@@ -1,0 +1,6 @@
+/* French permission strings. */
+"NSCameraUsageDescription" = "MySWYM utilise l’appareil photo pour prendre ta photo de profil.";
+"NSPhotoLibraryUsageDescription" = "MySWYM accède à tes photos pour choisir ta photo de profil.";
+"NSPhotoLibraryAddUsageDescription" = "MySWYM enregistre tes cartes de séance et stickers dans tes Photos.";
+"NSHealthShareUsageDescription" = "MySWYM lit tes séances de natation et ta fréquence cardiaque dans Apple Santé, pour afficher tes stats. Rien n’est écrit dans Santé.";
+"NSHealthUpdateUsageDescription" = "MySWYM n’écrit rien dans Apple Santé. L’app lit seulement tes séances de natation et ta fréquence cardiaque.";

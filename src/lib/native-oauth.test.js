@@ -65,9 +65,10 @@ assert(!isNativeOAuthCallback("myswym://other"), "other path ignored");
   };
   const data = await completeNativeOAuthFromUrl(
     supabase,
-    "myswym://auth/callback#access_token=a&refresh_token=r",
+    "myswym://auth/callback?reset=1#access_token=a&refresh_token=r&type=recovery",
   );
   assert(data.user.id === "u2", "implicit session");
+  assert(data.isPasswordRecovery === true, "marks password recovery");
 }
 
 {

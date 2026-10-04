@@ -7,6 +7,7 @@ import SoftMistSheet from "./SoftMistSheet.jsx";
 import CheckoutLegalGates, { checkoutGatesReady, checkoutGatesError } from "../CheckoutLegalGates.jsx";
 import { supabase } from "../supabase.js";
 import { PRICING, PRICING_SUMMARY_FR, priceIdForPlan } from "../lib/pricing.js";
+import { APPLE_IAP_SUMMARY_FR } from "../lib/apple-iap-catalog.js";
 import { getUpgradeCopy } from "../lib/coach-insights.js";
 import { trackEvent } from "../lib/analytics.js";
 import { captureReferralFromUrl, resolveReferralCode } from "../lib/referral.js";
@@ -21,13 +22,6 @@ import {
 } from "../lib/apple-iap-catalog.js";
 import { loadAppleIapProducts, purchaseAppleProduct, restoreAndSyncAppleIap } from "../lib/native-iap.js";
 import IosIapPaywall from "./IosIapPaywall.jsx";
-
-const PREMIUM_LINES_ACTIVE = [
-  "Séances complètes + allures à la seconde (T100)",
-  "Adaptation coach après feedback séance / semaine",
-  "Plan jusqu’à ton événement · jusqu’à 5× / semaine",
-  "Projection d’allures · plans complets · vidéos technique",
-];
 
 const MUTED = "#4a5d72";
 
@@ -82,10 +76,11 @@ export default function UpgradeModal({
   const headline = copy.headline;
   const subtitle = copy.subtitle;
   const featureLines = [t("upgrade.line1"), t("upgrade.line2"), t("upgrade.line3"), t("upgrade.line4")];
+  const priceSummary = native ? APPLE_IAP_SUMMARY_FR : PRICING_SUMMARY_FR;
   const premiumLines = trialEnded
     ? featureLines
     : [
-        `Essai 7 jours sans carte à l’inscription, puis ${PRICING_SUMMARY_FR}`,
+        t("upgrade.trialThen", { price: priceSummary }),
         ...featureLines,
       ];
 

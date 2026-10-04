@@ -96,6 +96,7 @@ export function shouldShowLovePrompt({
   if (s.answer === "yes" || s.answer === "no") return false;
   if (finishedSessions < LOVE_REVIEW_MIN_SESSIONS) return false;
   if (now < s.firstOpenAt + LOVE_REVIEW_MIN_USAGE_MS) return false;
+  if ((s.laterCount || 0) >= LOVE_REVIEW_MAX_LATER) return false;
   if (s.laterUntil && now < s.laterUntil) return false;
   return true;
 }

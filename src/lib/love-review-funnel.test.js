@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import {
+  LOVE_REVIEW_MAX_LATER,
   LOVE_REVIEW_MIN_USAGE_MS,
   LOVE_REVIEW_STORE_DELAY_MS,
   answerLoveNo,
@@ -131,6 +132,18 @@ assert.equal(
   }),
   false,
   "snoozed until laterUntil",
+);
+
+assert.equal(
+  shouldShowLovePrompt({
+    isNative: true,
+    now: t0 + LOVE_REVIEW_MIN_USAGE_MS + 10_000,
+    finishedSessions: 2,
+    state: { ...baseState, laterCount: LOVE_REVIEW_MAX_LATER, laterUntil: null },
+    storeAlreadyAsked: false,
+  }),
+  false,
+  "stops after max snoozes",
 );
 
 assert.equal(typeof answerLoveYes, "function");

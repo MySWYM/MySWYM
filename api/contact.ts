@@ -80,14 +80,23 @@ function isPasswordResetRequest(req: VercelRequest, body: Record<string, unknown
 
 const PROD_SITE = "https://www.myswym.app";
 /** ?reset=1 : l’app affiche le formulaire même si PASSWORD_RECOVERY ne part pas. */
-const RESET_REDIRECT = `${PROD_SITE}/app?reset=1`;
+const RESET_REDIRECT_WEB = `${PROD_SITE}/app?reset=1`;
+/** Scheme iOS déjà allowlisté pour OAuth (`myswym://auth/callback`). */
+const RESET_REDIRECT_NATIVE = "myswym://auth/callback?reset=1";
 
-/** Force redirect_to prod même si le projet Supabase a Site URL = staging. */
-function forceProdRecoveryLink(actionLink: string): string {
+function resolveResetRedirect(body: Record<string, unknown>): string {
+  const nativeFlag = body.native === true || body.native === "true" || body.client === "ios";
+  const asked = asString(body.redirectTo || body.redirect_to).trim();
+  if (nativeFlag || asked === RESET_REDIRECT_NATIVE) return RESET_REDIRECT_NATIVE;
+  return RESET_REDIRECT_WEB;
+}
+
+/** Force redirect_to (web prod ou scheme iOS) même si Site URL Supabase = staging. */
+function forceRecoveryRedirect(actionLink: string, redirectTo: string): string {
   try {
     const u = new URL(actionLink);
     if (u.searchParams.has("redirect_to")) {
-      u.searchParams.set("redirect_to", RESET_REDIRECT);
+      u.searchParams.set("redirect_to", redirectTo);
     }
     return u.toString();
   } catch {
@@ -154,10 +163,11 @@ async function handlePasswordReset(
     const admin = createClient(url, serviceKey, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
+    const redirectTo = resolveResetRedirect(body);
     const { data, error } = await admin.auth.admin.generateLink({
       type: "recovery",
       email,
-      options: { redirectTo: RESET_REDIRECT },
+      options: { redirectTo },
     });
 
     if (error || !data?.properties?.action_link) {
@@ -168,7 +178,7 @@ async function handlePasswordReset(
       return okResponse();
     }
 
-    const resetUrl = forceProdRecoveryLink(data.properties.action_link);
+    const resetUrl = forceRecoveryRedirect(data.properties.action_link, redirectTo);
     const resend = new Resend(apiKey);
     const { error: sendErr } = await resend.emails.send({
       from: fromAddress(),

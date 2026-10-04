@@ -1815,11 +1815,16 @@
 .ms-sheet-card.is-dragging {
   overflow: hidden !important;
 }
+.ms-soft-sheet-icon {
+  display: flex;
+  justify-content: center;
+  margin: 4px 0 10px;
+}
 .love-review-icon {
   width: 56px;
   height: 56px;
   border-radius: 18px;
-  margin: 4px auto 8px;
+  margin: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1833,6 +1838,11 @@
 .love-review-icon.is-star {
   background: rgba(245, 180, 40, 0.16);
   color: #d97706;
+}
+.love-review-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 /* ── Soft mist sheet shell (tips, éducatifs, popups) ── */

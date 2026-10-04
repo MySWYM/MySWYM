@@ -1,18 +1,21 @@
 import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useSheetSwipeDismiss } from "./useSheetSwipeDismiss.js";
 
 /**
  * Bottom sheet soft mist partagé (tips séance, éducatifs, popups app).
  * `fullscreenMobile` : quasi plein écran sous 640px (prep séance).
  * Swipe down sur le header (handle) pour fermer quand `onClose` est fourni.
+ * `icon` : rendu au-dessus du titre (funnel avis, etc.).
  */
 export default function SoftMistSheet({
   open = true,
   title,
   eyebrow = null,
   subtitle = null,
+  icon = null,
   onClose,
   children,
   ariaLabel = null,
@@ -24,13 +27,14 @@ export default function SoftMistSheet({
   swipeToDismiss = true,
   fullscreenMobile = false,
   footer = null,
+  closeLabel = null,
 }) {
+  const { t } = useTranslation("app");
   /** Ignore le geste qui a ouvert le sheet (évite fermeture immédiate web / iOS). */
   const ignoreDismissUntil = useRef(0);
   const wasOpenRef = useRef(false);
   const {
     canSwipe,
-    dragging,
     headProps,
     panelStyle,
     overlayStyle,
@@ -111,12 +115,14 @@ export default function SoftMistSheet({
     ...(headProps.style || {}),
   };
 
+  const resolvedCloseLabel = closeLabel || t("sheet.close", { defaultValue: "Close" });
+
   return createPortal(
     <div
       className={overlayClass}
       role="dialog"
       aria-modal="true"
-      aria-label={ariaLabel || title || "Dialogue"}
+      aria-label={ariaLabel || title || resolvedCloseLabel}
       style={{
         ...(zIndex != null ? { zIndex } : {}),
         ...overlayStyle,
@@ -137,6 +143,7 @@ export default function SoftMistSheet({
           style={canSwipe ? headStyle : undefined}
         >
           <div className="ms-sheet-handle" aria-hidden />
+          {icon ? <div className="ms-soft-sheet-icon">{icon}</div> : null}
           <div className="ms-soft-sheet-head-row">
             <div style={{ minWidth: 0, flex: 1 }}>
               {eyebrow ? <div className="ms-soft-sheet-eyebrow">{eyebrow}</div> : null}
@@ -147,7 +154,7 @@ export default function SoftMistSheet({
               <button
                 type="button"
                 onClick={onClose}
-                aria-label="Fermer"
+                aria-label={resolvedCloseLabel}
                 className="ms-soft-sheet-close"
               >
                 <X size={18} color="currentColor" />
@@ -155,9 +162,11 @@ export default function SoftMistSheet({
             ) : null}
           </div>
         </div>
-        <div className={`ms-soft-sheet-body ${bodyClassName}`.trim()}>
-          {children}
-        </div>
+        {children ? (
+          <div className={`ms-soft-sheet-body ${bodyClassName}`.trim()}>
+            {children}
+          </div>
+        ) : null}
         {footer ? <div className="ms-soft-sheet-footer">{footer}</div> : null}
       </div>
     </div>,

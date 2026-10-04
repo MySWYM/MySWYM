@@ -96,7 +96,7 @@ import {
   resolveBodyUnits,
   weightDisplayToKg,
 } from "./lib/body-units.js";
-import { countryLabelFr } from "./lib/countries.js";
+import { countryLabel } from "./lib/countries.js";
 import IosFloatField, { IosFloatButton } from "./profile/IosFloatField.jsx";
 import FlagCircle from "./profile/FlagCircle.jsx";
 import IosCountrySheet from "./profile/IosCountrySheet.jsx";
@@ -1255,7 +1255,7 @@ export default function ProfileTab({
               <IosFloatButton
                 label={ta("person.country")}
                 prefix={draftCountry ? <FlagCircle code={draftCountry} lazy={false} /> : null}
-                value={countryLabelFr(draftCountry)}
+                value={countryLabel(draftCountry, i18n.language)}
                 onClick={() => setCountrySheetOpen(true)}
               />
             </div>
@@ -1377,7 +1377,7 @@ export default function ProfileTab({
                   return (
                     <div key={item.zone} style={{ marginBottom: 12 }}>
                       <div className="ms-profile-label">
-                        Gravité · {zoneLabel}
+                        {ta("injury.severityLabel", { zone: zoneLabel })}
                       </div>
                       <div className="ms-profile-choice-wrap">
                         {INJURY_SEVERITIES.map((s) => {
@@ -1389,7 +1389,7 @@ export default function ProfileTab({
                               onClick={() => onSwimmerProfileChange(setInjurySeverity(declaredInjuries, item.zone, s.id))}
                               className={`ms-profile-choice${active ? " is-active" : ""}`}
                             >
-                              {s.label}
+                              {ta(`injury.severity.${s.id}`, { defaultValue: s.label })}
                             </button>
                           );
                         })}
@@ -2392,7 +2392,7 @@ export default function ProfileTab({
                   return (
                     <div key={item.zone} style={{ marginBottom: 12 }}>
                       <div className="ms-profile-label">
-                        Gravité · {zoneLabel}
+                        {ta("injury.severityLabel", { zone: zoneLabel })}
                       </div>
                       <div className="ms-profile-choice-wrap">
                         {INJURY_SEVERITIES.map((s) => {
@@ -2404,7 +2404,7 @@ export default function ProfileTab({
                               onClick={() => onSwimmerProfileChange(setInjurySeverity(declaredInjuries, item.zone, s.id))}
                               className={`ms-profile-choice${active ? " is-active" : ""}`}
                             >
-                              {s.label}
+                              {ta(`injury.severity.${s.id}`, { defaultValue: s.label })}
                             </button>
                           );
                         })}

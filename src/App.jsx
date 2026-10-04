@@ -238,7 +238,6 @@ import {
   shouldShowLoveStoreAsk,
   snoozeLovePrompt,
 } from "./lib/love-review-funnel.js";
-import { appStoreWriteReviewHref } from "./lib/store-links.js";
 import { openInSystemBrowser, absoluteSiteUrl } from "./lib/native-links.js";
 import LoveReviewSheet from "./sheets/LoveReviewSheet.jsx";
 import { openStripePortalUrl } from "./lib/native-billing.js";
@@ -4911,60 +4910,68 @@ const ResetConfirmButton = ({ onReset, variant = "subtle" }) => {
 
 // ── COACH CARD ────────────────────────────────────────────────────────────
 // ── MODE BOUCLE « Nager & Progresser » ─────────────────────────────────────
-const LoopPaywallScreen = ({ reason = "cap", onUpgrade, onClose }) => (
-  <div style={{
-    position: "fixed", inset: 0, zIndex: 200, background: "rgba(15,23,42,0.55)",
-    display: "flex", alignItems: "flex-end", justifyContent: "center",
-  }}>
+function LoopPaywallScreen({ reason = "cap", onUpgrade, onClose }) {
+  const { t } = useTranslation("app");
+  const priceSummary = premiumPriceSummary();
+  const ctaLabel = isNativeIos()
+    ? t("loopPaywall.ctaNative")
+    : t("loopPaywall.ctaWeb", { price: PRICING.monthlyCommit.label });
+  const bullets = [
+    t("loopPaywall.b1"),
+    t("loopPaywall.b2"),
+    t("loopPaywall.b3"),
+    t("loopPaywall.b4"),
+    t("loopPaywall.b5"),
+  ];
+  return (
     <div style={{
-      width: "100%", maxWidth: 440, background: G.surface, borderRadius: "24px 24px 0 0",
-      padding: "28px 22px calc(28px + var(--safe-bottom))",
-      boxShadow: "0 -8px 40px rgba(0,0,0,0.18)",
+      position: "fixed", inset: 0, zIndex: 200, background: "rgba(15,23,42,0.55)",
+      display: "flex", alignItems: "flex-end", justifyContent: "center",
     }}>
-      {reason === "weekly" ? (
-        <>
-          <h2 style={{ fontSize: 22, fontWeight: 800, color: G.ink, margin: "0 0 10px", lineHeight: 1.2 }}>
-            Limite atteinte
-          </h2>
-          <p style={{ fontSize: 14, color: G.grey, lineHeight: 1.55, margin: "0 0 18px" }}>
-            Pour générer de nouvelles séances, abonne-toi à Premium : {premiumPriceSummary()}.
-          </p>
-        </>
-      ) : (
-        <>
-          <h2 style={{ fontSize: 22, fontWeight: 800, color: G.ink, margin: "0 0 10px", lineHeight: 1.2 }}>
-            Continue avec Premium
-          </h2>
-          <p style={{ fontSize: 14, color: G.grey, lineHeight: 1.55, margin: "0 0 16px" }}>
-            Pour de nouvelles séances personnalisées : {premiumPriceSummary()}.
-          </p>
-          <ul style={{ margin: "0 0 20px", padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 8 }}>
-            {[
-              "Génération illimitée",
-              "Régénération des séances",
-              "Progression personnalisée",
-              "Historique complet",
-              "Nouvelles fonctionnalités à venir",
-            ].map((line) => (
-              <li key={line} style={{ fontSize: 13, fontWeight: 600, color: G.ink, display: "flex", alignItems: "center", gap: 8 }}>
-                <Check size={14} color={G.mint} /> {line}
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
-      <Btn variant="blue" onClick={onUpgrade} style={{ width: "100%", marginBottom: 10 }}>S’abonner : dès {PRICING.monthlyCommit.label}/mois</Btn>
-      {onClose && (
-        <button type="button" onClick={onClose} style={{
-          width: "100%", border: "none", background: "transparent", color: G.grey,
-          fontSize: 13, fontWeight: 600, padding: 12, cursor: "pointer",
-        }}>
-          Plus tard
-        </button>
-      )}
+      <div style={{
+        width: "100%", maxWidth: 440, background: G.surface, borderRadius: "24px 24px 0 0",
+        padding: "28px 22px calc(28px + var(--safe-bottom))",
+        boxShadow: "0 -8px 40px rgba(0,0,0,0.18)",
+      }}>
+        {reason === "weekly" ? (
+          <>
+            <h2 style={{ fontSize: 22, fontWeight: 800, color: G.ink, margin: "0 0 10px", lineHeight: 1.2 }}>
+              {t("loopPaywall.weeklyTitle")}
+            </h2>
+            <p style={{ fontSize: 14, color: G.grey, lineHeight: 1.55, margin: "0 0 18px" }}>
+              {t("loopPaywall.weeklyBody", { price: priceSummary })}
+            </p>
+          </>
+        ) : (
+          <>
+            <h2 style={{ fontSize: 22, fontWeight: 800, color: G.ink, margin: "0 0 10px", lineHeight: 1.2 }}>
+              {t("loopPaywall.capTitle")}
+            </h2>
+            <p style={{ fontSize: 14, color: G.grey, lineHeight: 1.55, margin: "0 0 16px" }}>
+              {t("loopPaywall.capBody", { price: priceSummary })}
+            </p>
+            <ul style={{ margin: "0 0 20px", padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 8 }}>
+              {bullets.map((line) => (
+                <li key={line} style={{ fontSize: 13, fontWeight: 600, color: G.ink, display: "flex", alignItems: "center", gap: 8 }}>
+                  <Check size={14} color={G.mint} /> {line}
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+        <Btn variant="blue" onClick={onUpgrade} style={{ width: "100%", marginBottom: 10 }}>{ctaLabel}</Btn>
+        {onClose && (
+          <button type="button" onClick={onClose} style={{
+            width: "100%", border: "none", background: "transparent", color: G.grey,
+            fontSize: 13, fontWeight: 600, padding: 12, cursor: "pointer",
+          }}>
+            {t("loopPaywall.later")}
+          </button>
+        )}
+      </div>
     </div>
-  </div>
-);
+  );
+}
 
 const ProgressionLoopView = ({
   plan,
@@ -7804,6 +7811,7 @@ const BLANK_PROFILE = {
 };
 
 export default function App() {
+  const { t } = useTranslation("app");
   useEffect(() => {
     // Re-register après HMR (évite crash getTabUi / écran blanc)
     registerAppTabUi();
@@ -9680,11 +9688,18 @@ export default function App() {
       // Notif +24 h (funnel love) ou legacy : sheet Store, pas SKStoreReview en silence.
       setLoveReviewStep("store");
     };
+    const onNativeAuth = (ev) => {
+      if (ev?.detail?.recovery || hasPasswordRecoveryIntent()) {
+        setIsRecovery(true);
+      }
+    };
     window.addEventListener("myswym:open-upgrade", onUpgrade);
     window.addEventListener("myswym:open-app-store-review", onReview);
+    window.addEventListener("myswym:native-oauth-done", onNativeAuth);
     return () => {
       window.removeEventListener("myswym:open-upgrade", onUpgrade);
       window.removeEventListener("myswym:open-app-store-review", onReview);
+      window.removeEventListener("myswym:native-oauth-done", onNativeAuth);
     };
   }, []);
 
@@ -11548,7 +11563,7 @@ export default function App() {
   const handleDeleteAccount = async () => {
     const { data: refreshData } = await supabase.auth.refreshSession();
     const session = refreshData?.session;
-    if (!session) throw new Error("Reconnecte-toi pour supprimer ton compte.");
+    if (!session) throw new Error(t("toast.reauthDelete"));
     const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/delete-account`, {
       method: "POST",
       headers: {
@@ -11559,7 +11574,7 @@ export default function App() {
       body: "{}",
     });
     const json = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(json.error || "Suppression impossible.");
+    if (!res.ok) throw new Error(json.error || t("toast.deleteFail"));
     resetAnalytics();
     signingOutRef.current = true;
     forceAuthRef.current = true;
@@ -11573,11 +11588,11 @@ export default function App() {
       navigate("/connexion", { replace: true });
       setTimeout(() => { signingOutRef.current = false; }, 500);
     }
-    showToast("Compte supprimé.");
+    showToast(t("toast.accountDeleted"));
   };
 
   const handleRefreshStatus = async () => {
-    showToast("Synchronisation…");
+    showToast(t("toast.syncing"));
     try {
       let u = null;
       if (isLiveStripeBilling(user)) {
@@ -11592,11 +11607,11 @@ export default function App() {
         setUser(u);
         const premium = checkIsPremium(u);
         setIsPremium(premium);
-        showToast(premium ? "Premium activé ✓" : "Pas d’abonnement actif", 5000);
+        showToast(premium ? t("toast.premiumOn") : t("toast.noSub"), 5000);
         if (premium) closeUpgrade();
       }
     } catch {
-      showToast("Impossible de synchroniser. Réessaie ou contacte support@myswym.app", 8000);
+      showToast(t("toast.syncFail"), 8000);
     }
   };
 
@@ -12023,6 +12038,10 @@ export default function App() {
               snoozeLovePrompt();
               setLoveReviewStep(null);
             }}
+            onDismissFeedback={() => {
+              completeLoveFunnel();
+              setLoveReviewStep(null);
+            }}
             onOpenContact={() => {
               completeLoveFunnel();
               setLoveReviewStep(null);
@@ -12034,9 +12053,8 @@ export default function App() {
               completeLoveFunnel();
               markAppStoreReviewAsked();
               setLoveReviewStep(null);
-              void requestAppStoreReview().finally(() => {
-                openInSystemBrowser(appStoreWriteReviewHref());
-              });
+              // SKStoreReview seul (pas d’URL write-review en plus : guideline Apple).
+              void requestAppStoreReview();
             }}
             onSkipStore={() => {
               completeLoveFunnel();

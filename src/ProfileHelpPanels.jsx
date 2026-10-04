@@ -81,6 +81,7 @@ export function useFitOverflow(active = true) {
 }
 
 export function PanelShell({ title, onBack, children }) {
+  const { t } = useTranslation("app");
   const bodyRef = useFitOverflow();
   return (
     <div className="ms-profile-subpanel ios-lock-pane">
@@ -88,7 +89,7 @@ export function PanelShell({ title, onBack, children }) {
         <button
           type="button"
           className="ms-glass-icon-btn"
-          aria-label="Retour"
+          aria-label={t("nav.back")}
           onClick={() => {
             playUiSound("soft");
             onBack();

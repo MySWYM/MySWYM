@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Lock } from "lucide-react";
 import { G } from "../theme/palette.js";
 import { PRICING_SUMMARY_FR } from "../lib/pricing.js";
@@ -15,6 +16,7 @@ import SupportBubble from "../SupportBubble.jsx";
 const MUTED = "#4a5d72";
 
 export default function TrialExpiredFreeze({ onSubscribe, onSignOut, preview = null }) {
+  const { t } = useTranslation("app");
   const native = isNativeApp();
   const [user, setUser] = useState(null);
   const [syncing, setSyncing] = useState(false);
@@ -47,8 +49,8 @@ export default function TrialExpiredFreeze({ onSubscribe, onSignOut, preview = n
   }, [native]);
   const heroPreview = preview
     ? {
-        title: preview.title || "Séance",
-        type: preview.type || "En pause",
+        title: preview.title || t("trialFreeze.sessionFallback", { defaultValue: "Session" }),
+        type: preview.type || t("trialFreeze.paused", { defaultValue: "Paused" }),
         distanceLabel: preview.distance ? `${preview.distance} m` : null,
         durationLabel: preview.duration ? `${preview.duration} min` : null,
         blocks: preview.blocks || [],
@@ -69,9 +71,9 @@ export default function TrialExpiredFreeze({ onSubscribe, onSignOut, preview = n
         window.location.reload();
         return;
       }
-      setSyncErr("Pas d’abonnement actif sur ce compte.");
+      setSyncErr(t("upgrade.noSub"));
     } catch {
-      setSyncErr("Impossible de synchroniser. Réessaie ou écris au support.");
+      setSyncErr(t("toast.syncFail"));
     } finally {
       setSyncing(false);
     }
@@ -81,17 +83,17 @@ export default function TrialExpiredFreeze({ onSubscribe, onSignOut, preview = n
     <>
     <SoftMistSheet
       open
-      eyebrow="Essai terminé"
-      title="Ton essai est terminé"
+      eyebrow={t("trialFreeze.eyebrow")}
+      title={t("trialFreeze.title")}
       subtitle={
         native
-          ? "Le coach est en pause. Abonne-toi via l’App Store, ou synchronise si tu es déjà Premium sur le site."
-          : `Le coach est en pause. Abonne-toi pour reprendre tes séances, ${PRICING_SUMMARY_FR}.`
+          ? t("trialFreeze.subNative")
+          : t("trialFreeze.subWeb", { price: PRICING_SUMMARY_FR })
       }
       onClose={undefined}
       dismissOnOverlay={false}
       zIndex={500}
-      ariaLabel="Essai terminé"
+      ariaLabel={t("trialFreeze.eyebrow")}
       bodyClassName="ms-soft-sheet-body--tall"
     >
       <div
@@ -131,22 +133,22 @@ export default function TrialExpiredFreeze({ onSubscribe, onSignOut, preview = n
               background: "linear-gradient(180deg, transparent 30%, rgba(244, 248, 252, 0.85) 100%)",
             }}
           />
-          <SessionHeroCard preview={heroPreview} kicker="Aperçu, en pause" className="is-compact" />
+          <SessionHeroCard preview={heroPreview} kicker={t("trialFreeze.paused", { defaultValue: "Paused" })} className="is-compact" />
         </div>
       ) : null}
 
       {native ? (
         <>
           <Btn variant="blue" onClick={onSubscribe} style={{ width: "100%", minHeight: 52 }}>
-            Reprendre avec Premium
+            {t("trialFreeze.resume")}
           </Btn>
           <Btn variant="ghost" onClick={handleNativeSync} style={{ width: "100%", minHeight: 52, marginTop: 10 }} disabled={syncing}>
-            {syncing ? "Synchronisation…" : "J’ai déjà Premium, restaurer"}
+            {syncing ? t("trialFreeze.syncing") : t("trialFreeze.restore")}
           </Btn>
         </>
       ) : (
         <Btn variant="blue" onClick={onSubscribe} style={{ width: "100%", minHeight: 52 }}>
-          Reprendre avec Premium
+          {t("trialFreeze.resume")}
         </Btn>
       )}
       {syncErr ? (
@@ -170,15 +172,15 @@ export default function TrialExpiredFreeze({ onSubscribe, onSignOut, preview = n
           minHeight: 44,
         }}
       >
-        Se déconnecter
+        {t("auth.signOut", { defaultValue: "Sign out" })}
       </button>
       {native ? (
         <p style={{ fontSize: 12, color: MUTED, marginTop: 16, lineHeight: 1.45, textAlign: "center" }}>
-          Besoin d’aide ? La loutre en bas à droite ouvre le support.
+          {t("trialFreeze.helpNative", { defaultValue: "Need help? The otter at the bottom right opens support." })}
         </p>
       ) : (
         <p style={{ fontSize: 12, color: MUTED, marginTop: 16, lineHeight: 1.45, textAlign: "center" }}>
-          Besoin d’aide ?{" "}
+          {t("trialFreeze.helpWeb", { defaultValue: "Need help?" })}{" "}
           <a href="mailto:support@myswym.app" style={{ color: G.blue, fontWeight: 700, textDecoration: "none" }}>
             support@myswym.app
           </a>

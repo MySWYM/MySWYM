@@ -40,10 +40,12 @@ function asErrorText(value) {
   }
 }
 
+/** Redirect natif : ouvre l’app (scheme) puis session recovery + formulaire. */
+export const NATIVE_PASSWORD_RESET_REDIRECT = "myswym://auth/callback?reset=1";
+
 function resetRedirectTo() {
   if (isNativeApp()) {
-    const base = nativeApiOrigin();
-    return withPasswordResetQuery(base ? `${base}/app` : PROD_APP);
+    return NATIVE_PASSWORD_RESET_REDIRECT;
   }
   try {
     const host = String(window.location?.hostname || "");
@@ -77,7 +79,11 @@ export async function requestPasswordReset(email) {
     res = await fetch(passwordResetApiUrl(), {
       method: "POST",
       headers: { "Content-Type": "application/json", Accept: "application/json" },
-      body: JSON.stringify({ kind: "reset-password", email: mail }),
+      body: JSON.stringify({
+        kind: "reset-password",
+        email: mail,
+        ...(isNativeApp() ? { native: true, redirectTo: NATIVE_PASSWORD_RESET_REDIRECT } : {}),
+      }),
     });
   } catch {
     return resetViaSupabase(mail);

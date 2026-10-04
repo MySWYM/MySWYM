@@ -15,6 +15,7 @@ import {
   emitNativeOAuthCompleted,
   isNativeOAuthCallback,
 } from "../lib/native-oauth.js";
+import { markPasswordRecoveryIntent } from "../lib/password-recovery-intent.js";
 import {
   closeNativeStravaBrowser,
   completeNativeStravaFromUrl,
@@ -47,7 +48,14 @@ async function handleNativeOAuthUrl(url) {
   if (!isNativeOAuthCallback(url)) return false;
   try {
     const data = await completeNativeOAuthFromUrl(supabase, url);
-    emitNativeOAuthCompleted({ ok: true, user: data?.user ?? null });
+    if (data?.isPasswordRecovery) {
+      markPasswordRecoveryIntent();
+    }
+    emitNativeOAuthCompleted({
+      ok: true,
+      user: data?.user ?? null,
+      recovery: data?.isPasswordRecovery === true,
+    });
     return true;
   } catch (err) {
     if (import.meta.env?.DEV) console.warn("[native-oauth]", err);
