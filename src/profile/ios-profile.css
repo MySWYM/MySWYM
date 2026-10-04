@@ -968,6 +968,50 @@ html.myswym-ios .ios-cover-lock {
 }
 
 /* Notifications (Push / Email) */
+.ios-notif-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  margin: 4px 0 20px;
+  padding: 20px 16px 16px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(0, 107, 253, 0.12);
+  box-shadow: 0 6px 20px rgba(50, 110, 180, 0.08);
+  text-align: center;
+}
+
+.ios-notif-hero-icon {
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 4px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 107, 253, 0.12);
+  color: var(--ms-blue, #006bfd);
+}
+
+.ios-notif-hero-title {
+  font-size: 17px;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+  color: var(--ms-ink, #0a162c);
+}
+
+.ios-notif-hero-body {
+  margin: 0 0 8px;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--ms-ink-soft, #5a6b7d);
+}
+
+.ios-notif-status.is-on {
+  border-color: rgba(31, 174, 134, 0.35);
+}
+
 .ios-notif-tabs {
   display: flex;
   gap: 4px;

@@ -16,7 +16,7 @@ export { buddyConnectionId };
 const BUNDLE_ID = "app.myswym.ios";
 const PUSH_PREF_KEY = "myswym_push_enabled";
 
-/** false seulement si l’utilisateur a coupé le switch. */
+/** false seulement si l’utilisateur a coupé le switch dans MySWYM. */
 export function pushNotificationsWanted() {
   try {
     return localStorage.getItem(PUSH_PREF_KEY) !== "0";
@@ -29,6 +29,26 @@ function writePushPref(on) {
   try {
     localStorage.setItem(PUSH_PREF_KEY, on ? "1" : "0");
   } catch { /* ignore */ }
+}
+
+function dispatchPushPref() {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("myswym:push-pref"));
+  }
+}
+
+/**
+ * État d’activation pour l’UI (source de vérité = permission iOS + opt-in MySWYM).
+ * @returns {Promise<{ os: "granted"|"denied"|"prompt", wanted: boolean, active: boolean }>}
+ */
+export async function getNotificationActivationState() {
+  const os = await getLocalNotificationPermission();
+  const wanted = pushNotificationsWanted();
+  return {
+    os: os === "granted" || os === "denied" ? os : "prompt",
+    wanted,
+    active: os === "granted" && wanted,
+  };
 }
 const AppBadge = registerPlugin("AppBadge");
 let listenersReady = false;
@@ -177,13 +197,10 @@ async function ensureListeners(PushNotifications) {
   });
 }
 
-/**
- * Demande permission + enregistre le device auprès d’APNs, upsert le jeton.
- */
+/** true si iOS a autorisé et que MySWYM n’a pas opt-out. */
 export async function notificationsSwitchOn() {
-  if (!pushNotificationsWanted()) return false;
-  const perm = await getLocalNotificationPermission();
-  return perm === "granted";
+  const state = await getNotificationActivationState();
+  return state.active;
 }
 
 /** Retire ce téléphone de la liste d’envoi (push global + rappels locaux). */
@@ -202,23 +219,48 @@ export async function disableNativeNotifications() {
     const { cancelMySwymLocalNotifications } = await import("./native-local-notifications.js");
     await cancelMySwymLocalNotifications();
   } catch { /* ignore */ }
-  if (typeof window !== "undefined") {
-    window.dispatchEvent(new CustomEvent("myswym:push-pref"));
-  }
+  dispatchPushPref();
   return { ok: true, enabled: false };
 }
 
+/**
+ * Active les notifs MySWYM.
+ * Si iOS a déjà autorisé (Réglages), réactive sans popup et sans échouer sur le jeton.
+ */
 export async function enableNativeNotifications() {
-  writePushPref(true);
-  const res = await registerNativePush({ request: true });
-  if (!res?.ok) {
+  const osBefore = await getLocalNotificationPermission();
+  if (osBefore === "denied") {
     writePushPref(false);
-    return { ok: false, enabled: false, reason: res?.reason };
+    return { ok: false, enabled: false, reason: "denied" };
   }
-  if (typeof window !== "undefined") {
-    window.dispatchEvent(new CustomEvent("myswym:push-pref"));
+
+  writePushPref(true);
+
+  if (osBefore === "granted") {
+    try {
+      await registerNativePush({ request: false });
+    } catch (e) {
+      console.warn("[push] register after os-granted", e);
+    }
+    dispatchPushPref();
+    return { ok: true, enabled: true };
   }
-  return { ok: true, enabled: true };
+
+  const res = await registerNativePush({ request: true });
+  const osAfter = await getLocalNotificationPermission();
+  if (osAfter === "granted") {
+    writePushPref(true);
+    dispatchPushPref();
+    return { ok: true, enabled: true, soft: !res?.ok };
+  }
+
+  writePushPref(false);
+  dispatchPushPref();
+  return {
+    ok: false,
+    enabled: false,
+    reason: osAfter === "denied" ? "denied" : (res?.reason || "denied"),
+  };
 }
 
 /** Ouvre Réglages iPhone → page MySWYM (après un refus de notifications). */
