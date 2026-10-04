@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   Check, ChevronRight, Mail, RotateCcw, Lock, Shield, CircleHelp, Info, Languages,
-  FileText, LogOut, HeartPulse, CreditCard, Activity, AlertTriangle, Bell,
+  FileText, LogOut, HeartPulse, CreditCard, Activity, AlertTriangle, Bell, Smartphone, Monitor,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { G } from "../theme/palette.js";
@@ -21,6 +21,14 @@ import {
   downloadAccountExport,
   hasEmailPasswordProvider,
 } from "../lib/account-export.js";
+import {
+  formatDeviceSeenAt,
+  listUserDevices,
+  revokeAllUserDevices,
+  revokeOtherUserDevices,
+  revokeUserDevice,
+} from "../lib/user-devices.js";
+import { countryFlagSrc } from "../lib/countries.js";
 import { PanelShell } from "../ProfileHelpPanels.jsx";
 import TimedUndoAction from "../ui/TimedUndoAction.jsx";
 import ConfirmSheet from "../sheets/ConfirmSheet.jsx";
@@ -311,6 +319,7 @@ export function IosDataPanel({
   deleteErr,
   deleteGate,
   deleteWarning,
+  onOpenDevices,
 }) {
   const { t } = useTranslation("app");
   const [exportBusy, setExportBusy] = useState(false);
@@ -355,6 +364,23 @@ export function IosDataPanel({
         <p className={`ios-settings-alert ${exportNote.type === "err" ? "is-err" : "is-ok"}`}>
           {exportNote.text}
         </p>
+      ) : null}
+
+      {onOpenDevices ? (
+        <>
+          <div className="ms-profile-group-label">{t("devices.title")}</div>
+          <div className="ms-profile-account-stack" style={{ marginBottom: 20 }}>
+            <SettingsRow
+              icon={Smartphone}
+              title={t("devices.title")}
+              hint={t("devices.rowHint")}
+              onClick={() => {
+                playUiSound("soft");
+                onOpenDevices();
+              }}
+            />
+          </div>
+        </>
       ) : null}
 
       <div className="ms-profile-group-label">{t("settings.news")}</div>
@@ -660,6 +686,181 @@ export function IosSettingsHome({
         {ta("settings.signOut")}
       </button>
     </>
+  );
+}
+
+function deviceSeenLabel(t, iso) {
+  const token = formatDeviceSeenAt(iso);
+  if (token === "now") return t("devices.seenNow");
+  if (token.endsWith("m")) return t("devices.seenMin", { n: token.replace("m", "") });
+  if (token.endsWith("h")) return t("devices.seenHours", { n: token.replace("h", "") });
+  if (token.endsWith("d")) return t("devices.seenDays", { n: token.replace("d", "") });
+  return t("devices.seen", { when: token || "-" });
+}
+
+export function IosDevicesPanel({ onBack, onSignOut }) {
+  const { t } = useTranslation("app");
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState(null);
+  const [devices, setDevices] = useState([]);
+  const [busyKey, setBusyKey] = useState(null);
+  const [confirm, setConfirm] = useState(null); // { kind: 'one'|'others'|'all', device_key? }
+
+  const reload = async () => {
+    setLoading(true);
+    setErr(null);
+    try {
+      const res = await listUserDevices();
+      setDevices(Array.isArray(res.devices) ? res.devices : []);
+    } catch {
+      setErr(t("devices.fail"));
+      setDevices([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void reload();
+  }, []);
+
+  const runAction = async () => {
+    if (!confirm) return;
+    const kind = confirm.kind;
+    const targetKey = confirm.device_key;
+    setBusyKey(kind === "one" ? targetKey : kind);
+    setConfirm(null);
+    try {
+      if (kind === "one") {
+        const res = await revokeUserDevice(targetKey);
+        playUiSound("success");
+        if (res?.self_revoked) {
+          onSignOut?.();
+          return;
+        }
+      } else if (kind === "others") {
+        await revokeOtherUserDevices();
+        playUiSound("success");
+      } else if (kind === "all") {
+        await revokeAllUserDevices();
+        playUiSound("success");
+        onSignOut?.();
+        return;
+      }
+      await reload();
+    } catch {
+      setErr(t("devices.fail"));
+    } finally {
+      setBusyKey(null);
+    }
+  };
+
+  const others = devices.filter((d) => !d.is_current);
+
+  return (
+    <PanelShell title={t("devices.title")} onBack={onBack}>
+      <p className="ios-settings-copy">{t("devices.lead")}</p>
+      {loading ? <p className="ios-settings-copy">{t("devices.loading")}</p> : null}
+      {err ? <p className="ios-settings-alert is-err">{err}</p> : null}
+
+      {!loading && devices.length === 0 && !err ? (
+        <p className="ios-settings-copy">{t("devices.empty")}</p>
+      ) : null}
+
+      <div className="ios-devices-list">
+        {devices.map((d) => {
+          const Icon = d.platform === "ios" || d.platform === "android" ? Smartphone : Monitor;
+          const flag = d.country_code ? countryFlagSrc(d.country_code) : "";
+          const meta = [d.country_code, d.last_ip].filter(Boolean).join(" · ");
+          return (
+            <div key={d.device_key} className={`ios-device-card${d.is_current ? " is-current" : ""}`}>
+              <span className="ios-device-icon" aria-hidden>
+                <Icon size={20} color={G.blue} strokeWidth={2.2} />
+              </span>
+              <div className="ios-device-body">
+                <div className="ios-device-name">{d.label || "Appareil"}</div>
+                {meta ? (
+                  <div className="ios-device-meta">
+                    {flag ? <img src={flag} alt="" width={14} height={14} className="ios-device-flag" /> : null}
+                    <span>{meta}</span>
+                  </div>
+                ) : null}
+                <div className="ios-device-meta">
+                  {t("devices.seen", { when: deviceSeenLabel(t, d.last_seen_at) })}
+                </div>
+                {d.is_current ? (
+                  <div className="ios-device-badge">{t("devices.current")}</div>
+                ) : (
+                  <button
+                    type="button"
+                    className="ios-device-revoke"
+                    disabled={Boolean(busyKey)}
+                    onClick={() => {
+                      playUiSound("soft");
+                      setConfirm({ kind: "one", device_key: d.device_key });
+                    }}
+                  >
+                    {busyKey === d.device_key ? t("devices.loading") : t("devices.revoke")}
+                  </button>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {others.length > 0 ? (
+        <button
+          type="button"
+          className="ios-devices-danger"
+          disabled={Boolean(busyKey)}
+          onClick={() => {
+            playUiSound("soft");
+            setConfirm({ kind: "others" });
+          }}
+        >
+          {busyKey === "others" ? t("devices.loading") : t("devices.revokeOthers")}
+        </button>
+      ) : null}
+
+      <button
+        type="button"
+        className="ios-devices-danger is-strong"
+        disabled={Boolean(busyKey) || devices.length === 0}
+        onClick={() => {
+          playUiSound("soft");
+          setConfirm({ kind: "all" });
+        }}
+      >
+        {busyKey === "all" ? t("devices.loading") : t("devices.revokeAll")}
+      </button>
+
+      {confirm && createPortal(
+        <ConfirmSheet
+          title={
+            confirm.kind === "one"
+              ? t("devices.revokeConfirmTitle")
+              : confirm.kind === "others"
+                ? t("devices.revokeOthersTitle")
+                : t("devices.revokeAllTitle")
+          }
+          message={
+            confirm.kind === "one"
+              ? t("devices.revokeConfirmBody")
+              : confirm.kind === "others"
+                ? t("devices.revokeOthersBody")
+                : t("devices.revokeAllBody")
+          }
+          confirmLabel={t("devices.revoke")}
+          cancelLabel={t("sheet.cancel")}
+          destructive
+          icon={LogOut}
+          onConfirm={() => { void runAction(); }}
+          onCancel={() => setConfirm(null)}
+        />,
+        document.body,
+      )}
+    </PanelShell>
   );
 }
 

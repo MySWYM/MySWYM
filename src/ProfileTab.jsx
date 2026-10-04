@@ -46,6 +46,7 @@ import {
   IosLanguagePanel,
   IosPasswordPanel,
   IosDataPanel,
+  IosDevicesPanel,
   IosStravaPanel,
   IosAppleHealthPanel,
   IosSubscriptionPanel,
@@ -796,6 +797,7 @@ export default function ProfileTab({
           newsletterOn={newsletterOn}
           newsletterBusy={newsletterBusy}
           onToggleNewsletter={toggleNewsletter}
+          onOpenDevices={() => setHelpPanel("devices")}
           onDeleteAccount={async () => {
             setDeleteErr(null);
             setDeleteBusy(true);
@@ -810,6 +812,12 @@ export default function ProfileTab({
           deleteErr={deleteErr}
           deleteGate={deleteGate}
           deleteWarning={deleteGate.appleKeepsBilling ? ACCOUNT_DELETE_APPLE_WARNING : deleteGate.willCancelSubscription ? ACCOUNT_DELETE_FLEX_WARNING : ACCOUNT_DELETE_WARNING}
+        />
+      ) : null}
+      {helpPanel === "devices" ? (
+        <IosDevicesPanel
+          onBack={() => setHelpPanel("data")}
+          onSignOut={onSignOut}
         />
       ) : null}
       {helpPanel === "strava" ? (

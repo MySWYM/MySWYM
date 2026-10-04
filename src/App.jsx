@@ -8813,6 +8813,14 @@ export default function App() {
             void flushPendingPushToken();
             void registerNativePush();
           }
+          // Appareils connectés : heartbeat + force logout si révoqué à distance
+          void import("./lib/user-devices.js").then(({ heartbeatUserDevice }) => (
+            heartbeatUserDevice().then((res) => {
+              if (res?.force_logout || res?.revoked) {
+                void supabase.auth.signOut();
+              }
+            }).catch(() => { /* function pas encore déployée */ })
+          ));
           // Welcome email (email + Google), retry OAuth-safe, pas de catch silencieux
           if (!welcomeEmailInFlightRef.current && u.app_metadata?.welcome_email_sent !== true) {
             welcomeEmailInFlightRef.current = ensureWelcomeEmail(u)

@@ -861,3 +861,108 @@ html.myswym-ios .ios-cover-lock {
   font-weight: 700;
   font-size: 15px;
 }
+
+/* Appareils connectés */
+.ios-devices-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 8px 0 20px;
+}
+
+.ios-device-card {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 14px 14px 12px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(0, 107, 253, 0.12);
+  box-shadow: 0 4px 16px rgba(50, 110, 180, 0.06);
+}
+
+.ios-device-card.is-current {
+  border-color: rgba(31, 174, 134, 0.35);
+}
+
+.ios-device-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: rgba(0, 107, 253, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.ios-device-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.ios-device-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ms-ink, #0a162c);
+  letter-spacing: -0.02em;
+}
+
+.ios-device-meta {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--ms-ink-soft, #5a6b7d);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  line-height: 1.35;
+}
+
+.ios-device-flag {
+  border-radius: 3px;
+  object-fit: cover;
+}
+
+.ios-device-badge {
+  margin-top: 8px;
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ms-mint, #1fae86);
+}
+
+.ios-device-revoke {
+  margin-top: 10px;
+  border: none;
+  background: none;
+  padding: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ms-coral, #e85a68);
+  cursor: pointer;
+  min-height: 32px;
+}
+
+.ios-devices-danger {
+  width: 100%;
+  min-height: 52px;
+  margin-bottom: 10px;
+  border-radius: 999px;
+  border: 1.5px solid rgba(232, 90, 104, 0.45);
+  background: rgba(253, 232, 234, 0.95);
+  color: var(--ms-coral, #e85a68);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.ios-devices-danger.is-strong {
+  background: rgba(232, 90, 104, 0.16);
+  border-color: var(--ms-coral, #e85a68);
+}
+
+.ios-devices-danger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

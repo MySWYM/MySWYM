@@ -69,6 +69,12 @@ verify_jwt = true
 import_map = "./functions/delete-account/deno.json"
 entrypoint = "./functions/delete-account/index.ts"
 
+[functions.manage-devices]
+enabled = true
+verify_jwt = true
+import_map = "./functions/manage-devices/deno.json"
+entrypoint = "./functions/manage-devices/index.ts"
+
 [functions.reactivate-nonpayers]
 enabled = true
 verify_jwt = false
