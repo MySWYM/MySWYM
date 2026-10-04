@@ -79,7 +79,8 @@ function isPasswordResetRequest(req: VercelRequest, body: Record<string, unknown
 }
 
 const PROD_SITE = "https://www.myswym.app";
-const RESET_REDIRECT = `${PROD_SITE}/app`;
+/** ?reset=1 : l’app affiche le formulaire même si PASSWORD_RECOVERY ne part pas. */
+const RESET_REDIRECT = `${PROD_SITE}/app?reset=1`;
 
 /** Force redirect_to prod même si le projet Supabase a Site URL = staging. */
 function forceProdRecoveryLink(actionLink: string): string {

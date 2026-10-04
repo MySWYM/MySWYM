@@ -1,5 +1,11 @@
 import { createClient } from "@supabase/supabase-js";
 import { isNativeApp } from "./lib/native-platform.js";
+import { capturePasswordRecoveryIntent } from "./lib/password-recovery-intent.js";
+
+// Filet si supabase est importé avant main.jsx (tests, lazy).
+if (typeof window !== "undefined") {
+  capturePasswordRecoveryIntent();
+}
 
 const FALLBACK_URL = "https://unavailable.supabase.co";
 const FALLBACK_KEY = "public-anon-key";

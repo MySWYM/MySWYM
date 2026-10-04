@@ -1,5 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
+// Avant AppTree / supabase : capture type=recovery / ?reset=1 dans sessionStorage.
+import "./lib/password-recovery-intent.js";
 import "./i18n/index.js";
 import "./theme/fonts.css";
 import "./index.css";

@@ -15,6 +15,12 @@ import {
 } from "./lib/access.js";
 import { ensureAnonymousSession } from "./lib/anonymous-auth.js";
 import {
+  capturePasswordRecoveryIntent,
+  clearPasswordRecoveryIntent,
+  hasPasswordRecoveryIntent,
+  stripPasswordResetQueryFromUrl,
+} from "./lib/password-recovery-intent.js";
+import {
   clearSaveAccountSnooze,
   isSaveAccountSnoozed,
   releaseSaveAccountSnoozeOnResume,
@@ -7792,7 +7798,10 @@ export default function App() {
   const [authLoading, setAuthLoading] = useState(true);
   const [isPremium, setIsPremium] = useState(false);
   const [accessSynced, setAccessSynced] = useState(false);
-  const [isRecovery, setIsRecovery] = useState(false);
+  const [isRecovery, setIsRecovery] = useState(() => {
+    capturePasswordRecoveryIntent();
+    return hasPasswordRecoveryIntent();
+  });
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [upgradeSoftContext, setUpgradeSoftContext] = useState(null);
   const [showPlanReady, setShowPlanReady] = useState(false);
@@ -8691,13 +8700,24 @@ export default function App() {
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "PASSWORD_RECOVERY") {
-        // Lien de réinitialisation cliqué → afficher l'écran de nouveau mot de passe
-        setUser(session?.user ?? null);
+      // Re-capture : supabase peut encore avoir le hash au 1er tick.
+      capturePasswordRecoveryIntent();
+      const recoveryIntent =
+        event === "PASSWORD_RECOVERY" || hasPasswordRecoveryIntent();
+
+      // Lien reset → formulaire même si Supabase n’émet que SIGNED_IN (pas PASSWORD_RECOVERY).
+      if (
+        recoveryIntent
+        && session?.user
+        && (event === "PASSWORD_RECOVERY" || event === "SIGNED_IN" || event === "INITIAL_SESSION")
+      ) {
+        setUser(session.user);
+        setIsPremium(checkPremiumUnlocked(session.user));
         setIsRecovery(true);
         setAuthLoading(false);
         return;
       }
+
       const u = session?.user ?? null;
       setUser(u);
       setIsPremium(checkPremiumUnlocked(u));
@@ -8708,6 +8728,11 @@ export default function App() {
           if (!isAccessMetadataPending(u) && !shouldAwaitCardlessTrial(u)) {
             setAccessSynced(true);
           }
+          setAuthLoading(false);
+          return;
+        }
+        if (recoveryIntent) {
+          setIsRecovery(true);
           setAuthLoading(false);
           return;
         }
@@ -11596,6 +11621,8 @@ export default function App() {
       <style>{css}</style>
       <div className="ms-auth-shell">
         <ResetPasswordScreen showBrandHeader={false} onDone={() => {
+          clearPasswordRecoveryIntent();
+          stripPasswordResetQueryFromUrl();
           setIsRecovery(false);
           // Recharge les données utilisateur après reset
           supabase.auth.getUser().then(({ data }) => {
