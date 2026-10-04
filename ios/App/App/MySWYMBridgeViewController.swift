@@ -16,6 +16,11 @@ class MySWYMBridgeViewController: CAPBridgeViewController {
         hardenWebView()
     }
 
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        hardenWebView()
+    }
+
     private func hardenWebView() {
         guard let webView else { return }
         webView.allowsLinkPreview = false
@@ -26,5 +31,9 @@ class MySWYMBridgeViewController: CAPBridgeViewController {
         scrollView.alwaysBounceHorizontal = false
         scrollView.showsVerticalScrollIndicator = false
         scrollView.showsHorizontalScrollIndicator = false
+        scrollView.minimumZoomScale = 1
+        scrollView.maximumZoomScale = 1
+        scrollView.pinchGestureRecognizer?.isEnabled = false
+        scrollView.panGestureRecognizer.maximumNumberOfTouches = 1
     }
 }

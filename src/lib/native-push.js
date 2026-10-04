@@ -15,6 +15,27 @@ export { buddyConnectionId };
 
 const BUNDLE_ID = "app.myswym.ios";
 const PUSH_PREF_KEY = "myswym_push_enabled";
+/** 1ʳᵉ séance validée sur cet iPhone (local) : déclenche le popup Apple. */
+const IOS_FIRST_SESSION_KEY_PREFIX = "myswym_ios_first_session_";
+
+export function iosFirstSessionKey(userId) {
+  return `${IOS_FIRST_SESSION_KEY_PREFIX}${userId || "anon"}`;
+}
+
+/** true si une séance a déjà été validée dans l’app iPhone (pas le web). */
+export function hasCompletedFirstIosSession(userId) {
+  try {
+    return localStorage.getItem(iosFirstSessionKey(userId)) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function markFirstIosSessionCompleted(userId) {
+  try {
+    localStorage.setItem(iosFirstSessionKey(userId), "1");
+  } catch { /* ignore */ }
+}
 
 /** false seulement si l’utilisateur a coupé le switch dans MySWYM. */
 export function pushNotificationsWanted() {
@@ -37,20 +58,81 @@ function dispatchPushPref() {
   }
 }
 
+function raceTimeout(promise, ms, fallback) {
+  return Promise.race([
+    promise,
+    new Promise((resolve) => {
+      setTimeout(() => resolve(fallback), ms);
+    }),
+  ]);
+}
+
+const AppBadge = registerPlugin("AppBadge");
+
 /**
- * État d’activation pour l’UI (source de vérité = permission iOS + opt-in MySWYM).
+ * Lecture native UNUserNotificationCenter (même vérité que Réglages iPhone).
+ * @returns {Promise<"granted"|"denied"|"prompt"|null>}
+ */
+async function readNativeAuthStatus() {
+  if (!isNativeIos()) return null;
+  try {
+    const res = await raceTimeout(AppBadge.getNotificationAuthStatus(), 2000, null);
+    const s = res?.status;
+    if (s === "granted" || s === "denied" || s === "prompt") return s;
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Permission iOS (Réglages → MySWYM → Notifications).
+ * Priorité : plugin natif AppBadge, puis Capacitor en secours.
+ */
+async function readOsPermissionFast() {
+  const native = await readNativeAuthStatus();
+  if (native === "granted" || native === "denied" || native === "prompt") {
+    return native;
+  }
+
+  let local = null;
+  let pushReceive = null;
+  try {
+    local = await raceTimeout(getLocalNotificationPermission(), 1200, null);
+  } catch {
+    local = null;
+  }
+  try {
+    const PushNotifications = await getPushPlugin();
+    if (PushNotifications) {
+      const perm = await raceTimeout(PushNotifications.checkPermissions(), 1200, null);
+      pushReceive = perm?.receive ?? null;
+    }
+  } catch {
+    pushReceive = null;
+  }
+
+  if (local === "denied" || pushReceive === "denied") return "denied";
+  if (local === "granted" || pushReceive === "granted") return "granted";
+  return "prompt";
+}
+
+/**
+ * État d’activation pour l’UI.
+ * Source de vérité : permission iOS d’abord, puis opt-in MySWYM.
+ * `active` = alertes réellement livrables (OS granted + opt-in).
  * @returns {Promise<{ os: "granted"|"denied"|"prompt", wanted: boolean, active: boolean }>}
  */
 export async function getNotificationActivationState() {
-  const os = await getLocalNotificationPermission();
+  const os = await raceTimeout(readOsPermissionFast(), 2800, "prompt");
   const wanted = pushNotificationsWanted();
+  const osNorm = os === "granted" || os === "denied" ? os : "prompt";
   return {
-    os: os === "granted" || os === "denied" ? os : "prompt",
+    os: osNorm,
     wanted,
-    active: os === "granted" && wanted,
+    active: wanted && osNorm === "granted",
   };
 }
-const AppBadge = registerPlugin("AppBadge");
 let listenersReady = false;
 let registerInFlight = null;
 /** Jeton reçu avant session auth (boot AppDelegate). */
@@ -225,42 +307,45 @@ export async function disableNativeNotifications() {
 
 /**
  * Active les notifs MySWYM.
- * Si iOS a déjà autorisé (Réglages), réactive sans popup et sans échouer sur le jeton.
+ * Ne revendique jamais "activé" si iOS n’a pas granted (aligné Réglages).
+ * Si iOS = Non : retourne denied tout de suite (pas de hang requestPermissions).
  */
 export async function enableNativeNotifications() {
-  const osBefore = await getLocalNotificationPermission();
+  const osBefore = await raceTimeout(readOsPermissionFast(), 2200, "prompt");
+
   if (osBefore === "denied") {
     writePushPref(false);
-    return { ok: false, enabled: false, reason: "denied" };
+    dispatchPushPref();
+    return { ok: false, enabled: false, reason: "denied", os: "denied" };
+  }
+
+  if (osBefore === "granted") {
+    writePushPref(true);
+    dispatchPushPref();
+    void registerNativePush({ request: false }).catch((e) => {
+      console.warn("[push] register after os-granted", e);
+    });
+    return { ok: true, enabled: true, os: "granted" };
+  }
+
+  // notDetermined seulement : popup système (court timeout, pas 12s).
+  const asked = await raceTimeout(ensureIosNotificationPermission(), 4500, null);
+  const osAfter = await raceTimeout(readOsPermissionFast(), 2000, null);
+  const os = osAfter === "granted" || osAfter === "denied"
+    ? osAfter
+    : (asked === "granted" || asked === "denied" ? asked : "denied");
+
+  // Après une tentative, "prompt" opaque = souvent déjà refusé côté iOS.
+  if (os !== "granted") {
+    writePushPref(false);
+    dispatchPushPref();
+    return { ok: false, enabled: false, reason: "denied", os: "denied" };
   }
 
   writePushPref(true);
-
-  if (osBefore === "granted") {
-    try {
-      await registerNativePush({ request: false });
-    } catch (e) {
-      console.warn("[push] register after os-granted", e);
-    }
-    dispatchPushPref();
-    return { ok: true, enabled: true };
-  }
-
-  const res = await registerNativePush({ request: true });
-  const osAfter = await getLocalNotificationPermission();
-  if (osAfter === "granted") {
-    writePushPref(true);
-    dispatchPushPref();
-    return { ok: true, enabled: true, soft: !res?.ok };
-  }
-
-  writePushPref(false);
   dispatchPushPref();
-  return {
-    ok: false,
-    enabled: false,
-    reason: osAfter === "denied" ? "denied" : (res?.reason || "denied"),
-  };
+  void registerNativePush({ request: false }).catch(() => {});
+  return { ok: true, enabled: true, os: "granted" };
 }
 
 /** Ouvre Réglages iPhone → page MySWYM (après un refus de notifications). */
@@ -307,17 +392,18 @@ export async function registerNativePush({ request = false } = {}) {
       // Rejoue le cache natif (jeton souvent arrivé au boot avant les listeners JS).
       try { await AppBadge.replayApnsToken(); } catch { /* ignore */ }
 
-      for (const waitMs of [0, 800, 2000, 4000]) {
+      // Boucle courte : le CTA UI ne doit jamais dépendre d’un jeton long à venir.
+      for (const waitMs of [0, 600, 1500]) {
         if (waitMs) await new Promise((r) => setTimeout(r, waitMs));
         const cached = await readCachedNativeToken();
         if (cached) {
           const saved = await upsertDeviceToken(cached);
           if (saved.ok) return { ok: true, via: "cache" };
         }
-        await PushNotifications.register();
+        try { await PushNotifications.register(); } catch { /* ignore */ }
       }
-      await flushPendingPushToken();
-      return { ok: true };
+      void flushPendingPushToken();
+      return { ok: true, soft: true };
     } catch (e) {
       console.warn("[push] register", e);
       return { ok: false, reason: e?.message || "register_failed" };

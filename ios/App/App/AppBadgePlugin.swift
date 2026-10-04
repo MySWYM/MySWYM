@@ -15,6 +15,7 @@ public class AppBadgePlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "getApnsToken", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "replayApnsToken", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "openAppSettings", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "getNotificationAuthStatus", returnType: CAPPluginReturnPromise),
     ]
 
     @objc func set(_ call: CAPPluginCall) {
@@ -72,6 +73,28 @@ public class AppBadgePlugin: CAPPlugin, CAPBridgedPlugin {
                 if ok { call.resolve(["ok": true]) }
                 else { call.reject("open_failed") }
             }
+        }
+    }
+
+    /// Source de vérité = Réglages → MySWYM → Notifications.
+    /// status: "granted" | "denied" | "prompt"
+    @objc func getNotificationAuthStatus(_ call: CAPPluginCall) {
+        UNUserNotificationCenter.current().getNotificationSettings { settings in
+            let status: String
+            switch settings.authorizationStatus {
+            case .authorized, .provisional, .ephemeral:
+                status = "granted"
+            case .denied:
+                status = "denied"
+            case .notDetermined:
+                status = "prompt"
+            @unknown default:
+                status = "prompt"
+            }
+            call.resolve([
+                "status": status,
+                "authorizationStatus": settings.authorizationStatus.rawValue,
+            ])
         }
     }
 }

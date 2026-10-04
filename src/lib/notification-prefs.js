@@ -151,7 +151,18 @@ export async function setPushPref(key, enabled) {
   return updateNotificationPrefs({ push: { [key]: !!enabled } });
 }
 
-/** Toggle email.news (+ newsletter_opt_in via updateNotificationPrefs). */
+/**
+ * Toggle email.news via le même chemin que l’ancien switch Mes données
+ * (newsletter_opt_in + sync notification_prefs).
+ */
 export async function setEmailNewsPref(enabled) {
-  return updateNotificationPrefs({ email: { news: !!enabled } });
+  const on = !!enabled;
+  const { setNewsletterOptIn } = await import("./newsletter-opt-in.js");
+  const result = await setNewsletterOptIn(on);
+  if (result.error) return { user: null, prefs: null, error: result.error };
+  return {
+    user: result.user,
+    prefs: parseNotificationPrefs(result.user?.user_metadata),
+    error: null,
+  };
 }

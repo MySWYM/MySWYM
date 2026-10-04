@@ -95,14 +95,25 @@ async function ensureActionListeners(plugin) {
   } catch { /* ignore */ }
 }
 
+function withTimeout(promise, ms, fallback) {
+  return Promise.race([
+    promise,
+    new Promise((resolve) => {
+      setTimeout(() => resolve(fallback), ms);
+    }),
+  ]);
+}
+
 export async function getLocalNotificationPermission() {
   const plugin = await getPlugin();
   if (!plugin) return "denied";
   try {
-    const { display } = await plugin.checkPermissions();
-    return display || "prompt";
+    // Timeout → null (pas "prompt" : évite faux Activer quand iOS = Non).
+    const result = await withTimeout(plugin.checkPermissions(), 1500, null);
+    if (!result) return null;
+    return result?.display || "prompt";
   } catch {
-    return "denied";
+    return null;
   }
 }
 
@@ -121,8 +132,8 @@ export async function ensureIosNotificationPermission(userId) {
 
     let status = "prompt";
     try {
-      const { display } = await plugin.checkPermissions();
-      status = display || "prompt";
+      const checked = await withTimeout(plugin.checkPermissions(), 1500, null);
+      status = checked?.display || "prompt";
     } catch {
       status = "prompt";
     }
@@ -133,10 +144,14 @@ export async function ensureIosNotificationPermission(userId) {
     }
 
     try {
-      const { display } = await plugin.requestPermissions();
-      const next = display || "denied";
-      markLocalNotificationPermissionAsked(userId);
-      return next;
+      // Popup système : court. Si iOS a déjà tranché, ça revient vite (souvent denied).
+      const asked = await withTimeout(plugin.requestPermissions(), 4000, null);
+      const next = asked?.display || "prompt";
+      if (next === "granted" || next === "denied") {
+        markLocalNotificationPermissionAsked(userId);
+      }
+      // Timeout / silence = pas granted → l’appelant bascule vers Réglages.
+      return next === "granted" ? "granted" : (next === "denied" ? "denied" : "denied");
     } catch {
       return "denied";
     }

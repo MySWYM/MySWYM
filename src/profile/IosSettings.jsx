@@ -1,7 +1,7 @@
 /**
  * Paramètres iOS : IA type GOWOD, DA soft mist.
  */
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   Check, ChevronRight, Mail, RotateCcw, Lock, Shield, CircleHelp, Info, Languages,
@@ -317,9 +317,6 @@ export function IosDataPanel({
   profile,
   onBack,
   onMsg,
-  newsletterOn,
-  newsletterBusy,
-  onToggleNewsletter,
   onDeleteAccount,
   deleteBusy,
   deleteErr,
@@ -388,30 +385,6 @@ export function IosDataPanel({
           </div>
         </>
       ) : null}
-
-      <div className="ms-profile-group-label">{t("settings.news")}</div>
-      <div className="ms-profile-account-stack">
-        <div className="ms-profile-account-row is-static">
-          <span className="ms-profile-settings-icon" style={{ background: "rgba(0,107,253,0.1)" }}>
-            <Mail size={18} color={G.blue} />
-          </span>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div className="ms-profile-settings-label">{t("settings.newsTitle")}</div>
-            <div className="ms-profile-settings-hint">{t("settings.newsHint")}</div>
-          </div>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={newsletterOn}
-            aria-busy={newsletterBusy}
-            className={`ms-menu-switch${newsletterOn ? " is-on" : ""}`}
-            onClick={onToggleNewsletter}
-            disabled={newsletterBusy}
-          >
-            <span />
-          </button>
-        </div>
-      </div>
 
       <p className="ios-settings-copy">
         {t("settings.dataDeleteLead")}
@@ -795,44 +768,109 @@ export function IosNotificationsPanel({ user, plan, onBack, onUserUpdated }) {
   const [prefs, setPrefs] = useState(() => notificationPrefsFromUser(user));
   const [busyKey, setBusyKey] = useState(null);
   const [err, setErr] = useState(null);
+  /** Permission iOS réelle : loading | granted | denied | prompt */
   const [osStatus, setOsStatus] = useState(native ? "loading" : "prompt");
+  /** Opt-in MySWYM (local), distinct de la permission Apple. */
+  const [wanted, setWanted] = useState(false);
+  /** Alertes livrables = OS granted + wanted. */
   const [active, setActive] = useState(false);
   const [masterBusy, setMasterBusy] = useState(false);
   const [deniedSheet, setDeniedSheet] = useState(false);
+  const prevOsRef = useRef("loading");
 
   useEffect(() => {
+    // Ne pas écraser un toggle en cours d’enregistrement.
+    if (busyKey) return;
     setPrefs(notificationPrefsFromUser(user));
-  }, [user?.id, user?.user_metadata?.notification_prefs, user?.user_metadata?.newsletter_opt_in]);
+  }, [
+    user?.id,
+    user?.user_metadata?.newsletter_opt_in,
+    user?.user_metadata?.notification_prefs?.email?.news,
+    busyKey,
+  ]);
 
   useEffect(() => {
     if (!native) return undefined;
     let cancelled = false;
-    const refresh = async () => {
+    let appListener = null;
+
+    const applyState = (state) => {
+      if (!state || cancelled) return;
+      const os = state.os === "denied" || state.os === "granted" ? state.os : "prompt";
+      setOsStatus(os);
+      setWanted(state.wanted === true);
+      setActive(state.active === true);
+      prevOsRef.current = os;
+    };
+
+    const refresh = async ({ healFromSettings = false } = {}) => {
       try {
         const mod = await import("../lib/native-push.js");
-        const state = await mod.getNotificationActivationState();
+        let state = await Promise.race([
+          mod.getNotificationActivationState(),
+          new Promise((resolve) => {
+            window.setTimeout(() => resolve(null), 2800);
+          }),
+        ]);
         if (cancelled) return;
-        setOsStatus(state.os);
-        setActive(state.active);
+        if (!state) {
+          setOsStatus((prev) => (prev === "loading" ? "prompt" : prev));
+          return;
+        }
+        // Retour de Réglages : iOS vient de passer à granted → opt-in auto.
+        if (
+          healFromSettings
+          && state.os === "granted"
+          && !state.wanted
+          && prevOsRef.current === "denied"
+        ) {
+          const res = await mod.enableNativeNotifications();
+          if (res?.ok) {
+            state = await mod.getNotificationActivationState();
+            void resyncLocal(user);
+          }
+        }
+        applyState(state);
       } catch {
         if (!cancelled) {
-          setOsStatus("prompt");
+          setOsStatus((prev) => (prev === "loading" ? "prompt" : prev));
           setActive(false);
         }
       }
     };
+
+    const fallback = window.setTimeout(() => {
+      if (cancelled) return;
+      setOsStatus((prev) => (prev === "loading" ? "prompt" : prev));
+    }, 3000);
     void refresh();
+
     const onVis = () => {
-      if (document.visibilityState === "visible") void refresh();
+      if (document.visibilityState === "visible") {
+        void refresh({ healFromSettings: true });
+      }
     };
+    const onPref = () => { void refresh(); };
     document.addEventListener("visibilitychange", onVis);
-    window.addEventListener("myswym:push-pref", refresh);
+    window.addEventListener("myswym:push-pref", onPref);
+
+    void import("@capacitor/app").then(({ App }) => {
+      if (cancelled) return;
+      void App.addListener("appStateChange", ({ isActive }) => {
+        if (isActive) void refresh({ healFromSettings: true });
+      }).then((handle) => {
+        appListener = handle;
+      }).catch(() => {});
+    }).catch(() => {});
+
     return () => {
       cancelled = true;
+      window.clearTimeout(fallback);
       document.removeEventListener("visibilitychange", onVis);
-      window.removeEventListener("myswym:push-pref", refresh);
+      window.removeEventListener("myswym:push-pref", onPref);
+      try { appListener?.remove?.(); } catch { /* ignore */ }
     };
-  }, [native]);
+  }, [native, user?.id]);
 
   const resyncLocal = async (nextUser) => {
     try {
@@ -845,32 +883,43 @@ export function IosNotificationsPanel({ user, plan, onBack, onUserUpdated }) {
     if (masterBusy || !native) return;
     setMasterBusy(true);
     setErr(null);
+    const safety = window.setTimeout(() => setMasterBusy(false), 5500);
     try {
       const mod = await import("../lib/native-push.js");
+      const res = await mod.enableNativeNotifications();
       const state = await mod.getNotificationActivationState();
-      if (state.os === "denied") {
+      const os = res?.os === "denied" || state.os === "denied"
+        ? "denied"
+        : (state.os === "granted" ? "granted" : (res?.os || state.os || "prompt"));
+      setOsStatus(os);
+      setWanted(state.wanted === true && os === "granted");
+      setActive(state.active === true && os === "granted");
+      prevOsRef.current = os;
+      if (os === "denied" || res?.reason === "denied") {
         setOsStatus("denied");
         setActive(false);
+        setWanted(false);
         setDeniedSheet(true);
+        // Tap = intention d’activer : on ouvre Réglages tout de suite (pas de 2e tap).
+        void mod.openNativeAppSettings();
         return;
       }
-      const res = await mod.enableNativeNotifications();
-      const next = await mod.getNotificationActivationState();
-      setOsStatus(next.os);
-      setActive(next.active);
-      if (next.active) {
+      if (state.active) {
         playUiSound("success");
-        await resyncLocal(user);
-        return;
-      }
-      if (res?.reason === "denied" || next.os === "denied") {
-        setDeniedSheet(true);
-      } else {
-        setErr(t("notif.fail"));
+        void resyncLocal(user);
       }
     } catch {
+      // Échec opaque : iOS a souvent déjà refusé → montrer Réglages, pas un CTA mort.
+      setOsStatus("denied");
+      setActive(false);
+      setWanted(false);
       setDeniedSheet(true);
+      try {
+        const mod = await import("../lib/native-push.js");
+        void mod.openNativeAppSettings();
+      } catch { /* ignore */ }
     } finally {
+      window.clearTimeout(safety);
       setMasterBusy(false);
     }
   };
@@ -879,13 +928,17 @@ export function IosNotificationsPanel({ user, plan, onBack, onUserUpdated }) {
     if (masterBusy || !native) return;
     setMasterBusy(true);
     setErr(null);
+    setWanted(false);
+    setActive(false);
     try {
       const mod = await import("../lib/native-push.js");
       await mod.disableNativeNotifications();
       const next = await mod.getNotificationActivationState();
       setOsStatus(next.os);
+      setWanted(false);
       setActive(false);
-      await resyncLocal(user);
+      prevOsRef.current = next.os;
+      void resyncLocal(user);
     } catch {
       setErr(t("notif.fail"));
     } finally {
@@ -895,17 +948,21 @@ export function IosNotificationsPanel({ user, plan, onBack, onUserUpdated }) {
 
   const togglePush = async (key) => {
     if (busyKey || !active) return;
-    const next = !prefs.push[key];
+    const prev = prefs.push[key] !== false;
+    const next = !prev;
     setBusyKey(`push.${key}`);
     setErr(null);
+    setPrefs((p) => ({ ...p, push: { ...p.push, [key]: next } }));
+    playUiSound("soft");
     try {
       const { user: updated, prefs: nextPrefs, error } = await setPushPref(key, next);
       if (error) throw error;
       if (nextPrefs) setPrefs(nextPrefs);
       if (updated) onUserUpdated?.(updated);
-      await resyncLocal(updated);
       playUiSound("success");
+      void resyncLocal(updated);
     } catch {
+      setPrefs((p) => ({ ...p, push: { ...p.push, [key]: prev } }));
       setErr(t("notif.fail"));
     } finally {
       setBusyKey(null);
@@ -914,17 +971,23 @@ export function IosNotificationsPanel({ user, plan, onBack, onUserUpdated }) {
 
   const toggleEmailNews = async () => {
     if (busyKey) return;
-    const next = !prefs.email.news;
+    const prev = prefs.email.news === true;
+    const next = !prev;
     setBusyKey("email.news");
     setErr(null);
+    // Optimistic : le switch doit bouger tout de suite (comme Mes données avant).
+    setPrefs((p) => ({ ...p, email: { ...p.email, news: next } }));
+    playUiSound("soft");
     try {
       const { user: updated, prefs: nextPrefs, error } = await setEmailNewsPref(next);
       if (error) throw error;
       if (nextPrefs) setPrefs(nextPrefs);
       if (updated) onUserUpdated?.(updated);
-      await resyncLocal(updated);
       playUiSound("success");
+      // Ne pas await : un hang permission iOS ne doit pas bloquer le toggle.
+      void resyncLocal(updated);
     } catch {
+      setPrefs((p) => ({ ...p, email: { ...p.email, news: prev } }));
       setErr(t("notif.fail"));
     } finally {
       setBusyKey(null);
@@ -964,15 +1027,48 @@ export function IosNotificationsPanel({ user, plan, onBack, onUserUpdated }) {
             <p className="ios-settings-copy">{t("notif.pushWebOnly")}</p>
           ) : osStatus === "loading" ? (
             <p className="ios-settings-copy">{t("devices.loading")}</p>
-          ) : active ? (
-            <div className="ios-notif-card ios-notif-status is-on" style={{ marginBottom: 16 }}>
+          ) : osStatus === "denied" ? (
+            <div className="ios-notif-hero is-blocked">
+              <div className="ios-notif-os-pill is-denied" role="status">
+                {t("notif.osDeniedBanner")}
+              </div>
+              <div className="ios-notif-hero-icon" aria-hidden>
+                <Bell size={22} />
+              </div>
+              <div className="ios-notif-hero-title">{t("notif.blockedTitle")}</div>
+              <p className="ios-notif-hero-body">{t("notif.blockedBody")}</p>
+              <button
+                type="button"
+                className="ms-pill-cta"
+                style={{ width: "100%", minHeight: 52 }}
+                disabled={masterBusy}
+                onClick={async () => {
+                  playUiSound("soft");
+                  setDeniedSheet(false);
+                  try {
+                    const mod = await import("../lib/native-push.js");
+                    await mod.openNativeAppSettings();
+                  } catch { /* ignore */ }
+                }}
+              >
+                {t("settings.notificationsOpenSettings")}
+              </button>
+            </div>
+          ) : osStatus === "granted" ? (
+            <div className={`ios-notif-card ios-notif-status${active ? " is-on" : ""}`} style={{ marginBottom: 16 }}>
+              <div className="ios-notif-os-pill is-ok" role="status">
+                {t("notif.osGrantedBanner")}
+              </div>
               <NotifPrefRow
                 icon={Bell}
-                title={t("notif.statusOn")}
-                hint={t("notif.statusOnHint")}
-                on
+                title={active ? t("notif.statusOn") : t("notif.statusOff")}
+                hint={active ? t("notif.statusOnHint") : t("notif.statusOffHint")}
+                on={wanted}
                 busy={masterBusy}
-                onToggle={() => { void disableNotifications(); }}
+                onToggle={() => {
+                  if (wanted) void disableNotifications();
+                  else void activateNotifications();
+                }}
               />
             </div>
           ) : (
@@ -980,43 +1076,20 @@ export function IosNotificationsPanel({ user, plan, onBack, onUserUpdated }) {
               <div className="ios-notif-hero-icon" aria-hidden>
                 <Bell size={22} />
               </div>
-              <div className="ios-notif-hero-title">
-                {osStatus === "denied" ? t("notif.blockedTitle") : t("notif.activateTitle")}
-              </div>
-              <p className="ios-notif-hero-body">
-                {osStatus === "denied" ? t("notif.blockedBody") : t("notif.activateBody")}
-              </p>
-              {osStatus === "denied" ? (
-                <button
-                  type="button"
-                  className="ms-pill-cta"
-                  style={{ width: "100%", minHeight: 52 }}
-                  disabled={masterBusy}
-                  onClick={async () => {
-                    playUiSound("soft");
-                    setDeniedSheet(false);
-                    try {
-                      const mod = await import("../lib/native-push.js");
-                      await mod.openNativeAppSettings();
-                    } catch { /* ignore */ }
-                  }}
-                >
-                  {t("settings.notificationsOpenSettings")}
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  className="ms-pill-cta"
-                  style={{ width: "100%", minHeight: 52 }}
-                  disabled={masterBusy}
-                  onClick={() => {
-                    playUiSound("soft");
-                    void activateNotifications();
-                  }}
-                >
-                  {masterBusy ? t("devices.loading") : t("notif.activateCta")}
-                </button>
-              )}
+              <div className="ios-notif-hero-title">{t("notif.activateTitle")}</div>
+              <p className="ios-notif-hero-body">{t("notif.activateBody")}</p>
+              <button
+                type="button"
+                className="ms-pill-cta"
+                style={{ width: "100%", minHeight: 52 }}
+                disabled={masterBusy}
+                onClick={() => {
+                  playUiSound("soft");
+                  void activateNotifications();
+                }}
+              >
+                {masterBusy ? t("devices.loading") : t("notif.activateCta")}
+              </button>
             </div>
           )}
 

@@ -795,9 +795,6 @@ export default function ProfileTab({
           profile={profile}
           onBack={() => setHelpPanel(null)}
           onMsg={setMsg}
-          newsletterOn={newsletterOn}
-          newsletterBusy={newsletterBusy}
-          onToggleNewsletter={toggleNewsletter}
           onOpenDevices={() => setHelpPanel("devices")}
           onDeleteAccount={async () => {
             setDeleteErr(null);

@@ -1,18 +1,71 @@
-import { Activity, CircleUser, Home, Calendar, History, ChartNoAxesCombined } from "lucide-react";
+import { Home, Calendar, History, ChartNoAxesCombined } from "lucide-react";
 import { G } from "../theme/palette.js";
 import { playUiSound } from "../lib/ui-sounds.js";
 import { isIosSimpleNav } from "../lib/ios-simple-nav.js";
 import BrandLogo from "../BrandLogo.jsx";
 import { useTranslation } from "react-i18next";
 
+/** Grille 2×2 type GOWOD (modules / analyse). */
+function NavGridIcon({ size = 22, color, filled }) {
+  const gap = 2.2;
+  const cell = (size - gap) / 2;
+  const r = Math.max(2.4, cell * 0.28);
+  const tiles = [
+    [0, 0],
+    [cell + gap, 0],
+    [0, cell + gap],
+    [cell + gap, cell + gap],
+  ];
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden>
+      {tiles.map(([x, y], i) => (
+        <rect
+          key={i}
+          x={x}
+          y={y}
+          width={cell}
+          height={cell}
+          rx={r}
+          fill={filled ? color : "none"}
+          stroke={color}
+          strokeWidth={filled ? 0 : 1.7}
+        />
+      ))}
+    </svg>
+  );
+}
+
+/** Silhouette profil, pleine à l’onglet actif. */
+function NavUserIcon({ size = 22, color, filled }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden>
+      <circle
+        cx="12"
+        cy="8"
+        r="3.35"
+        fill={filled ? color : "none"}
+        stroke={color}
+        strokeWidth={filled ? 0 : 1.75}
+      />
+      <path
+        d="M5.4 19.2c.55-3.35 3.15-5.2 6.6-5.2s6.05 1.85 6.6 5.2"
+        fill={filled ? color : "none"}
+        stroke={color}
+        strokeWidth={filled ? 0 : 1.75}
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 export default function BottomNav({ active, onChange, newBadge }) {
   const { t } = useTranslation("app");
   const ios = isIosSimpleNav();
   const tabs = ios
     ? [
-        { id: "analyse", Icon: Activity, label: t("nav.analyse") },
+        { id: "analyse", NavIcon: NavGridIcon, label: t("nav.analyse") },
         { id: "home", brand: true, label: t("nav.swim"), center: true },
-        { id: "profile", Icon: CircleUser, label: t("nav.profile") },
+        { id: "profile", NavIcon: NavUserIcon, label: t("nav.profile") },
       ]
     : [
         { id: "home", Icon: Home, label: t("nav.home") },
@@ -23,7 +76,7 @@ export default function BottomNav({ active, onChange, newBadge }) {
   const centerSize = ios ? 40 : 48;
   const sideW = ios ? 36 : 44;
   const sideH = ios ? 32 : 36;
-  const iconSize = ios ? 20 : 22;
+  const iconSize = ios ? 22 : 22;
 
   return (
     <div className="bottom-nav">
@@ -73,6 +126,8 @@ export default function BottomNav({ active, onChange, newBadge }) {
               >
                 {tab.brand ? (
                   <BrandLogo variant="mark" height={ios ? 20 : 22} onDark={centerOn} alt="" />
+                ) : tab.NavIcon ? (
+                  <tab.NavIcon size={iconSize} color={iconColor} filled={isActive} />
                 ) : (
                   <tab.Icon size={iconSize} color={iconColor} strokeWidth={isActive ? 2.2 : 1.6} style={{ transition: "all 0.2s" }} />
                 )}

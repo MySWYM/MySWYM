@@ -13,9 +13,14 @@ Panneau **Profil → Réglages → Notifications** : onglets Push · E-mail.
 | Produit | actus push, conseils / avis |
 | E-mail Actus | = `newsletter_opt_in` + `notification_prefs.email.news` |
 
-Activation : 1 CTA « Activer les notifications ». Si iOS a déjà autorisé, réactive sans popup.
-Si iOS a refusé : CTA « Ouvrir Réglages ». Catégories visibles seulement une fois activées.
-Opt-out MySWYM (switch « Notifications activées ») ≠ permission iOS.
+États UI (alignés Réglages iPhone) :
+- **iOS denied** : bandeau + CTA « Ouvrir Réglages » (jamais de faux « activées »).
+- **iOS prompt** : CTA « Activer » → popup système.
+- **iOS granted** : switch MySWYM (opt-in local) + catégories si ON.
+`active` = OS `granted` **et** opt-in MySWYM. Resync au retour app (Réglages → ON → heal).
+
+Popup Apple (système) : à la fermeture du celebrate de la **1ʳᵉ séance validée sur cet iPhone**
+(`myswym_ios_first_session_${userId}`), pas la 1ʳᵉ séance du compte (web→iOS inclus).
 
 ## Technique
 

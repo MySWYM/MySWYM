@@ -74,7 +74,13 @@ import {
   getLocalNotificationPermission,
   notifyBadgeEarned,
 } from "./lib/native-local-notifications.js";
-import { registerNativePush, flushPendingPushToken, pushNotificationsWanted } from "./lib/native-push.js";
+import {
+  registerNativePush,
+  flushPendingPushToken,
+  pushNotificationsWanted,
+  hasCompletedFirstIosSession,
+  markFirstIosSessionCompleted,
+} from "./lib/native-push.js";
 import { startStravaOAuth, stravaRedirectUri } from "./lib/native-strava.js";
 import { clearAppIconBadge } from "./lib/native-app-badge.js";
 import {
@@ -9827,12 +9833,13 @@ export default function App() {
 
   const dismissSessionCelebrate = () => {
     const pending = pendingFeedbackRef.current;
-    const wasFirst = sessionCelebrate?.first === true;
     pendingFeedbackRef.current = null;
     setSessionCelebrate(null);
     if (pending) setSessionFeedbackTarget(pending);
-    if (wasFirst && isNativeIos() && user?.id) {
-      // 1re séance terminée : timing produit du popup système (ligne Notifications apparaît ensuite).
+    // 1ʳᵉ séance validée sur iPhone (local), pas 1ʳᵉ du compte : les nageurs web→iOS
+    // doivent aussi voir le popup Apple.
+    if (isNativeIos() && user?.id && !hasCompletedFirstIosSession(user.id)) {
+      markFirstIosSessionCompleted(user.id);
       void registerNativePush({ request: true }).then((res) => {
         if (res?.ok) void syncLocalNotificationsFromState({ user, plan });
         if (typeof window !== "undefined") {
