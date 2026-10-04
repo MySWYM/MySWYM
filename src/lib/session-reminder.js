@@ -76,6 +76,8 @@ export function buildLocalNotificationPlan({
   checkoutAbandonedAt = null,
   reviewEligible = false,
   reviewAlreadyAsked = false,
+  /** Si funnel love = oui : horodatage Store (prioritaire sur reviewEligible). */
+  loveStoreAskAtMs = null,
   newsletterNudgeAtMs = null,
   nowMs = Date.now(),
   sessionHour = 18,
@@ -203,8 +205,10 @@ export function buildLocalNotificationPlan({
     }
   }
 
-  if (reviewEligible && !reviewAlreadyAsked) {
-    const at = nextCommercialAt(nowMs, { minMs: 24 * 3600_000, hour: 11 });
+  if (!reviewAlreadyAsked && (Number(loveStoreAskAtMs) > 0 || reviewEligible)) {
+    const at = Number(loveStoreAskAtMs) > nowMs + 60_000
+      ? new Date(Number(loveStoreAskAtMs))
+      : nextCommercialAt(nowMs, { minMs: 24 * 3600_000, hour: 11 });
     if (at.getTime() > nowMs + 60_000) {
       items.push({
         id: NOTIF_IDS.REVIEW_ASK,

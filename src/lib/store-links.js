@@ -47,7 +47,7 @@ export function appStoreHref() {
   return APP_STORE_URL;
 }
 
-/** Page d’écriture d’avis App Store (CTA Support explicite). */
+/** Page d’écriture d’avis App Store (CTA Support + funnel avis). */
 export function appStoreWriteReviewHref() {
   const base = String(APP_STORE_URL || "").split("?")[0];
   return `${base}?action=write-review`;

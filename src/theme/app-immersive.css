@@ -1815,6 +1815,25 @@
 .ms-sheet-card.is-dragging {
   overflow: hidden !important;
 }
+.love-review-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 18px;
+  margin: 4px auto 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ms-blue-soft, #e8f2ff);
+  color: var(--ms-blue, #006bfd);
+}
+.love-review-icon.is-heart {
+  background: rgba(255, 90, 120, 0.12);
+  color: #e11d48;
+}
+.love-review-icon.is-star {
+  background: rgba(245, 180, 40, 0.16);
+  color: #d97706;
+}
 
 /* ── Soft mist sheet shell (tips, éducatifs, popups) ── */
 .ms-soft-overlay {
