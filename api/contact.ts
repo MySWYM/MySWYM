@@ -91,17 +91,18 @@ function resolveResetRedirect(body: Record<string, unknown>): string {
   return RESET_REDIRECT_WEB;
 }
 
-/** Force redirect_to (web prod ou scheme iOS) même si Site URL Supabase = staging. */
-function forceRecoveryRedirect(actionLink: string, redirectTo: string): string {
-  try {
-    const u = new URL(actionLink);
-    if (u.searchParams.has("redirect_to")) {
-      u.searchParams.set("redirect_to", redirectTo);
-    }
-    return u.toString();
-  } catch {
-    return actionLink;
-  }
+/**
+ * Lien du mail sur myswym.app (jamais *.supabase.co) : l’app vérifie `token_hash` via verifyOtp.
+ * iOS : `native=1`, la page web renvoie vers myswym://auth/callback (les clients mail
+ * bloquent souvent les liens vers un scheme custom).
+ */
+function buildRecoveryLink(hashedToken: string, redirectTo: string): string {
+  const u = new URL(`${PROD_SITE}/app`);
+  u.searchParams.set("reset", "1");
+  u.searchParams.set("token_hash", hashedToken);
+  u.searchParams.set("type", "recovery");
+  if (redirectTo === RESET_REDIRECT_NATIVE) u.searchParams.set("native", "1");
+  return u.toString();
 }
 
 function resetPasswordHtml(resetUrl: string): string {
@@ -170,7 +171,7 @@ async function handlePasswordReset(
       options: { redirectTo },
     });
 
-    if (error || !data?.properties?.action_link) {
+    if (error || !data?.properties?.hashed_token) {
       // Compte inconnu ou autre : réponse neutre
       if (error && !/not found|unable to find|user not found/i.test(error.message || "")) {
         console.error("[api/contact] reset generateLink:", error.message);
@@ -178,7 +179,7 @@ async function handlePasswordReset(
       return okResponse();
     }
 
-    const resetUrl = forceRecoveryRedirect(data.properties.action_link, redirectTo);
+    const resetUrl = buildRecoveryLink(data.properties.hashed_token, redirectTo);
     const resend = new Resend(apiKey);
     const { error: sendErr } = await resend.emails.send({
       from: fromAddress(),

@@ -11,8 +11,15 @@ import AppTree from "./app-shell/AppTree.jsx";
 import { bootstrapNativeChrome, prepareNativeRuntime } from "./native/bootstrap-native.js";
 import { installProtectMediaAssets } from "./lib/protect-media-assets.js";
 import { handoffStravaIosIfNeeded } from "./lib/native-strava.js";
+import { bounceRecoveryToNativeApp, consumeRecoveryTokenHash } from "./lib/recovery-token.js";
+import { supabase } from "./supabase.js";
 
 handoffStravaIosIfNeeded();
+if (!bounceRecoveryToNativeApp()) {
+  void consumeRecoveryTokenHash(supabase).then((res) => {
+    if (res.error) console.warn("[MySWYM] lien reset invalide ou expiré", res.error.message);
+  });
+}
 prepareNativeRuntime();
 installProtectMediaAssets();
 void bootstrapNativeChrome();
