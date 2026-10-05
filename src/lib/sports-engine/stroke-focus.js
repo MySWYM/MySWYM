@@ -40,7 +40,7 @@ export const STROKE_UX_TO_FOCUS = Object.freeze({
 /**
  * Normalise le choix de nage depuis le profil.
  * swimStyle=crawl = 100 % crawl.
- * Débutant = crawl (pas de 4 nages). Avancé = 4 nages.
+ * Débutant = crawl (pas de 4 nages). 4 nages seulement si le nageur le déclare (tous niveaux).
  * Défaut : crawl pour eau libre / triathlon ; mixte sinon.
  */
 export function normalizeStrokeFocus(profile = {}, objectifV1 = null) {

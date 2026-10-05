@@ -28,7 +28,7 @@ assert.equal(isAvanceLevelId("performance"), true);
 assert.equal(isAvanceLevelId("advanced"), true);
 assert.equal(isAvanceLevelId("sportif"), false);
 assert.equal(impliedSwimStyleForLevel("régulier"), "crawl");
-assert.equal(impliedSwimStyleForLevel("performance"), "4_nages");
+assert.equal(impliedSwimStyleForLevel("performance"), "4_nages"); // défaut Avancé, modifiable dans Paramètres
 assert.equal(impliedSwimStyleForLevel("sportif"), null);
 
 console.log("ok");

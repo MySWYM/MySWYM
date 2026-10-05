@@ -28,9 +28,9 @@ export function parseOAuthCallbackUrl(url) {
   const resetFlag = params.get("reset") === "1" || hashParams.get("reset") === "1";
   return {
     code: pick("code"),
-    tokenHash: pick("token_hash"),
     accessToken: pick("access_token"),
     refreshToken: pick("refresh_token"),
+    tokenHash: pick("token_hash"),
     error: pick("error"),
     errorDescription: pick("error_description"),
     type,
@@ -47,17 +47,28 @@ export async function completeNativeOAuthFromUrl(supabase, url) {
   if (parsed.error) {
     throw new Error(parsed.errorDescription || parsed.error);
   }
-  // Mot de passe oublié : lien mail myswym.app → token_hash (verifyOtp, jamais setSession).
-  if (parsed.tokenHash && parsed.type === "recovery") {
+  if (parsed.code) {
+    const res = await supabase.auth.exchangeCodeForSession(parsed.code);
+    if (res.error) throw res.error;
+    return { ...res.data, isPasswordRecovery: parsed.isPasswordRecovery === true };
+  }
+  // Lien « mot de passe oublié » (generateLink admin) : pas de PKCE possible.
+  // On n’accepte une session venue de l’URL QUE pour type=recovery, et l’app
+  // affiche alors le formulaire de nouveau mot de passe (jamais une connexion silencieuse).
+  if (parsed.type === "recovery" && parsed.tokenHash) {
     const res = await supabase.auth.verifyOtp({ token_hash: parsed.tokenHash, type: "recovery" });
     if (res.error) throw res.error;
     return { ...res.data, isPasswordRecovery: true };
   }
-  if (!parsed.code) throw new Error("NATIVE_OAUTH_NO_CREDENTIALS");
-  const res = await supabase.auth.exchangeCodeForSession(parsed.code);
-  if (res.error) throw res.error;
-  const data = res.data;
-  return { ...data, isPasswordRecovery: parsed.isPasswordRecovery === true };
+  if (parsed.type === "recovery" && parsed.accessToken && parsed.refreshToken) {
+    const res = await supabase.auth.setSession({
+      access_token: parsed.accessToken,
+      refresh_token: parsed.refreshToken,
+    });
+    if (res.error) throw res.error;
+    return { ...res.data, isPasswordRecovery: true };
+  }
+  throw new Error("NATIVE_OAUTH_NO_CREDENTIALS");
 }
 
 /** Notifie l’UI auth après retour Safari (cold start ou app déjà ouverte). */

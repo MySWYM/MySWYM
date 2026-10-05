@@ -1038,5 +1038,19 @@
     "da": "Kopiér træningsreference {{1}} til support",
     "nb": "Kopier øktreferanse {{1}} til support",
     "fi": "Kopioi treenin viite {{1}} tukea varten"
+  },
+  "Ouvre MySWYM sur iPhone, ou l’essai dans le navigateur.": {
+    "en": "Open MySWYM on iPhone, or the trial in your browser.",
+    "de": "Öffne MySWYM auf dem iPhone oder die Testversion im Browser.",
+    "es": "Abre MySWYM en el iPhone, o la prueba en el navegador.",
+    "ja": "iPhoneでMySWYMを開くか、ブラウザで無料体験を開いて。",
+    "nl": "Open MySWYM op je iPhone, of de proefversie in je browser.",
+    "it": "Apri MySWYM su iPhone, o la prova nel browser.",
+    "pt": "Abre o MySWYM no iPhone, ou o teste no navegador.",
+    "pt-BR": "Abra o MySWYM no iPhone, ou o teste no navegador.",
+    "sv": "Öppna MySWYM på iPhone, eller provperioden i webbläsaren.",
+    "da": "Åbn MySWYM på iPhone, eller prøveperioden i browseren.",
+    "nb": "Åpne MySWYM på iPhone, eller prøveperioden i nettleseren.",
+    "fi": "Avaa MySWYM iPhonessa tai kokeilu selaimessa."
   }
 }

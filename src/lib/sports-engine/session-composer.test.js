@@ -176,7 +176,8 @@ assert(normalizeStrokeFocus({ swimStyle: "4_nages", preferredStroke: "dos" }) ==
 assert(normalizeStrokeFocus({ swimStyle: "crawl", preferredStroke: "dos" }) === "crawl", "swimStyle crawl");
 assert(normalizeStrokeFocus({ preferredStroke: "dos" }) === "mixte", "plus de nage favorite");
 assert(normalizeStrokeFocus({ level: "régulier", swimStyle: "4_nages" }) === "crawl", "débutant = crawl");
-assert(normalizeStrokeFocus({ level: "performance", swimStyle: "crawl" }) === "4n", "avancé = 4 nages");
+assert(normalizeStrokeFocus({ level: "performance", swimStyle: "crawl" }) === "crawl", "avancé crawl déclaré = crawl");
+assert(normalizeStrokeFocus({ level: "performance", swimStyle: "4_nages" }) === "4n", "avancé qui déclare le 4 nages = 4 nages");
 assert(normalizeStrokeFocus({}, "eau_libre") === "crawl", "défaut OW=crawl");
 assert(canUsePapillon({ level: "decouverte", strokeFocus: "4n" }), "4n ⇒ papillon");
 assert(!canUsePapillon({ level: "decouverte" }), "papillon off Découverte hors 4n");

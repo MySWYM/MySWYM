@@ -6,7 +6,7 @@ import {
 } from "lucide-react";
 import i18n from "../i18n/index.js";
 import { canonicalizeGoal } from "./sports-engine/race-event.js";
-import { isAvanceLevelId, isDebutantLevelId } from "./onboarding-level-gate.js";
+import { isDebutantLevelId } from "./onboarding-level-gate.js";
 
 export const GOALS = [
   { id: "triathlon_xs",      label: "Triathlon XS",           dist: "400 m nage",                   icon: <Activity size={20} />, wellness: false },
@@ -145,11 +145,10 @@ export const goalHidesFourNagesChoice = (profile = {}) => {
   return cat === "diplome" || DIPLOMA_GOAL_IDS.has(goal);
 };
 
-/** Pas de question 4 nages : diplômes, Débutant (crawl), Avancé (4 nages). */
+/** Pas de question 4 nages : diplômes et Débutant (crawl). Intermédiaire et Avancé choisissent. */
 export const hidesFourNagesChoice = (profile = {}) =>
   goalHidesFourNagesChoice(profile)
-  || isDebutantLevelId(profile.level)
-  || isAvanceLevelId(profile.level);
+  || isDebutantLevelId(profile.level);
 
 /** Nage préférée (stroke) */
 export const PREFERRED_STROKES = [

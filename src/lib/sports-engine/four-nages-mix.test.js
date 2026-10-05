@@ -136,7 +136,8 @@ console.log("4N0 allocate + normalize");
   assert(FOUR_STROKES.every((s) => a50[s] >= 50 && a50[s] % 50 === 0), "50m quantum");
   assert(a50.dos > a50.brasse && a50.crawl >= a50.dos, "dos pondéré, crawl majoritaire");
   assert(normalizeStrokeFocus({ swimStyle: "4_nages", preferredStroke: "brasse" }) === "4n", "style 4n");
-  assert(isFourNagesDeclared({ level: "performance", swimStyle: "crawl" }), "avancé implique 4 nages");
+  assert(!isFourNagesDeclared({ level: "performance", swimStyle: "crawl" }), "avancé crawl déclaré : pas de 4 nages");
+  assert(isFourNagesDeclared({ level: "performance", swimStyle: "4_nages" }), "avancé qui déclare le 4 nages");
   assert(!isFourNagesDeclared({ level: "régulier", swimStyle: "4_nages" }), "débutant refuse 4 nages");
   assert(!isFourNagesDeclared({ level: "sportif", swimStyle: "crawl" }), "intermédiaire crawl = crawl");
 }

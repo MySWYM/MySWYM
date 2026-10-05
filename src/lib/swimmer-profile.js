@@ -228,9 +228,11 @@ export function applyFirstPlanDefaults(profile = {}) {
   const pool = Number(next.pool);
   next.pool = pool === 50 ? 50 : 25;
   if (!Array.isArray(next.equipment)) next.equipment = [];
+  // Débutant : crawl imposé. Sinon on respecte le choix déjà fait (Paramètres) :
+  // un Avancé qui a répondu « Non » au 4 nages ne doit pas y être remis à chaque plan.
   const implied = impliedSwimStyleForLevel(next.level);
-  if (implied) next.swimStyle = implied;
-  else if (!next.swimStyle) next.swimStyle = "crawl";
+  if (implied === "crawl") next.swimStyle = "crawl";
+  else if (!next.swimStyle) next.swimStyle = implied || "crawl";
   if (!next.preferredStroke) next.preferredStroke = "crawl";
   if (!(Number(next.targetSessionDistance) > 0)) {
     next.targetSessionDistance = defaultSessionDistanceForLevel(next.level);
