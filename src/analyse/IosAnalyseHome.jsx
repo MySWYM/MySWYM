@@ -13,7 +13,7 @@ import { ScoreRing } from "./ScoreRing.jsx";
 import { CountUp } from "./CountUp.jsx";
 import IosBadgesPanel from "./IosBadgesPanel.jsx";
 import { resolveAvatarUrl } from "../lib/avatar.js";
-import { resolveDisplayFullName } from "../lib/identity-cache.js";
+import { resolveDisplayFullName, avatarInitials } from "../lib/identity-cache.js";
 import { intlLocaleFor, normalizeAppLanguage } from "../i18n/languages.js";
 import { iosShowPremiumBar } from "../lib/ios-simple-nav.js";
 import { fetchWeeklyRank } from "../lib/weekly-rank-api.js";
@@ -145,7 +145,7 @@ export default function IosAnalyseHome({
   const currentStreak = stats.currentStreak || 0;
   const avatarUrl = resolveAvatarUrl(user);
   const name = displayFullName(user);
-  const initials = name.slice(0, 2).toUpperCase();
+  const initials = avatarInitials(name);
   const { t, i18n } = useTranslation("app");
   const memberDate = (() => {
     const d = new Date(user?.created_at || "");

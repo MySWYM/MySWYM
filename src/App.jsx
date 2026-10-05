@@ -10212,14 +10212,16 @@ export default function App() {
         if (openSaveAccountAfter) setShowSaveAccount(true);
         else if (openPaywallAfter) setShowPlanReady(true);
       }
-    } catch {
+    } catch (err) {
+      console.error("[generatePlan]", err);
       planRevealActiveRef.current = false;
       setPlanReveal(null);
       planRevealPaywallRef.current = false;
       planRevealSaveAccountRef.current = false;
       setError("Impossible de générer le plan. Réessaie !");
       track("generation_failed", { reason: "exception", context: "generate_plan" });
-      const retryStep = sourceProfile.category === "progression" ? 3 : 5;
+      // Revenir sur l’écran « Séances par semaine » (bouton Générer), pas sur le niveau.
+      const retryStep = 5;
       setStep(retryStep);
       if (user && !(isNativeApp() && isAnonymousUser(user))) {
         setScreen("app");
@@ -11840,11 +11842,14 @@ export default function App() {
       <div style={{ minHeight: "100vh", background: G.bg, paddingTop: 64 }}>
         <div style={{ maxWidth: 440, margin: "0 auto", padding: "0 20px" }}>
           <div style={{ paddingTop: 84, paddingBottom: 40 }}>
-            <div style={{ display: "flex", alignItems: "center", marginBottom: 40 }}>
-              <div style={{ display: "flex", alignItems: "center" }}>
-                <BrandLogo variant="wordmark" height={22} />
+            {/* iOS : fond bleu, le wordmark bleu y était un « fantôme » quasi invisible. */}
+            {!isNativeApp() && (
+              <div style={{ display: "flex", alignItems: "center", marginBottom: 40 }}>
+                <div style={{ display: "flex", alignItems: "center" }}>
+                  <BrandLogo variant="wordmark" height={22} />
+                </div>
               </div>
-            </div>
+            )}
             <OnboardingWizard
               profile={profile}
               step={step}

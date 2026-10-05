@@ -24,13 +24,13 @@ const TYPE_I18N = {
 const TYPE_COVERS = {
   ENDURANCE: [
     "/hero-pool.webp",
-    "/session-covers/endurance-2.png",
-    "/session-covers/endurance-3.png",
+    "/session-covers/endurance-2.webp",
+    "/session-covers/endurance-3.webp",
   ],
-  SEUIL: ["/session-covers/seuil.png"],
-  VITESSE: ["/session-covers/vitesse.png"],
-  TECHNIQUE: ["/session-covers/technique.png"],
-  RECUPERATION: ["/session-covers/recup.png"],
+  SEUIL: ["/session-covers/seuil.webp"],
+  VITESSE: ["/session-covers/vitesse.webp"],
+  TECHNIQUE: ["/session-covers/technique.webp"],
+  RECUPERATION: ["/session-covers/recup.webp"],
 };
 
 function allCoverSrcs() {

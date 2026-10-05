@@ -4,6 +4,9 @@
  * irait sur localhost et casserait version-gate, sheet Soft, support.
  */
 import { Capacitor } from "@capacitor/core";
+
+/** @type {{ plugin: any } | null} */
+let nativeHttpBox = null;
 import { isAppPath } from "../i18n/locale-path.js";
 
 export const DEFAULT_NATIVE_API_ORIGIN = "https://www.myswym.app";
@@ -150,8 +153,13 @@ export async function nativePluginRequest(url, init = {}) {
     }
   }
   try {
-    const { registerPlugin } = await import("@capacitor/core");
-    const Http = registerPlugin("CapacitorHttp");
+    if (!nativeHttpBox) {
+      const { registerPlugin } = await import("@capacitor/core");
+      // Une seule instance (sinon avertissement Capacitor à chaque requête) ; emballée
+      // dans un objet pour ne pas « await » le proxy du plugin.
+      nativeHttpBox = { plugin: registerPlugin("CapacitorHttp") };
+    }
+    const Http = nativeHttpBox.plugin;
     const res = await Http.request({
       url: abs,
       method,

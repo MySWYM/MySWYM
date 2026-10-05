@@ -1,6 +1,7 @@
 import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
+import { backdropFilterFixPlugin } from './scripts/vite-backdrop-filter-fix.mjs'
 import { fileURLToPath, URL } from 'node:url'
 import { writeFileSync, mkdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
@@ -164,7 +165,7 @@ export default defineConfig(({ mode }) => {
     env.VERCEL_AUTOMATION_BYPASS_SECRET || env.DEV_API_BYPASS_SECRET || ''
 
   return {
-    plugins: [react(), tailwindcss(), sitemapPlugin(), natationSheetDevApi(env)],
+    plugins: [react(), tailwindcss(), sitemapPlugin(), natationSheetDevApi(env), backdropFilterFixPlugin()],
     define: {
       'import.meta.env.VITE_APP_VERSION': JSON.stringify(APP_VERSION),
     },

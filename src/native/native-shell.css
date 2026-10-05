@@ -132,9 +132,8 @@ html.myswym-ios .myswym-native-onboarding [style*="padding-top: 84px"] {
   padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px)) !important;
 }
 
-html.myswym-ios .myswym-native-onboarding [style*="padding-top: 84px"] > div:first-child {
-  display: none;
-}
+/* Le wordmark n’est plus rendu en natif (App.jsx) : ne pas masquer le 1er enfant ici,
+   ce serait maintenant l’OnboardingWizard. */
 
 html.myswym-ios .myswym-native-onboarding img[alt="MySWYM"] {
   display: none;

@@ -5,7 +5,7 @@
  * Le « token » = adresse Apple de cet iPhone. Sans ligne dans device_push_tokens,
  * le serveur ne peut pas envoyer bannière / pastille.
  */
-import { registerPlugin } from "@capacitor/core";
+import { AppBadge } from "./native-app-badge.js";
 import { supabase } from "../supabase.js";
 import { isNativeIos, nativeApiOrigin } from "./native-platform.js";
 import { ensureIosNotificationPermission, getLocalNotificationPermission } from "./native-local-notifications.js";
@@ -50,7 +50,6 @@ export async function getNotificationActivationState() {
     active: os === "granted" && wanted,
   };
 }
-const AppBadge = registerPlugin("AppBadge");
 let listenersReady = false;
 let registerInFlight = null;
 /** Jeton reçu avant session auth (boot AppDelegate). */
@@ -62,11 +61,16 @@ function normalizeToken(token) {
   return String(token || "").replace(/\s+/g, "").toLowerCase();
 }
 
+/**
+ * ⚠️ Ne jamais `return` un plugin Capacitor depuis une fonction async : le proxy
+ * répond à `.then` → await appelle `Plugin.then()` (« not implemented on ios ») et la
+ * promesse reste bloquée pour toujours. On l’emballe dans un objet `{ plugin }`.
+ */
 async function getPushPlugin() {
   if (!isNativeIos()) return null;
   try {
     const { PushNotifications } = await import("@capacitor/push-notifications");
-    return PushNotifications;
+    return { plugin: PushNotifications };
   } catch {
     return null;
   }
@@ -322,7 +326,7 @@ export async function registerNativePush({ request = false } = {}) {
   if (registerInFlight) return registerInFlight;
 
   registerInFlight = (async () => {
-    const PushNotifications = await getPushPlugin();
+    const PushNotifications = (await getPushPlugin())?.plugin;
     if (!PushNotifications) return { ok: false, reason: "no_plugin" };
 
     try {

@@ -4,7 +4,7 @@ import { isIosSimpleNav } from "../lib/ios-simple-nav.js";
 import { G } from "../theme/palette.js";
 import BrandLogo from "../BrandLogo.jsx";
 import { resolveAvatarUrl } from "../lib/avatar.js";
-import { resolveDisplayFirstName } from "../lib/identity-cache.js";
+import { resolveDisplayFirstName, avatarInitials } from "../lib/identity-cache.js";
 import {
   buildInAppNotifications,
   readSeenNotifications,
@@ -45,7 +45,7 @@ export default function AppTopBar({
 }) {
   const avatarUrl = resolveAvatarUrl(user);
   const firstName = resolveDisplayFirstName(user);
-  const initials = firstName.slice(0, 2).toUpperCase();
+  const initials = avatarInitials(firstName);
   const [notifOpen, setNotifOpen] = useState(false);
   const [buddyConnections, setBuddyConnections] = useState([]);
   const [supportConversations, setSupportConversations] = useState([]);

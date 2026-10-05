@@ -1,7 +1,9 @@
 /**
- * Suppression de compte : toujours possible depuis l’app (App Store 5.1.1).
- * Un abo Stripe vivant est annulé avant l’effacement.
- * Un abo App Store n’est pas annulé ici : l’utilisateur le résilie dans Réglages.
+ * Suppression de compte : TOUJOURS possible depuis l’app (App Store 5.1.1(v)) :
+ * jamais « résilie d’abord ». Un abo Stripe vivant est annulé immédiatement
+ * au moment de la suppression. Un abo App Store ne peut pas être résilié par
+ * l’app (Apple l’interdit) : on informe et on ouvre la gestion des abonnements.
+ * Si Stripe est injoignable, on supprime quand même et le support est alerté.
  */
 import { isCommitmentInForce } from "./stripe-commitment.ts";
 
@@ -79,6 +81,7 @@ export type DeleteGate =
     cancelIds: string[];
     willCancelSubscription: boolean;
     appleKeepsBilling: boolean;
+    stripeUnverified?: boolean;
   }
   | {
     allowed: false;
@@ -88,6 +91,7 @@ export type DeleteGate =
     cancelIds: string[];
     willCancelSubscription: false;
     appleKeepsBilling: false;
+    stripeUnverified?: false;
   };
 
 export class DeleteAccountBlockedError extends Error {
@@ -145,7 +149,12 @@ export function isFlexCancelable(sub: SubLike, nowMs = Date.now()): boolean {
 
 function allow(
   cancelIds: string[],
-  extra: { message?: string | null; endsAt?: string | null; appleKeepsBilling?: boolean } = {},
+  extra: {
+    message?: string | null;
+    endsAt?: string | null;
+    appleKeepsBilling?: boolean;
+    stripeUnverified?: boolean;
+  } = {},
 ): DeleteGate {
   return {
     allowed: true,
@@ -153,8 +162,9 @@ function allow(
     message: extra.message ?? null,
     endsAt: extra.endsAt ?? null,
     cancelIds,
-    willCancelSubscription: cancelIds.length > 0,
+    willCancelSubscription: cancelIds.length > 0 || extra.stripeUnverified === true,
     appleKeepsBilling: extra.appleKeepsBilling === true,
+    stripeUnverified: extra.stripeUnverified === true,
   };
 }
 
@@ -210,8 +220,12 @@ export function paidAccessLooksLive(
   return false;
 }
 
+export const DELETE_STRIPE_UNVERIFIED_NOTICE =
+  "Ton abonnement sera arrêté par notre équipe dans les 24 h : aucun nouveau prélèvement après la suppression.";
+
+/** Stripe injoignable : on ne bloque plus (Apple 5.1.1(v)), le support annule à la main. */
 export function gateFromUnverifiedAccess(): DeleteGate {
-  return block("unverified", DELETE_BLOCK.unverified, null);
+  return allow([], { message: DELETE_STRIPE_UNVERIFIED_NOTICE, stripeUnverified: true });
 }
 
 export function gateFromAppleAccess(endsAt: string | null = null): DeleteGate {

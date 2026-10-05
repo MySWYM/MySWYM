@@ -70,3 +70,14 @@ export function clearIdentityLocalCache(userId) {
   } catch { /* ignore */ }
   clearCachedAvatar(userId);
 }
+
+/**
+ * Initiales d’avatar : 1ʳᵉ lettre du prénom + 1ʳᵉ du nom (« Marie Dupont » → MD).
+ * Un seul mot → une seule lettre (« Nageur » → N, et non « NA » qui se lit N/A).
+ */
+export function avatarInitials(name, fallback = "N") {
+  const words = String(name || "").trim().split(/\s+/).filter(Boolean);
+  if (!words.length) return fallback;
+  const letters = words.length > 1 ? [words[0], words[words.length - 1]] : [words[0]];
+  return letters.map((w) => Array.from(w)[0] || "").join("").toUpperCase() || fallback;
+}
