@@ -28,6 +28,7 @@ export function parseOAuthCallbackUrl(url) {
   const resetFlag = params.get("reset") === "1" || hashParams.get("reset") === "1";
   return {
     code: pick("code"),
+    tokenHash: pick("token_hash"),
     accessToken: pick("access_token"),
     refreshToken: pick("refresh_token"),
     error: pick("error"),
@@ -45,6 +46,12 @@ export async function completeNativeOAuthFromUrl(supabase, url) {
   const parsed = parseOAuthCallbackUrl(url);
   if (parsed.error) {
     throw new Error(parsed.errorDescription || parsed.error);
+  }
+  // Mot de passe oublié : lien mail myswym.app → token_hash (verifyOtp, jamais setSession).
+  if (parsed.tokenHash && parsed.type === "recovery") {
+    const res = await supabase.auth.verifyOtp({ token_hash: parsed.tokenHash, type: "recovery" });
+    if (res.error) throw res.error;
+    return { ...res.data, isPasswordRecovery: true };
   }
   if (!parsed.code) throw new Error("NATIVE_OAUTH_NO_CREDENTIALS");
   const res = await supabase.auth.exchangeCodeForSession(parsed.code);

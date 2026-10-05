@@ -74,6 +74,29 @@ assert(!isNativeOAuthCallback("myswym://other"), "other path ignored");
 }
 
 {
+  const supabase = {
+    auth: {
+      verifyOtp: async (payload) => {
+        assert(payload.token_hash === "th123" && payload.type === "recovery", "recovery verifies token_hash");
+        return { data: { user: { id: "u3" } }, error: null };
+      },
+      exchangeCodeForSession: async () => {
+        throw new Error("exchangeCodeForSession should not run");
+      },
+      setSession: async () => {
+        throw new Error("setSession should not run");
+      },
+    },
+  };
+  const data = await completeNativeOAuthFromUrl(
+    supabase,
+    "myswym://auth/callback?reset=1&token_hash=th123&type=recovery",
+  );
+  assert(data.user.id === "u3", "token_hash recovery session");
+  assert(data.isPasswordRecovery === true, "token_hash marks password recovery");
+}
+
+{
   let threw = false;
   const supabase = {
     auth: {
