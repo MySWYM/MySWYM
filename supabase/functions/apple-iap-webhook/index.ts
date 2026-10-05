@@ -64,7 +64,13 @@ Deno.serve(async (req) => {
     }
 
     const { data: { user } } = await supabaseAdmin.auth.admin.getUserById(userId);
-    if (!user) throw new Error("Utilisateur introuvable");
+    if (!user) {
+      // Compte supprimé : répondre 200, sinon Apple renvoie la notification en boucle.
+      console.warn("[apple-iap-webhook] utilisateur introuvable", userId);
+      return new Response(JSON.stringify({ received: true, linked: false }), {
+        headers: { "Content-Type": "application/json" },
+      });
+    }
     const current = await getAccessState(supabaseAdmin, userId);
     if (isLiveStripeEntitlement(current)) {
       console.warn("[apple-iap-webhook] skip apple persist, stripe entitlement live", userId);

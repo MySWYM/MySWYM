@@ -43,7 +43,7 @@ function mapSocialAuthError(raw, t) {
   return msg || t("auth.socialFail");
 }
 
-export const getAuthInpStyle = () => {
+const getAuthInpStyle = () => {
   if (isNativeApp()) {
     return {
       width: "100%",
@@ -188,6 +188,23 @@ const SocialAuthButtons = ({ disabled, onError, onBlockedClick, onAuth, intent =
     window.addEventListener("myswym:native-oauth-done", onDone);
     return () => window.removeEventListener("myswym:native-oauth-done", onDone);
   }, [onAuth, onError, t]);
+
+  // Feuille Safari fermée (« OK ») sans connexion : débloque les boutons.
+  useEffect(() => {
+    if (!isNativeApp()) return undefined;
+    let handle = null;
+    let cancelled = false;
+    void import("@capacitor/browser").then(({ Browser }) => (
+      Browser.addListener("browserFinished", () => setBusy(null))
+    )).then((h) => {
+      if (cancelled) void h?.remove?.();
+      else handle = h;
+    }).catch(() => {});
+    return () => {
+      cancelled = true;
+      void handle?.remove?.();
+    };
+  }, []);
 
   const startOAuth = async (provider) => {
     if (busy) return;

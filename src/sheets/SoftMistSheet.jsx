@@ -10,6 +10,40 @@ import { useSheetSwipeDismiss } from "./useSheetSwipeDismiss.js";
  * Swipe down sur le header (handle) pour fermer quand `onClose` est fourni.
  * `icon` : rendu au-dessus du titre (funnel avis, etc.).
  */
+/**
+ * Verrou de scroll partagé entre sheets empilés : compteur, pour qu’un sheet
+ * fermé dans le désordre ne laisse pas la page bloquée (overflow hidden à vie).
+ * iOS : le viewport suit l’overflow de <html> (overflow-x: clip), pas celui de body.
+ */
+let scrollLockCount = 0;
+let scrollLockPrev = null;
+function acquireScrollLock() {
+  const html = document.documentElement;
+  if (scrollLockCount === 0) {
+    scrollLockPrev = {
+      body: document.body.style.overflow,
+      html: html.style.overflow,
+      overscroll: html.style.overscrollBehavior,
+    };
+    document.body.style.overflow = "hidden";
+    html.style.overflow = "hidden";
+    html.style.overscrollBehavior = "none";
+  }
+  scrollLockCount += 1;
+  let released = false;
+  return () => {
+    if (released) return;
+    released = true;
+    scrollLockCount = Math.max(0, scrollLockCount - 1);
+    if (scrollLockCount === 0 && scrollLockPrev) {
+      document.body.style.overflow = scrollLockPrev.body;
+      html.style.overflow = scrollLockPrev.html;
+      html.style.overscrollBehavior = scrollLockPrev.overscroll;
+      scrollLockPrev = null;
+    }
+  };
+}
+
 export default function SoftMistSheet({
   open = true,
   title,
@@ -60,9 +94,7 @@ export default function SoftMistSheet({
 
   useEffect(() => {
     if (!open || !lockScroll) return undefined;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = prev; };
+    return acquireScrollLock();
   }, [open, lockScroll]);
 
   useEffect(() => {

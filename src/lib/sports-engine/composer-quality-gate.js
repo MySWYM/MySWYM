@@ -275,9 +275,12 @@ export function validateComposedSession(session, brief = {}, constraints = null)
   }
 
   if (c.taperConstraints && c.maxRacePaceMeters != null && c.allowRacePaceTouch) {
-    // race pace touches counted as Z3 specific
+    // Allure course = séries intenses (Z3/Z4) marquées spécifiques. La portion 4N
+    // (Z2, blockRole « specific ») n’est pas de l’allure course : la compter faisait
+    // échouer toutes les séances d’affûtage → repli « séance sécurisée » de 500 m.
     const touchVol = sets
-      .filter((s) => s.blockRole === "specific" || /allure course|race/i.test(s.cue || ""))
+      .filter((s) => (s.zone === "Z3" || s.zone === "Z4")
+        && (s.blockRole === "specific" || /allure course|race/i.test(s.cue || "")))
       .reduce((a, s) => a + s.reps * s.distancePerRep, 0);
     if (touchVol > c.maxRacePaceMeters + 50) {
       errors.push(`taper race pace ${touchVol}m > maxRacePaceMeters ${c.maxRacePaceMeters}m`);

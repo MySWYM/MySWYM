@@ -55,6 +55,8 @@ let listenersReady = false;
 let registerInFlight = null;
 /** Jeton reçu avant session auth (boot AppDelegate). */
 let pendingToken = null;
+/** true entre prepareNativeSignOut et la prochaine session : aucun réenregistrement. */
+let suppressTokenUpsert = false;
 
 function normalizeToken(token) {
   return String(token || "").replace(/\s+/g, "").toLowerCase();
@@ -70,11 +72,13 @@ async function getPushPlugin() {
   }
 }
 
-async function readCachedNativeToken() {
+async function readCachedNativeToken({ replay = true } = {}) {
   if (!isNativeIos()) return null;
-  try {
-    await AppBadge.replayApnsToken?.();
-  } catch { /* ignore */ }
+  if (replay) {
+    try {
+      await AppBadge.replayApnsToken?.();
+    } catch { /* ignore */ }
+  }
   try {
     const res = await AppBadge.getApnsToken();
     const t = normalizeToken(res?.token);
@@ -123,6 +127,11 @@ async function upsertTokenViaApi(token) {
 }
 
 async function upsertDeviceToken(token) {
+  // Déconnexion en cours ou switch MySWYM coupé : AppDelegate rejoue le jeton à
+  // chaque retour au premier plan, il ne doit pas réinscrire ce téléphone.
+  if (suppressTokenUpsert || !pushNotificationsWanted()) {
+    return { ok: false, reason: suppressTokenUpsert ? "signing_out" : "opt_out" };
+  }
   const clean = normalizeToken(token);
   if (!clean || clean.length < 64) return { ok: false, reason: "bad_token" };
 
@@ -159,6 +168,7 @@ async function upsertDeviceToken(token) {
 /** Si un jeton était en attente (boot avant login), l’écrit maintenant. */
 export async function flushPendingPushToken() {
   if (!isNativeIos()) return { ok: false, reason: "none" };
+  suppressTokenUpsert = false;
   const cached = await readCachedNativeToken();
   if (cached) pendingToken = cached;
   if (!pendingToken) return { ok: false, reason: "none" };
@@ -205,7 +215,8 @@ export async function notificationsSwitchOn() {
 
 /** Retire ce téléphone seulement (pas les autres appareils du compte). */
 async function deleteThisDevicePushToken() {
-  const token = await readCachedNativeToken();
+  // Pas de replay ici : le replay relance le listener « registration » qui réinscrit le jeton.
+  const token = await readCachedNativeToken({ replay: false });
   if (!token) return;
   const { data: { session } } = await supabase.auth.getSession();
   const uid = session?.user?.id;
@@ -221,6 +232,8 @@ async function deleteThisDevicePushToken() {
 /** Avant signOut : jeton de cet iPhone + rappels locaux. La session doit encore exister. */
 export async function prepareNativeSignOut() {
   if (!isNativeIos()) return;
+  suppressTokenUpsert = true;
+  pendingToken = null;
   // La table peut être absente du cache PostgREST (PGRST205). Ne jamais bloquer la déconnexion.
   await Promise.race([
     deleteThisDevicePushToken().catch((e) => {
@@ -303,6 +316,8 @@ export async function openNativeAppSettings() {
 
 export async function registerNativePush({ request = false } = {}) {
   if (!isNativeIos()) return { ok: false, reason: "not_ios" };
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.user?.id) suppressTokenUpsert = false;
   if (!request && !pushNotificationsWanted()) return { ok: false, reason: "opt_out" };
   if (registerInFlight) return registerInFlight;
 

@@ -14,6 +14,7 @@ import {
   completeNativeOAuthFromUrl,
   emitNativeOAuthCompleted,
   isNativeOAuthCallback,
+  parseOAuthCallbackUrl,
 } from "../lib/native-oauth.js";
 import { markPasswordRecoveryIntent } from "../lib/password-recovery-intent.js";
 import {
@@ -49,6 +50,8 @@ export function prepareNativeRuntime() {
 async function handleNativeOAuthUrl(url) {
   if (!isNativeOAuthCallback(url)) return false;
   try {
+    // Avant l’échange : onAuthStateChange(SIGNED_IN) doit déjà voir l’intention reset.
+    if (parseOAuthCallbackUrl(url).isPasswordRecovery) markPasswordRecoveryIntent();
     const data = await completeNativeOAuthFromUrl(supabase, url);
     if (data?.isPasswordRecovery) {
       markPasswordRecoveryIntent();
