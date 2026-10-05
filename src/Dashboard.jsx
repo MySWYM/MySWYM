@@ -266,6 +266,9 @@ export default function Dashboard({
         {iosNav ? (
           <>
             <IosHomeSessionDeck cards={weekCards} onOpen={setOpenCard} />
+            {plan && hasSessionAccess ? (
+              <CoachCard plan={plan} profile={profile} currentWeekIndex={coachWeek} spaced />
+            ) : null}
             {typeof onGoBuddies === "function" ? (
               <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 16 }}>
                 <button

@@ -70,9 +70,24 @@ const COACH_KEYS = {
   default: ["coach.default0"],
 };
 
-const CoachCard = ({ plan, profile, currentWeekIndex }) => {
+/** Complète les phases à 1-2 messages pour que la rotation hebdo varie vraiment. */
+const ROTATION_FILL = ["coach.default0", "coach.base1", "coach.base2", "coach.well0"];
+const ROTATION_FILL_DECOUVERTE = ["coach.d0", "coach.d1", "coach.d2"];
+/** Citations et conseils valables pour tous les niveaux, ajoutés à chaque rotation. */
+const ROTATION_ALL = Array.from({ length: 12 }, (_, i) => `coach.all${i}`);
+
+/** Numéro de semaine local, bascule le lundi. */
+function weekNumber(date = new Date()) {
+  const days = Math.floor(
+    Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) / 86400000,
+  );
+  return Math.floor((days + 3) / 7);
+}
+
+const CoachCard = ({ plan, profile, currentWeekIndex, spaced = false }) => {
   const { t } = useTranslation("app");
-  const week = plan.weeks[Math.max(0, currentWeekIndex)];
+  const currentWeek = weekNumber();
+  const week = plan?.weeks?.[Math.max(0, currentWeekIndex || 0)];
   const isDecouverte = profile?.level === "découverte";
   const adaptLine = formatCoachAdaptLine(plan);
 
@@ -86,7 +101,7 @@ const CoachCard = ({ plan, profile, currentWeekIndex }) => {
     if (f.includes("vitesse") || f.includes("intensité") || f.includes("volume maximum")) return "peak";
     if (f.includes("seuil") || f.includes("développement")) return "development";
     if (f.includes("mise en") || f.includes("construction") || f.includes("jambes") || f.includes("aérobie")) return "base";
-    if (plan.isProgression) {
+    if (plan?.isProgression) {
       if (currentWeekIndex < 3) return "base";
       if (currentWeekIndex === 3) return "test";
       if (currentWeekIndex < 7) return "development";
@@ -102,15 +117,17 @@ const CoachCard = ({ plan, profile, currentWeekIndex }) => {
   const phaseKey = isDecouverte
     ? (`découverte_${phase}` in COACH_KEYS ? `découverte_${phase}` : "découverte_base")
     : phase;
-  const keys = COACH_KEYS[phaseKey] || COACH_KEYS.default;
-  const msgIndex = new Date().getMonth() % keys.length;
-  const message = t(keys[msgIndex]);
+  const phaseKeys = COACH_KEYS[phaseKey] || COACH_KEYS.default;
+  const fill = phaseKeys.length >= 3 ? [] : (isDecouverte ? ROTATION_FILL_DECOUVERTE : ROTATION_FILL);
+  const keys = [...new Set([...phaseKeys, ...fill, ...ROTATION_ALL])];
+  const message = t(keys[currentWeek % keys.length]);
 
   return (
     <div style={{
       background: `linear-gradient(135deg, ${G.blue} 0%, ${G.blueDeep} 100%)`,
       borderRadius: 22,
       padding: "20px",
+      marginTop: spaced ? 16 : 0,
       marginBottom: 20,
       boxShadow: "0 8px 28px rgba(53,93,163,0.28)",
       position: "relative",
