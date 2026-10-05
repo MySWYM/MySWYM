@@ -1,0 +1,42 @@
+MySWYM est maintenant une app officielle sur l'App Store. Merci a vous. On accelere : vos retours sur ce build nous aident a livrer plus vite sur la version store.
+
+A tester en priorite
+
+Essai Premium 7 jours : seances accessibles, compteur visible, puis gel clair (cartes grisees + CTA) quand l'essai est fini
+Ouverture d'une seance (plus de plantage / retour home)
+Croix rouge d'abandon : confirmation "Abandonner cette seance ?" avant envoi dans l'Historique (swipe vers le bas pour fermer aussi)
+Telecharger / sticker : enregistrement dans Photos (pas le presse-papiers)
+Export montre : libelle "Exporter pour la montre", aide Garmin (pas Apple Watch), message apres export
+Navigation bas : icones seules, barre plus basse ; grille + profil type GOWOD (milieu seances inchange)
+Sheets : fermeture par swipe vers le bas
+Partage / PDF de seance
+Auth : croix pour fermer, scroll plus naturel
+Reset mot de passe : le lien mail ouvre bien le formulaire (retour dans l'app si possible)
+Profil : espace correct entre carte et "Devenir Premium"
+Profil : unites corps kg/lb et cm/ft.in, roues ancrees sur le champ
+Support : avis -> App Store, bug -> Contact, Instagram MySWYM / Arthur separes
+Suppression de compte : seulement dans Mes donnees (plus sur l'accueil Parametres)
+Historique : "Voir le programme" ramene bien a l'accueil iOS
+Mes donnees -> Appareils connectes : liste iPhone / web, deconnexion d'un appareil, des autres, ou de tous
+Reglages -> Notifications : onglets Alertes instantanees / E-mail
+  - Si iOS = Non (Reglages iPhone) : bandeau "Desactivees dans Reglages" + CTA "Ouvrir Reglages" (pas de faux "Notifications activees")
+  - Si jamais demande : gros bouton "Activer les notifications" (popup systeme)
+  - Si iOS a deja autorise : switch MySWYM + categories ; coupe/reactive sans popup
+  - Categories (seance, serie, badges, binomes, support, actus) seulement apres activation reelle
+  - Securite et facturation toujours actives
+  - Retour de Reglages apres autorisation : l'app se resync toute seule
+Strava : bouton Deconnecter en rouge, scroll du panneau jusqu'en bas
+Zoom page interdit partout (pinch / double-tap)
+
+Aussi dans ce build
+
+Popup avis iOS apres environ 7 jours + 1 seance : Oui -> rappel Store, Non -> Contact (sans forcer)
+Le popup systeme Notifications arrive apres la 1re seance validee sur cet iPhone (pas a l'install, pas seulement la 1re seance du compte web)
+Banner / sheet pour convertir un compte anonyme, avec relances plus visibles
+Ecran d'erreur plus clair (Accueil, sans Relancer inutile)
+Paywall boucle : prix App Store (plus le prix Stripe web)
+Selection de texte et long-press images desactives cote app
+Titre sticky en revelation de plan
+Copy export Garmin clarifie
+
+Bonne nage, et merci de nous dire ce qui bloque encore.

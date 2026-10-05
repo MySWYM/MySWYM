@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <title>MySWYM · aperçus App Store</title>
+  <style>
+    @font-face {
+      font-family: Geist;
+      src: url("../../node_modules/@fontsource/geist/files/geist-latin-700-normal.woff2") format("woff2");
+      font-weight: 700;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: Geist;
+      src: url("../../node_modules/@fontsource/geist/files/geist-latin-600-normal.woff2") format("woff2");
+      font-weight: 600;
+      font-style: normal;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; background: #0F1B2D; }
+    .frame {
+      width: 1320px;
+      height: 2868px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 620px 80px 0;
+      background:
+        radial-gradient(120% 70% at 50% -10%, rgba(255, 255, 255, 0.55), transparent 55%),
+        linear-gradient(180deg, #7EB8F5 0%, #C5DFFB 46%, #F4F8FC 100%);
+      font-family: Geist, ui-sans-serif, system-ui, sans-serif;
+    }
+    h1 {
+      margin: 0;
+      color: #0F1B2D;
+      font-size: 118px;
+      font-weight: 700;
+      line-height: 1.02;
+      letter-spacing: -0.035em;
+      text-align: center;
+    }
+    .pills {
+      display: flex;
+      gap: 18px;
+      margin-top: 48px;
+    }
+    .pills span {
+      background: #ffffff;
+      color: #0F1B2D;
+      font-size: 34px;
+      font-weight: 600;
+      line-height: 1;
+      padding: 22px 36px;
+      border-radius: 999px;
+      box-shadow: 0 10px 28px rgba(15, 27, 45, 0.08);
+    }
+    .phone {
+      margin-top: 88px;
+      width: 1040px;
+      height: 2200px;
+      flex-shrink: 0;
+      padding: 18px 18px 0;
+      border-radius: 96px 96px 0 0;
+      background: linear-gradient(165deg, #4A5568 0%, #121820 28%, #0F1B2D 70%);
+      box-shadow:
+        0 40px 80px rgba(15, 27, 45, 0.22),
+        0 2px 0 rgba(255, 255, 255, 0.35) inset;
+    }
+    .screen {
+      height: 100%;
+      border-radius: 78px 78px 0 0;
+      overflow: hidden;
+      background: #EAF4FF;
+    }
+    .screen img {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+  </style>
+</head>
+<body>
+  <section class="frame" data-shot="01-seance">
+    <h1>Ta séance,<br>prête.</h1>
+    <div class="pills">
+      <span>Piscine</span>
+      <span>Endurance</span>
+      <span>2 400 m</span>
+    </div>
+    <div class="phone"><div class="screen"><img src="shots/home.jpg" alt="" /></div></div>
+  </section>
+
+  <section class="frame" data-shot="02-detail">
+    <h1>Une séance<br>claire.</h1>
+    <div class="pills">
+      <span>Échauffement</span>
+      <span>Corps</span>
+      <span>Retour</span>
+    </div>
+    <div class="phone"><div class="screen"><img src="shots/seance.jpg" alt="" /></div></div>
+  </section>
+
+  <section class="frame" data-shot="03-semaine">
+    <h1>Ta semaine,<br>posée.</h1>
+    <div class="pills">
+      <span>Séances</span>
+      <span>Allure</span>
+      <span>Badges</span>
+    </div>
+    <div class="phone"><div class="screen"><img src="shots/semaine.jpg" alt="" /></div></div>
+  </section>
+
+  <section class="frame" data-shot="04-materiel">
+    <h1>Ton matériel<br>au bassin.</h1>
+    <div class="pills">
+      <span>Palmes</span>
+      <span>Planche</span>
+      <span>Pull-buoy</span>
+    </div>
+    <div class="phone"><div class="screen"><img src="shots/materiel.jpg" alt="" /></div></div>
+  </section>
+</body>
+</html>
