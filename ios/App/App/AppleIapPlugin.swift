@@ -9,6 +9,7 @@ public class AppleIapPlugin: CAPPlugin, CAPBridgedPlugin {
     public let pluginMethods: [CAPPluginMethod] = [
         CAPPluginMethod(name: "getProducts", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "purchase", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "finish", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "restore", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "manageSubscriptions", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "requestReview", returnType: CAPPluginReturnPromise),
@@ -26,11 +27,11 @@ public class AppleIapPlugin: CAPPlugin, CAPBridgedPlugin {
             for await update in Transaction.updates {
                 guard let self else { return }
                 if case .verified(let transaction) = update {
-                    await transaction.finish()
                     self.notifyListeners("transactionUpdated", data: [
                         "jws": update.jwsRepresentation,
                         "productId": transaction.productID,
-                    ])
+                        "transactionId": String(transaction.id),
+                    ], retainUntilConsumed: true)
                 }
             }
         }
@@ -73,13 +74,21 @@ public class AppleIapPlugin: CAPPlugin, CAPBridgedPlugin {
                     call.reject("Offre introuvable sur l’App Store")
                     return
                 }
-                let result = try await product.purchase()
+                var options = Set<Product.PurchaseOption>()
+                if let raw = call.getString("appAccountToken"), let uuid = UUID(uuidString: raw) {
+                    options.insert(.appAccountToken(uuid))
+                }
+                let result = try await product.purchase(options: options)
                 switch result {
                 case .success(let verification):
-                    if case .verified(let transaction) = verification {
-                        await transaction.finish()
+                    guard case .verified(let transaction) = verification else {
+                        call.reject("Transaction Apple non vérifiée")
+                        return
                     }
-                    call.resolve(["jws": verification.jwsRepresentation])
+                    call.resolve([
+                        "jws": verification.jwsRepresentation,
+                        "transactionId": String(transaction.id),
+                    ])
                 case .userCancelled:
                     call.reject("Achat annulé", "USER_CANCELLED")
                 case .pending:
@@ -90,6 +99,25 @@ public class AppleIapPlugin: CAPPlugin, CAPBridgedPlugin {
             } catch {
                 call.reject(error.localizedDescription)
             }
+        }
+    }
+
+    /// Appelé par le JS seulement après un apple-iap-sync réussi.
+    @objc func finish(_ call: CAPPluginCall) {
+        guard let raw = call.getString("transactionId"), let target = UInt64(raw) else {
+            call.reject("transactionId manquant")
+            return
+        }
+        Task {
+            for await result in Transaction.unfinished {
+                guard case .verified(let transaction) = result else { continue }
+                if transaction.id == target {
+                    await transaction.finish()
+                    call.resolve()
+                    return
+                }
+            }
+            call.resolve(["missing": true])
         }
     }
 

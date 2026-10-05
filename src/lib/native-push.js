@@ -203,15 +203,41 @@ export async function notificationsSwitchOn() {
   return state.active;
 }
 
+/** Retire ce téléphone seulement (pas les autres appareils du compte). */
+async function deleteThisDevicePushToken() {
+  const token = await readCachedNativeToken();
+  if (!token) return;
+  const { data: { session } } = await supabase.auth.getSession();
+  const uid = session?.user?.id;
+  if (!uid) return;
+  const { error } = await supabase
+    .from("device_push_tokens")
+    .delete()
+    .eq("user_id", uid)
+    .eq("token", token);
+  if (error) console.warn("[push] delete device token", error.message || error);
+}
+
+/** Avant signOut : jeton de cet iPhone + rappels locaux. La session doit encore exister. */
+export async function prepareNativeSignOut() {
+  if (!isNativeIos()) return;
+  // La table peut être absente du cache PostgREST (PGRST205). Ne jamais bloquer la déconnexion.
+  await Promise.race([
+    deleteThisDevicePushToken().catch((e) => {
+      console.warn("[push] sign-out token", e);
+    }),
+    new Promise((resolve) => setTimeout(resolve, 1500)),
+  ]);
+  void import("./native-local-notifications.js")
+    .then((m) => m.cancelMySwymLocalNotifications())
+    .catch(() => {});
+}
+
 /** Retire ce téléphone de la liste d’envoi (push global + rappels locaux). */
 export async function disableNativeNotifications() {
   writePushPref(false);
   try {
-    const { data: { session } } = await supabase.auth.getSession();
-    const uid = session?.user?.id;
-    if (uid) {
-      await supabase.from("device_push_tokens").delete().eq("user_id", uid);
-    }
+    await deleteThisDevicePushToken();
   } catch (e) {
     console.warn("[push] disable", e);
   }

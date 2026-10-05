@@ -12,6 +12,35 @@ export const NATIVE_STRAVA_REDIRECT = "myswym://localhost/strava/callback";
 export const NATIVE_STRAVA_SCHEME_PATH = NATIVE_STRAVA_REDIRECT;
 export const STRAVA_STATE_WEB = "strava_connect";
 export const STRAVA_STATE_IOS = "strava_connect_ios";
+const STRAVA_IOS_STATE_KEY = "myswym_strava_oauth_state";
+
+export function isIosStravaOAuthState(state) {
+  return String(state || "").startsWith(`${STRAVA_STATE_IOS}.`);
+}
+
+export function createIosStravaState() {
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  const nonce = [...bytes].map((b) => b.toString(16).padStart(2, "0")).join("");
+  const state = `${STRAVA_STATE_IOS}.${nonce}`;
+  try {
+    localStorage.setItem(STRAVA_IOS_STATE_KEY, state);
+  } catch { /* mode privé / node */ }
+  return state;
+}
+
+export function consumeIosStravaState(state) {
+  const got = String(state || "");
+  if (!isIosStravaOAuthState(got)) throw new Error("Connexion Strava refusée.");
+  let expected = "";
+  try {
+    expected = localStorage.getItem(STRAVA_IOS_STATE_KEY) || "";
+  } catch { /* ignore */ }
+  if (!expected || expected !== got) throw new Error("Connexion Strava refusée.");
+  try {
+    localStorage.removeItem(STRAVA_IOS_STATE_KEY);
+  } catch { /* ignore */ }
+}
 
 export function stravaRedirectUri() {
   if (isNativeApp()) return NATIVE_STRAVA_REDIRECT;
@@ -20,7 +49,7 @@ export function stravaRedirectUri() {
 }
 
 export function stravaOAuthState() {
-  return isNativeApp() ? STRAVA_STATE_IOS : STRAVA_STATE_WEB;
+  return isNativeApp() ? createIosStravaState() : STRAVA_STATE_WEB;
 }
 
 export function isNativeStravaCallback(url) {
@@ -47,13 +76,14 @@ export function handoffStravaIosIfNeeded(
   if (!loc || typeof loc.search !== "string") return false;
   if (isNativeApp()) return false;
   const params = new URLSearchParams(loc.search);
-  if (params.get("state") !== STRAVA_STATE_IOS) return false;
+  const state = params.get("state") || "";
+  if (!isIosStravaOAuthState(state)) return false;
   const code = params.get("code");
   const err = params.get("error");
   if (!code && !err) return false;
   const next = new URLSearchParams();
   if (code) next.set("code", code);
-  next.set("state", STRAVA_STATE_WEB);
+  next.set("state", state);
   if (err) next.set("error", err);
   const desc = params.get("error_description");
   if (desc) next.set("error_description", desc);
@@ -94,6 +124,7 @@ export async function completeNativeStravaFromUrl(supabase, url) {
     throw new Error(parsed.errorDescription || parsed.error);
   }
   if (!parsed.code) throw new Error("Connexion Strava interrompue.");
+  consumeIosStravaState(parsed.state);
   const { data: { session } } = await supabase.auth.getSession();
   if (!session?.access_token) throw new Error("Session expirée, reconnecte-toi.");
   const res = await fetch(

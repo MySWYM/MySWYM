@@ -4,6 +4,7 @@ import { Trans, useTranslation } from "react-i18next";
 import { useActiveLocale } from "../i18n/locale-routing.jsx";
 import { legalHref } from "../lib/legal-copy.js";
 import BrandLogo from "../BrandLogo.jsx";
+import LanguageSwitcher from "../i18n/LanguageSwitcher.jsx";
 
 /**
  * Premier écran iOS : plein bleu, picto blanc, CTAs verre.
@@ -15,6 +16,9 @@ export default function NativeWelcomeFork({ onCreate }) {
 
   return (
     <div className="native-welcome-fork">
+      <div className="native-welcome-lang">
+        <LanguageSwitcher variant="flag" />
+      </div>
       <div className="native-welcome-swimmer" aria-hidden="true">
         <img
           src="/hero-pool.webp"

@@ -97,7 +97,7 @@ html.myswym-ios .native-auth-legal.is-native .native-auth-check input[type="chec
 }
 
 html.myswym-ios {
-  --bottom-nav-h: 52px;
+  --bottom-nav-h: 60px;
 }
 
 html.myswym-ios .bottom-nav {
@@ -300,6 +300,33 @@ html.myswym-ios .myswym-native-onboarding .ms-freq-gauge {
 
 html.myswym-ios .is-funnel .ms-app-immersive-bg {
   display: none;
+}
+
+.ms-lang-flag-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid rgba(15, 27, 45, 0.1);
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(15, 27, 45, 0.12);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.ms-lang-flag-btn .ms-lang-flag {
+  border-radius: 50%;
+  overflow: hidden;
+}
+
+.native-welcome-lang {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  justify-content: flex-end;
 }
 
 .native-welcome-fork {

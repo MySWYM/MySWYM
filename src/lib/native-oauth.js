@@ -46,21 +46,10 @@ export async function completeNativeOAuthFromUrl(supabase, url) {
   if (parsed.error) {
     throw new Error(parsed.errorDescription || parsed.error);
   }
-  let data = null;
-  if (parsed.code) {
-    const res = await supabase.auth.exchangeCodeForSession(parsed.code);
-    if (res.error) throw res.error;
-    data = res.data;
-  } else if (parsed.accessToken && parsed.refreshToken) {
-    const res = await supabase.auth.setSession({
-      access_token: parsed.accessToken,
-      refresh_token: parsed.refreshToken,
-    });
-    if (res.error) throw res.error;
-    data = res.data;
-  } else {
-    throw new Error("NATIVE_OAUTH_NO_CREDENTIALS");
-  }
+  if (!parsed.code) throw new Error("NATIVE_OAUTH_NO_CREDENTIALS");
+  const res = await supabase.auth.exchangeCodeForSession(parsed.code);
+  if (res.error) throw res.error;
+  const data = res.data;
   return { ...data, isPasswordRecovery: parsed.isPasswordRecovery === true };
 }
 

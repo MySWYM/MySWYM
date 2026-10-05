@@ -7,6 +7,7 @@ import { G } from "./theme/palette.js";
 import Btn from "./ui/Btn.jsx";
 import BrandLogo from "./BrandLogo.jsx";
 import { useActiveLocale } from "./i18n/locale-routing.jsx";
+import LanguageSwitcher from "./i18n/LanguageSwitcher.jsx";
 import { track } from "./lib/analytics.js";
 import { captureReferralFromUrl, getStoredReferralCode } from "./lib/referral.js";
 import { convertAnonymousWithEmail, isAnonymousUser } from "./lib/anonymous-auth.js";
@@ -157,13 +158,18 @@ const AppleMark = () => (
   </svg>
 );
 
+const FacebookMark = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+    <path fill="#1877F2" d="M14 9h3V6h-3c-2.2 0-4 1.8-4 4v2H8v3h2v7h3v-7h3l1-3h-4v-2c0-.6.4-1 1-1z" />
+  </svg>
+);
+
 const authOAuthRedirect = () =>
   isNativeApp() ? NATIVE_OAUTH_REDIRECT : `${window.location.origin}/app`;
 
 const SocialAuthButtons = ({ disabled, onError, onBlockedClick, onAuth, intent = "login", newsletterOptIn = false }) => {
   const { t } = useTranslation("onboarding");
   const [busy, setBusy] = useState(null);
-  const [unavailable, setUnavailable] = useState(false);
   const nativeIos = isNativeIos();
 
   useEffect(() => {
@@ -184,7 +190,7 @@ const SocialAuthButtons = ({ disabled, onError, onBlockedClick, onAuth, intent =
   }, [onAuth, onError, t]);
 
   const startOAuth = async (provider) => {
-    if (busy || unavailable) return;
+    if (busy) return;
     if (disabled) {
       onBlockedClick?.();
       return;
@@ -240,17 +246,9 @@ const SocialAuthButtons = ({ disabled, onError, onBlockedClick, onAuth, intent =
       window.location.assign(data.url);
     } catch (e) {
       setBusy(null);
-      const mapped = mapSocialAuthError(e.message, t);
-      if (/pas encore activée|isn’t enabled|n’est pas encore activée/i.test(mapped) || /missing OAuth secret|Unsupported provider/i.test(String(e.message || ""))) {
-        setUnavailable(true);
-      }
-      onError?.(mapped);
+      onError?.(mapSocialAuthError(e.message, t));
     }
   };
-
-  if (unavailable && !nativeIos) {
-    return null;
-  }
 
   const startApple = async () => {
     if (busy) return;
@@ -301,66 +299,55 @@ const SocialAuthButtons = ({ disabled, onError, onBlockedClick, onAuth, intent =
 
   const btnBase = {
     display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
-    width: "100%", padding: nativeIos ? "11px 16px" : "13px 16px",
-    borderRadius: nativeIos ? 999 : 12, fontSize: 15, fontWeight: 600,
+    width: "100%", boxSizing: "border-box",
+    height: 52, minHeight: 52, maxHeight: 52, padding: "0 16px",
+    borderRadius: nativeIos ? 999 : 12, fontSize: 15, fontWeight: 600, lineHeight: 1,
     fontFamily: FONT, cursor: busy ? "not-allowed" : "pointer",
     opacity: disabled && !onBlockedClick ? 0.45 : 1, transition: "opacity 0.15s, background 0.15s",
   };
 
+  const lightStyle = {
+    ...btnBase,
+    background: nativeIos ? "rgba(255, 255, 255, 0.92)" : G.surface,
+    color: G.ink,
+    border: nativeIos ? "1.5px solid rgba(255, 255, 255, 0.95)" : `1.5px solid ${G.greyLight}`,
+    opacity: disabled ? 0.7 : 1,
+  };
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: nativeIos ? 8 : 10 }}>
-      {nativeIos ? (
-        <button
-          type="button"
-          className="native-funnel-social"
-          disabled={!!busy}
-          aria-disabled={disabled || !!busy}
-          onClick={startApple}
-          style={{
-            ...btnBase,
-            background: "#0F1B2D",
-            color: "#fff",
-            border: "none",
-            opacity: disabled ? 0.7 : 1,
-          }}
-        >
-          <AppleMark />
-          {busy === "apple" ? t("auth.connecting") : t("auth.apple")}
-        </button>
-      ) : (
-        <button
-          type="button"
-          disabled={!!busy}
-          aria-disabled={disabled || !!busy}
-          onClick={() => startOAuth("apple")}
-          style={{
-            ...btnBase,
-            background: G.ink,
-            color: G.white,
-            border: `1.5px solid ${G.ink}`,
-            opacity: disabled ? 0.7 : 1,
-          }}
-        >
-          <AppleMark />
-          {busy === "apple" ? t("auth.redirecting") : t("auth.apple")}
-        </button>
-      )}
       <button
         type="button"
         className={nativeIos ? "native-funnel-social" : undefined}
         disabled={!!busy}
         aria-disabled={disabled || !!busy}
         onClick={() => startOAuth("google")}
-        style={{
-          ...btnBase,
-          background: nativeIos ? "rgba(255, 255, 255, 0.92)" : G.surface,
-          color: G.ink,
-          border: nativeIos ? "1.5px solid rgba(255, 255, 255, 0.95)" : `1.5px solid ${G.greyLight}`,
-          opacity: disabled ? 0.7 : 1,
-        }}
+        style={lightStyle}
       >
         <GoogleMark />
         {busy === "google" ? t("auth.redirecting") : t("auth.google")}
+      </button>
+      <button
+        type="button"
+        className={nativeIos ? "native-funnel-social" : undefined}
+        disabled={!!busy}
+        aria-disabled={disabled || !!busy}
+        onClick={() => startOAuth("facebook")}
+        style={lightStyle}
+      >
+        <FacebookMark />
+        {busy === "facebook" ? t("auth.redirecting") : t("auth.facebook")}
+      </button>
+      <button
+        type="button"
+        className={nativeIos ? "native-funnel-social" : undefined}
+        disabled={!!busy}
+        aria-disabled={disabled || !!busy}
+        onClick={nativeIos ? startApple : () => startOAuth("apple")}
+        style={lightStyle}
+      >
+        <AppleMark />
+        {busy === "apple" ? t(nativeIos ? "auth.connecting" : "auth.redirecting") : t("auth.apple")}
       </button>
     </div>
   );
@@ -647,25 +634,26 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, initialMode = "password", 
             ) : (
               <div />
             )}
-            {showCreateChip ? (
-              <button
-                type="button"
-                className="ms-glass-icon-btn native-guest-chip"
-                onClick={() => switchMode("register")}
-              >
-                {t("auth.createAccount")}
-              </button>
-            ) : showLoginChip ? (
-              <button
-                type="button"
-                className="ms-glass-icon-btn native-guest-chip"
-                onClick={() => switchMode("password")}
-              >
-                {t("auth.loginCta")}
-              </button>
-            ) : (
-              <div style={{ width: 44 }} aria-hidden />
-            )}
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <LanguageSwitcher variant="flag" />
+              {showCreateChip ? (
+                <button
+                  type="button"
+                  className="ms-glass-icon-btn native-guest-chip"
+                  onClick={() => switchMode("register")}
+                >
+                  {t("auth.createAccount")}
+                </button>
+              ) : showLoginChip ? (
+                <button
+                  type="button"
+                  className="ms-glass-icon-btn native-guest-chip"
+                  onClick={() => switchMode("password")}
+                >
+                  {t("auth.loginCta")}
+                </button>
+              ) : null}
+            </div>
           </div>
         );
       })()}
@@ -679,27 +667,6 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, initialMode = "password", 
 
         {error   && <div style={{ background: G.coralLight, borderRadius: 10, padding: "10px 14px", marginBottom: 14, color: G.coral, fontSize: 13 }}>{error}</div>}
         {success && <div style={{ background: G.mintLight, borderRadius: 10, padding: "10px 14px", marginBottom: 14, color: G.mint, fontSize: 13 }}>{success}</div>}
-
-        {(mode === "password" || mode === "register") && (
-          <>
-            <SocialAuthButtons
-              disabled={loading || socialBlocked}
-              intent={mode === "register" ? "signup" : "login"}
-              newsletterOptIn={acceptNewsletter}
-              onAuth={onAuth}
-              onError={(msg) => { setSuccess(null); setError(msg); }}
-              onBlockedClick={socialBlocked ? () => {
-                setSuccess(null);
-                setError(t(isNativeIos() ? "auth.socialBlocked" : "auth.googleBlocked"));
-              } : undefined}
-            />
-            <div style={{ display: "flex", alignItems: "center", gap: 12, margin: native ? "8px 0" : "18px 0" }}>
-              <div style={{ flex: 1, height: 1, background: native ? "rgba(255, 255, 255, 0.28)" : G.greyLight }} />
-              <span style={{ fontSize: 12, color: native ? "rgba(255, 255, 255, 0.72)" : G.grey, fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase" }}>{t("common.or")}</span>
-              <div style={{ flex: 1, height: 1, background: native ? "rgba(255, 255, 255, 0.28)" : G.greyLight }} />
-            </div>
-          </>
-        )}
 
         <form
           onSubmit={(e) => {
@@ -772,6 +739,27 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, initialMode = "password", 
             {t("auth.needChecks")}
           </p>
         ) : null}
+
+        {(mode === "password" || mode === "register") && (
+          <>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, margin: native ? "14px 0 10px" : "18px 0 14px" }}>
+              <div style={{ flex: 1, height: 1, background: native ? "rgba(255, 255, 255, 0.28)" : G.greyLight }} />
+              <span style={{ fontSize: 13, color: native ? "rgba(255, 255, 255, 0.72)" : G.grey, fontWeight: 500 }}>{t("common.or")}</span>
+              <div style={{ flex: 1, height: 1, background: native ? "rgba(255, 255, 255, 0.28)" : G.greyLight }} />
+            </div>
+            <SocialAuthButtons
+              disabled={loading || socialBlocked}
+              intent={mode === "register" ? "signup" : "login"}
+              newsletterOptIn={acceptNewsletter}
+              onAuth={onAuth}
+              onError={(msg) => { setSuccess(null); setError(msg); }}
+              onBlockedClick={socialBlocked ? () => {
+                setSuccess(null);
+                setError(t("auth.socialBlocked"));
+              } : undefined}
+            />
+          </>
+        )}
 
         {/* Toggles secondaires. iOS : chips en haut, pas de 2e CTA en bas. */}
         <div style={{ marginTop: native ? 8 : 18, textAlign: "center", fontSize: 14, color: G.grey }}>

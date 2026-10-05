@@ -74,7 +74,7 @@ import {
   getLocalNotificationPermission,
   notifyBadgeEarned,
 } from "./lib/native-local-notifications.js";
-import { registerNativePush, flushPendingPushToken, pushNotificationsWanted } from "./lib/native-push.js";
+import { registerNativePush, flushPendingPushToken, pushNotificationsWanted, prepareNativeSignOut } from "./lib/native-push.js";
 import { startStravaOAuth, stravaRedirectUri } from "./lib/native-strava.js";
 import { clearAppIconBadge } from "./lib/native-app-badge.js";
 import {
@@ -8812,12 +8812,18 @@ export default function App() {
           if (isNativeIos()) {
             void flushPendingPushToken();
             void registerNativePush();
+            void import("./lib/native-iap.js").then((m) => m.flushPendingAppleTransactions());
           }
           // Appareils connectés : heartbeat + force logout si révoqué à distance
           void import("./lib/user-devices.js").then(({ heartbeatUserDevice }) => (
             heartbeatUserDevice().then((res) => {
               if (res?.force_logout || res?.revoked) {
-                void supabase.auth.signOut();
+                void prepareNativeSignOut()
+                  .catch(() => {})
+                  .finally(() => {
+                    clearIdentityLocalCache(u.id);
+                    void supabase.auth.signOut();
+                  });
               }
             }).catch(() => { /* function pas encore déployée */ })
           ));
@@ -9674,20 +9680,39 @@ export default function App() {
 
   useEffect(() => {
     if (screen !== "app" || !user?.id || !isNativeIos()) return undefined;
-    const sync = () => {
+    const syncPush = () => {
       void clearAppIconBadge();
       void (async () => {
         const perm = await getLocalNotificationPermission();
         if (perm === "granted" && pushNotificationsWanted()) {
           void registerNativePush();
+        }
+      })();
+    };
+    syncPush();
+    window.addEventListener("myswym:push-pref", syncPush);
+    return () => window.removeEventListener("myswym:push-pref", syncPush);
+  }, [screen, user?.id]);
+
+  useEffect(() => {
+    if (screen !== "app" || !user?.id || !isNativeIos()) return undefined;
+    let cancelled = false;
+    const syncLocal = () => {
+      void (async () => {
+        const perm = await getLocalNotificationPermission();
+        if (cancelled) return;
+        if (perm === "granted" && pushNotificationsWanted()) {
           void syncLocalNotificationsFromState({ user, plan });
         }
       })();
     };
-    sync();
-    window.addEventListener("myswym:push-pref", sync);
-    return () => window.removeEventListener("myswym:push-pref", sync);
-  }, [screen, user?.id, user?.app_metadata?.subscription_status, plan, accessState.hasPremiumAccess, accessState.trialDaysLeft]);
+    syncLocal();
+    window.addEventListener("myswym:push-pref", syncLocal);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("myswym:push-pref", syncLocal);
+    };
+  }, [screen, user?.id, plan, accessState.hasPremiumAccess, accessState.trialDaysLeft]);
 
   useEffect(() => {
     if (!isNativeIos()) return undefined;
@@ -11572,6 +11597,9 @@ export default function App() {
     forceAuthRef.current = true;
     authOpenedFromUrlRef.current = true;
     setSettingsOpen(false);
+    try {
+      await prepareNativeSignOut();
+    } catch { /* jeton ou notifs locales */ }
     clearIdentityLocalCache(user?.id);
     // signOut AVANT navigate : sinon user encore set + /connexion → effet renvoie vers /app
     try {
@@ -11604,6 +11632,9 @@ export default function App() {
     forceAuthRef.current = true;
     authOpenedFromUrlRef.current = true;
     setSettingsOpen(false);
+    try {
+      await prepareNativeSignOut();
+    } catch { /* jeton ou notifs locales */ }
     clearIdentityLocalCache(user?.id);
     try {
       await supabase.auth.signOut();

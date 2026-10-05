@@ -5,7 +5,10 @@ import {
   NATIVE_STRAVA_SCHEME_PATH,
   STRAVA_STATE_IOS,
   buildStravaAuthorizeUrl,
+  consumeIosStravaState,
+  createIosStravaState,
   handoffStravaIosIfNeeded,
+  isIosStravaOAuthState,
   isNativeStravaCallback,
   parseNativeStravaCallback,
   stravaRedirectUri,
@@ -29,7 +32,8 @@ assert(stravaRedirectUri() === "myswym://localhost/strava/callback", "ios redire
   const url = buildStravaAuthorizeUrl("233278");
   assert(url.includes("redirect_uri=" + encodeURIComponent("myswym://localhost/strava/callback")), "authorize uses myswym");
   assert(!url.includes("www.myswym.app"), "ios authorize skips the website");
-  assert(url.includes("state=strava_connect_ios"), "ios state");
+  assert(url.includes("state=strava_connect_ios."), "ios state has a nonce");
+  assert(!url.includes("state=strava_connect_ios&"), "ios state is not the fixed prefix");
   assert(!url.includes("capacitor"), "authorize never uses capacitor");
 }
 setNativePlatformForTests(null);
@@ -45,17 +49,39 @@ assert(!isNativeStravaCallback("myswym://auth/callback?code=abc"), "auth callbac
 }
 
 {
+  const nonceState = "strava_connect_ios.abc123";
   let replaced = "";
   const loc = {
-    search: "?code=abc&state=strava_connect_ios",
+    search: `?code=abc&state=${nonceState}`,
     replace(next) { replaced = next; },
   };
   assert(handoffStravaIosIfNeeded(loc) === true, "handoff runs");
   assert(replaced.startsWith(`${NATIVE_STRAVA_SCHEME_PATH}?`), "handoff opens myswym");
   const q = new URLSearchParams(replaced.split("?")[1]);
   assert(q.get("code") === "abc", "handoff keeps code");
-  assert(q.get("state") === "strava_connect", "handoff state for the app");
+  assert(q.get("state") === nonceState, "handoff keeps ios state");
   assert(STRAVA_STATE_IOS === "strava_connect_ios", "ios state constant");
+  assert(isIosStravaOAuthState(nonceState) === true, "prefix detects ios");
+  assert(isIosStravaOAuthState(STRAVA_STATE_IOS) === false, "bare prefix is not a state");
+}
+
+{
+  const store = new Map();
+  globalThis.localStorage = {
+    getItem: (k) => (store.has(k) ? store.get(k) : null),
+    setItem: (k, v) => store.set(k, v),
+    removeItem: (k) => store.delete(k),
+  };
+  const state = createIosStravaState();
+  assert(isIosStravaOAuthState(state), "created state has prefix");
+  consumeIosStravaState(state);
+  let refused = false;
+  try {
+    consumeIosStravaState(state);
+  } catch (e) {
+    refused = e.message === "Connexion Strava refusée.";
+  }
+  assert(refused, "state cannot be reused");
 }
 
 {
