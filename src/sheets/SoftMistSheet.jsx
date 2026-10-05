@@ -60,9 +60,21 @@ export default function SoftMistSheet({
 
   useEffect(() => {
     if (!open || !lockScroll) return undefined;
-    const prev = document.body.style.overflow;
+    // iOS : le viewport suit l’overflow de <html> (overflow-x: clip), pas celui de body.
+    const html = document.documentElement;
+    const prev = {
+      body: document.body.style.overflow,
+      html: html.style.overflow,
+      overscroll: html.style.overscrollBehavior,
+    };
     document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = prev; };
+    html.style.overflow = "hidden";
+    html.style.overscrollBehavior = "none";
+    return () => {
+      document.body.style.overflow = prev.body;
+      html.style.overflow = prev.html;
+      html.style.overscrollBehavior = prev.overscroll;
+    };
   }, [open, lockScroll]);
 
   useEffect(() => {
