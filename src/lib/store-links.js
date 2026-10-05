@@ -47,6 +47,20 @@ export function appStoreHref() {
   return APP_STORE_URL;
 }
 
+/**
+ * Cible de https://www.myswym.app/go (et /fr/go).
+ * iPhone/iPad web → App Store. Android → webapp /app. Desktop → landing.
+ * Capacitor : rester dans l’app, pas de lien Store.
+ * @param {ClientPlatform} [platform]
+ * @returns {string}
+ */
+export function goStoreTarget(platform = detectClientPlatform()) {
+  if (isNativeApp()) return "/app";
+  if (platform === "ios") return APP_STORE_URL;
+  if (platform === "android") return "/app";
+  return "/";
+}
+
 /** Page d’écriture d’avis App Store (CTA Support + funnel avis). */
 export function appStoreWriteReviewHref() {
   const base = String(APP_STORE_URL || "").split("?")[0];

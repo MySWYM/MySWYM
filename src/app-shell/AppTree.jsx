@@ -11,6 +11,7 @@ import Blog from "../Blog.jsx";
 import BlogPost from "../BlogPost.jsx";
 import { MentionsLegalesPage, PolitiqueConfidentialitePage, PolitiqueCookiesPage, CguPage, CgvPage } from "../LegalPages.jsx";
 import MerciPage from "../Merci.jsx";
+import GoStoreRedirect from "../GoStoreRedirect.jsx";
 import NotFoundPage from "../NotFound.jsx";
 import CookieBanner from "../CookieBanner.jsx";
 import { hasPerformanceConsent } from "../lib/cookie-consent.js";
@@ -77,6 +78,7 @@ function frMarketingRoutes() {
       <Route path="contact" element={<ContactPage />} />
       <Route path="tarifs" element={<TarifsPage />} />
       <Route path="merci" element={<MerciPage />} />
+      <Route path="go" element={<GoStoreRedirect />} />
       <Route path="blog" element={<Blog />} />
       <Route path="blog/:slug" element={<BlogPost />} />
       <Route path="mentions-legales" element={<MentionsLegalesPage />} />
@@ -114,6 +116,7 @@ function enMarketingRoutes() {
       <Route path="contact" element={<ContactPage />} />
       <Route path="pricing" element={<TarifsPage />} />
       <Route path="thanks" element={<MerciPage />} />
+      <Route path="go" element={<GoStoreRedirect />} />
       <Route path="blog" element={<Blog />} />
       <Route path="blog/:slug" element={<BlogPost />} />
       <Route path="legal-notice" element={<MentionsLegalesPage />} />
