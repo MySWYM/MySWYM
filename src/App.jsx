@@ -1613,7 +1613,7 @@ const MonAllureCard = ({ profile, pace100, pace50 = null, pace400 = null, isPrem
             ))}
           </div>
           <p style={{ fontSize: 11, color: G.greyMid, margin: 0, lineHeight: 1.45 }}>
-            Indicatif · entraînement régulier (~{evolSvg.gainPct}% / −{evolSvg.gainSec}s sur {horizonYears} ans).
+            {`Indicatif · entraînement régulier (~${evolSvg.gainPct}% / −${evolSvg.gainSec}s sur ${horizonYears} ans).`}
           </p>
         </div>
       )}
