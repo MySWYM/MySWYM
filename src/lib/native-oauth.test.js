@@ -56,19 +56,41 @@ assert(!isNativeOAuthCallback("myswym://other"), "other path ignored");
 {
   const supabase = {
     auth: {
-      setSession: async (session) => {
-        assert(session.access_token === "a", "sets access");
-        assert(session.refresh_token === "r", "sets refresh");
+      exchangeCodeForSession: async (code) => {
+        assert(code === "recovery-code", "recovery uses code");
         return { data: { user: { id: "u2" } }, error: null };
+      },
+      setSession: async () => {
+        throw new Error("setSession should not run");
       },
     },
   };
   const data = await completeNativeOAuthFromUrl(
     supabase,
-    "myswym://auth/callback?reset=1#access_token=a&refresh_token=r&type=recovery",
+    "myswym://auth/callback?reset=1&code=recovery-code",
   );
-  assert(data.user.id === "u2", "implicit session");
+  assert(data.user.id === "u2", "recovery session");
   assert(data.isPasswordRecovery === true, "marks password recovery");
+}
+
+{
+  let threw = false;
+  const supabase = {
+    auth: {
+      setSession: async () => {
+        throw new Error("setSession should not run");
+      },
+    },
+  };
+  try {
+    await completeNativeOAuthFromUrl(
+      supabase,
+      "myswym://auth/callback#access_token=a&refresh_token=r",
+    );
+  } catch (e) {
+    threw = e.message === "NATIVE_OAUTH_NO_CREDENTIALS";
+  }
+  assert(threw, "implicit tokens refused");
 }
 
 {

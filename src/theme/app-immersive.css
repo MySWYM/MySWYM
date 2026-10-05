@@ -1671,12 +1671,31 @@
   line-height: 1.35;
 }
 
+/* Au-dessus de l’accueil iOS (z-index 20) même si App.jsx n’est pas monté. */
+.sheet-overlay.ms-lang-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 640;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  background: rgba(15, 40, 80, 0.28);
+  backdrop-filter: blur(10px) saturate(1.1);
+  -webkit-backdrop-filter: blur(10px) saturate(1.1);
+}
+
 .ms-lang-sheet {
+  box-sizing: border-box;
   width: 100%;
   max-width: 520px;
   margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  height: min(78dvh, 640px);
+  max-height: min(78dvh, 640px) !important;
+  overflow: hidden !important;
   border-radius: 28px 28px 0 0 !important;
-  padding: 20px 18px max(24px, env(safe-area-inset-bottom, 0px)) !important;
+  padding: 16px 16px max(16px, env(safe-area-inset-bottom, 0px)) !important;
   border-bottom: none !important;
   box-shadow: 0 -16px 48px rgba(15, 60, 120, 0.16) !important;
 }
@@ -1686,7 +1705,8 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 18px;
+  flex: 0 0 auto;
+  margin-bottom: 12px;
 }
 
 .ms-lang-sheet-title {
@@ -1700,16 +1720,21 @@
 .ms-lang-sheet-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  margin-bottom: 20px;
+  gap: 8px;
+  flex: 1 1 auto;
+  min-height: 0;
+  margin-bottom: 12px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .ms-lang-sheet-option {
   display: flex;
   align-items: center;
+  flex: 0 0 auto;
   gap: 14px;
   width: 100%;
-  min-height: 56px;
+  min-height: 52px;
   padding: 12px 14px;
   border: none;
   border-radius: 16px;
@@ -1731,8 +1756,10 @@
 }
 
 .ms-lang-sheet-confirm {
+  flex: 0 0 auto;
   width: 100%;
-  min-height: 54px;
+  min-height: 52px;
+  margin-top: 0;
 }
 
 .ms-seg-track {

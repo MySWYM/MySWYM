@@ -23,8 +23,9 @@ export default function LanguageSwitcher({ variant = "nav" }) {
   const { t, i18n } = useTranslation("common");
   const { t: ts } = useTranslation("settings");
   const location = useLocation();
-  const options = variant === "settings" ? APP_LANGUAGES : NAV_OPTIONS;
-  const lng = variant === "settings"
+  const fullList = variant === "settings" || variant === "flag";
+  const options = fullList ? APP_LANGUAGES : NAV_OPTIONS;
+  const lng = fullList
     ? normalizeAppLanguage(i18n.language)
     : (String(i18n.language || "").toLowerCase().startsWith("en") ? "en" : "fr");
   const current = options.find((o) => o.id === lng) || options[0];
@@ -61,7 +62,7 @@ export default function LanguageSwitcher({ variant = "nav" }) {
   }, [open, lng]);
 
   useEffect(() => {
-    if (!open || variant === "settings") return undefined;
+    if (!open || variant === "settings" || variant === "flag") return undefined;
     const onPointer = (e) => {
       if (!rootRef.current?.contains(e.target)) setOpen(false);
     };
@@ -69,7 +70,7 @@ export default function LanguageSwitcher({ variant = "nav" }) {
     return () => document.removeEventListener("pointerdown", onPointer);
   }, [open, variant]);
 
-  if (variant === "settings") {
+  if (variant === "settings" || variant === "flag") {
     const close = () => {
       playUiSound("soft");
       setOpen(false);
@@ -80,9 +81,22 @@ export default function LanguageSwitcher({ variant = "nav" }) {
       setOpen(false);
     };
 
-    return (
-      <>
-        <button
+    const trigger = variant === "flag" ? (
+      <button
+        type="button"
+        className="ms-lang-flag-btn"
+        onClick={() => {
+          playUiSound("soft");
+          setOpen(true);
+        }}
+        aria-label={ts("language.title")}
+        aria-haspopup="dialog"
+        aria-expanded={open}
+      >
+        <FlagMark code={current.flag} size={22} />
+      </button>
+    ) : (
+      <button
           type="button"
           className="ms-profile-settings-row"
           style={{
@@ -110,16 +124,20 @@ export default function LanguageSwitcher({ variant = "nav" }) {
           </div>
           <ChevronRight size={18} color="#9aa8b8" strokeWidth={2} />
         </button>
+    );
+
+    return (
+      <>
+        {trigger}
 
         {open
           ? createPortal(
               <div
-                className="sheet-overlay"
+                className="sheet-overlay ms-lang-overlay"
                 role="presentation"
                 onClick={(e) => {
                   if (e.target === e.currentTarget) close();
                 }}
-                style={{ zIndex: 520 }}
               >
                 <div
                   className="sheet-panel ms-sheet-card scale-in ms-lang-sheet"

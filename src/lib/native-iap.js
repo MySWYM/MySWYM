@@ -46,14 +46,67 @@ async function syncAppleJws(jws, { skipIfStripeLive = false } = {}) {
   return data?.user ?? null;
 }
 
+async function finishAppleTransaction(transactionId) {
+  if (!transactionId) return;
+  await AppleIap.finish({ transactionId: String(transactionId) });
+}
+
+const pendingAppleUpdates = [];
+
+async function syncThenFinish(jws, transactionId, { skipIfStripeLive = false } = {}) {
+  const user = await syncAppleJws(jws, { skipIfStripeLive });
+  await finishAppleTransaction(transactionId);
+  return user;
+}
+
+/** Ask to Buy, code promo, autre appareil : synchro seulement si une session existe. */
+export function installAppleTransactionUpdates() {
+  if (!isNativeApp() || installAppleTransactionUpdates.done) return;
+  installAppleTransactionUpdates.done = true;
+  void AppleIap.addListener("transactionUpdated", (event) => {
+    const jws = event?.jws;
+    const transactionId = event?.transactionId;
+    if (!jws) return;
+    void (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        pendingAppleUpdates.push({ jws, transactionId });
+        return;
+      }
+      try {
+        await syncThenFinish(jws, transactionId, { skipIfStripeLive: true });
+      } catch (err) {
+        console.warn("[iap] transactionUpdated", err?.message || err);
+        pendingAppleUpdates.push({ jws, transactionId });
+      }
+    })();
+  });
+}
+
+export async function flushPendingAppleTransactions() {
+  if (!isNativeApp() || pendingAppleUpdates.length === 0) return;
+  const batch = pendingAppleUpdates.splice(0);
+  for (const event of batch) {
+    try {
+      await syncThenFinish(event.jws, event.transactionId, { skipIfStripeLive: true });
+    } catch (err) {
+      console.warn("[iap] flush transaction", err?.message || err);
+      pendingAppleUpdates.push(event);
+    }
+  }
+}
+
 export async function purchaseAppleProduct(productId) {
   const session = await currentSessionUser();
   if (isLiveStripeBilling(session?.user)) {
     throw new Error(STRIPE_LIVE_APPLE_MESSAGE);
   }
-  const { jws } = await AppleIap.purchase({ productId });
+  const { jws, transactionId } = await AppleIap.purchase({
+    productId,
+    ...(session?.user?.id ? { appAccountToken: session.user.id } : {}),
+  });
   if (!jws) throw new Error("Transaction Apple manquante");
-  return syncAppleJws(jws);
+  return syncThenFinish(jws, transactionId);
 }
 
 export async function restoreAndSyncAppleIap() {
