@@ -1,5 +1,7 @@
 #!/bin/sh
 # MySWYM : bloque un commit qui ajoute du français visible sans traduction.
+# Branches sans le catalogue i18n (avant merge de feat/i18n-catalog-check) : pas de contrôle.
+[ -f scripts/i18n-check.mjs ] || exit 0
 if git diff --cached --name-only | grep -qE '^src/'; then
   node scripts/i18n-check.mjs || {
     echo ""
