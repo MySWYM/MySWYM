@@ -6,6 +6,8 @@ import i18n from "../i18n/index.js";
 import { isSessionResolved } from "./plan-progress-merge.js";
 import { translateSessionText } from "../i18n/session-terms.js";
 import { getSessionDisplayLang } from "../i18n/session-display-lang.js";
+import { intlLocaleFor } from "../i18n/languages.js";
+import { humanSessionType, sessionTypeKey } from "./home-week-sessions.js";
 
 const FAMILIES = new Set(["progression", "triathlon", "eau_libre", "diplome"]);
 
@@ -67,13 +69,22 @@ export function daysUntilEvent(iso, now = new Date()) {
 }
 
 /** Date d'épreuve + J-n. Jamais de phrase catalogue. */
+function formatEventDateLocalized(iso) {
+  const s = String(iso || "").slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return "";
+  const [y, m, d] = s.split("-").map(Number);
+  const date = new Date(y, m - 1, d);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString(intlLocaleFor(i18n.language), { day: "numeric", month: "long", year: "numeric" });
+}
+
 export function formatEventLine(iso, now = new Date()) {
-  const dateLabel = formatEventDateFr(iso);
+  const dateLabel = formatEventDateLocalized(iso);
   if (!dateLabel) return "";
   const days = daysUntilEvent(iso, now);
   if (days == null) return dateLabel;
-  if (days < 0) return `${dateLabel} · passée`;
-  if (days === 0) return `${dateLabel} · aujourd'hui`;
+  if (days < 0) return `${dateLabel} · ${i18n.t("profile.datePast", { ns: "app", defaultValue: "passée" })}`;
+  if (days === 0) return `${dateLabel} · ${i18n.t("profile.dateToday", { ns: "app", defaultValue: "aujourd'hui" })}`;
   return `${dateLabel} · J-${days}`;
 }
 
@@ -93,7 +104,12 @@ export function currentWeekLine(plan) {
   const idx = weeks.findIndex((w) => !(w.sessions || []).every(isSessionResolved));
   const i = idx >= 0 ? idx : weeks.length - 1;
   const focusRaw = String(weeks[i]?.focus || "").trim();
-  const focus = focusRaw ? translateSessionText(focusRaw, getSessionDisplayLang()) : "";
+  const knownType = focusRaw && sessionTypeKey(focusRaw) && humanSessionType(focusRaw) !== focusRaw;
+  const focus = !focusRaw
+    ? ""
+    : knownType
+      ? humanSessionType(focusRaw)
+      : translateSessionText(focusRaw, getSessionDisplayLang());
   const n = i + 1;
   const total = weeks.length;
   const showTotal = !plan?.isSessionLoop && total > 1;

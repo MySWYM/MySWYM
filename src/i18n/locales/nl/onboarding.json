@@ -297,5 +297,14 @@
     "socialOff": "Deze inlogmethode staat op de server nog niet aan. Probeer e-mail / wachtwoord.",
     "socialAppleConfig": "Inloggen met Apple is niet goed ingesteld (Supabase). Probeer e-mail / wachtwoord.",
     "socialFail": "Sociaal inloggen is niet beschikbaar."
+  },
+  "saveAccount": {
+    "eyebrow": "Je training",
+    "title": "Bewaar deze training",
+    "lead": "Maak je account om hem op al je apparaten te hebben. Je proefperiode van 7 dagen is al begonnen.",
+    "apple": "Doorgaan met Apple",
+    "email": "Doorgaan met e-mail",
+    "later": "Later",
+    "error": "Account maken lukte niet. Probeer opnieuw."
   }
 }

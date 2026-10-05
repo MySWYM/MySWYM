@@ -1,3 +1,5 @@
+import i18n from "../i18n/index.js";
+import { intlLocaleFor } from "../i18n/languages.js";
 import { BADGE_DEFS, isBadgeEarned } from "./plan-stats.js";
 
 export const LADDER_GROUPS = new Set(["km", "sessions", "streak"]);
@@ -24,10 +26,10 @@ function previousTarget(def) {
 function homeValue(def, value, target) {
   if (def.group === "km") {
     const cur = target >= 1000
-      ? (value / 1000).toLocaleString("fr-FR", { maximumFractionDigits: value >= 10000 ? 0 : 1 })
+      ? (value / 1000).toLocaleString(intlLocaleFor(i18n.language), { maximumFractionDigits: value >= 10000 ? 0 : 1 })
       : String(value);
     const tgt = target >= 1000
-      ? (target / 1000).toLocaleString("fr-FR", { maximumFractionDigits: 0 })
+      ? (target / 1000).toLocaleString(intlLocaleFor(i18n.language), { maximumFractionDigits: 0 })
       : String(target);
     return `${cur} / ${tgt} km`;
   }

@@ -4,7 +4,7 @@ import { ArrowLeft, ChevronDown, ChevronRight, Home, MessageCircle, Send, X } fr
 import { PRICING_SUMMARY_FR } from "./lib/pricing.js";
 import { APPLE_IAP_SUMMARY_FR } from "./lib/apple-iap-catalog.js";
 import { isNativeIos } from "./lib/native-platform.js";
-import { getStoredLanguage } from "./i18n/index.js";
+import i18n, { getStoredLanguage } from "./i18n/index.js";
 import { closeSupportLive, fetchSupportThread, sendSupportLive } from "./lib/support-api.js";
 import { getSupportSessionRef } from "./lib/support-context.js";
 import "./theme/support-widget-opaque.css";
@@ -53,21 +53,25 @@ const FAQ_RULES = [
       "Sur iPhone, l’abonnement se gère dans Réglages, Apple ID, Abonnements. Tu restes Premium jusqu’à la fin de la période déjà payée. Essai 7 jours sans carte : rien à résilier. Supprimer le compte se fait dans Profil : ça n’arrête pas un abonnement App Store tout seul.",
   },
   {
+    id: "goal",
     keys: ["objectif", "changer", "relancer", "nouveau plan", "onboarding", "plusieurs plan"],
     answer:
       "Un nouvel objectif se lance depuis le profil (relance de l'onboarding). Premium permet aussi de gérer plusieurs plans en parallèle.",
   },
   {
+    id: "beginner",
     keys: ["début", "debut", "débutant", "debutant", "jamais", "apprendre", "savoir nager", "école"],
     answer:
       "MySWYM convient dès que tu sais déjà nager. Le niveau découverte allège le vocabulaire (zones en français, repos en secondes). Ce n'est pas une école pour apprendre le geste de A à Z. L'app génère et structure tes séances.",
   },
   {
+    id: "how",
     keys: ["comment ça marche", "comment ca marche", "fonctionn", "personnalis", "générateur", "generateur"],
     answer:
       "Après le questionnaire (objectif, niveau, fréquence), un plan est généré semaine par semaine. Structure type : départ → technique → corps (zones) → retour au calme. Pas d'IA générative : logique coaching déterministe.",
   },
   {
+    id: "contact",
     keys: ["contact", "humain", "équipe", "equipe", "écrire", "ecrire", "mail", "email", "support", "arthur"],
     answer:
       "Pour une question perso ou un souci sur une séance, écris ici. Arthur te répond dans cette conversation.",
@@ -86,11 +90,13 @@ const FAQ_RULES = [
 
   // ── Natation / méthode ───────────────────────────────────
   {
+    id: "zones",
     keys: ["zone", "z1", "z2", "z3", "z4", "intensité", "intensite", "filière", "filiere"],
     answer:
       "Les zones guident l'effort : Z1 = aisance / récup active, Z2 = endurance aéro, Z3 = seuil (soutenu mais régulier), Z4 = vitesse / VO2.",
   },
   {
+    id: "pace",
     keys: ["allure", "t100", "temps 100", "pace", "@", "mm:ss", "chron"],
     answer:
       "Les allures cibles partent de ton seul T100 (meilleur 100 m, départ dans l'eau). Pendant l'essai et en Premium : @mm:ss à côté des zones. Plus tu es rapide, plus les bandes aérobie sont calibrées.",
@@ -101,6 +107,7 @@ const FAQ_RULES = [
       "R… = repos simple entre reps (ex. R30\"). D… = départ chronométré (ex. D1'30) : tu repartis à intervalle fixe. Premium affiche l'allure cible si T100 connu. Sur un sprint, la récup doit rester complète : sinon c'est de l'endurance déguisée.",
   },
   {
+    id: "structure",
     keys: ["structure", "échauff", "echauff", "retour calme", "rac", "bloc", "départ", "depart", "corps de séance", "corps de seance"],
     answer:
       "Séance type MySWYM : départ (souvent godilles en Z1) → bloc technique rotatif → corps physio (Z1–Z4 selon la filière) → fin / retour au calme. Eau libre : consignes spécifiques (sighting, combinaison), pas seulement des reps bassin.",
@@ -161,6 +168,7 @@ const FAQ_RULES = [
       "Sur roulis / rotation du corps : palmes OK, plaquettes non. Elles faussent l'appui. Les plaquettes servent plutôt d'autres blocs (force / traction), pas le travail de rotation.",
   },
   {
+    id: "volume",
     keys: ["volume", "+10", "10 %", "10%", "progression", "charge", "trop dur", "trop facile", "feedback", "easy", "hard"],
     answer:
       "Le volume monte ~+10 % max d'une semaine à l'autre. Après une semaine, le feedback (facile / ok / dur) ajuste les semaines futures encore vierges (borné). Une séance trop dure ? Dis-le dans le retour. Premium peut aussi micro-ajuster au premier feedback séance.",
@@ -177,8 +185,9 @@ const FAQ_RULES = [
   },
 ];
 
-const FALLBACK =
-  "Pas de réponse auto pour celle-ci. J’envoie ça à Arthur, il te répond ici.";
+function supportFallback() {
+  return i18n.t("support.fallback", { ns: "app" });
+}
 
 function stripAccents(s) {
   return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -200,7 +209,12 @@ function matchFaq(text) {
       best = rule;
     }
   }
-  if (bestScore <= 0 || !best) return FALLBACK;
+  if (bestScore <= 0 || !best) return supportFallback();
+  if (best.id) {
+    const key = `support.faq.${best.id}`;
+    const translated = i18n.t(key, { ns: "app", defaultValue: "" });
+    if (translated && translated !== key) return translated;
+  }
   const lang = String(getStoredLanguage() || "fr").toLowerCase();
   const en = lang.startsWith("en");
   if (isNativeIos()) {
@@ -211,11 +225,13 @@ function matchFaq(text) {
   return best.answer;
 }
 
-const WELCOME = {
-  role: "bot",
-  welcome: true,
-  text: "Salut ! Tu parles à l’assistance MySWYM. Je peux t’aider sur le produit et la natation. Tu peux demander l’équipe à tout moment, Arthur te répond ici.",
-};
+function welcomeMessage() {
+  return {
+    role: "bot",
+    welcome: true,
+    text: i18n.t("support.welcome", { ns: "app" }),
+  };
+}
 
 function wantsHuman(text) {
   return /\b(parler\s+(à|a)\s+|contacter\s+(l['’]?équipe|arthur)|un\s+humain|l['’]équipe|aide\s+humaine)\b/i.test(
@@ -337,7 +353,7 @@ export default function SupportBubble({
   /** Page iOS : inbox messages d’abord, puis un fil (drill-in). */
   const [tab, setTab] = useState(isPage ? "messages" : "home");
   const [view, setView] = useState("tabs");
-  const [faqMessages, setFaqMessages] = useState([WELCOME]);
+  const [faqMessages, setFaqMessages] = useState(() => [welcomeMessage()]);
   const [thread, setThread] = useState({ conversation: null, messages: [] });
   const [conversations, setConversations] = useState([]);
   const [startFresh, setStartFresh] = useState(false);
@@ -570,7 +586,7 @@ export default function SupportBubble({
     startFreshRef.current = true;
     setStartFresh(true);
     setForceLive(false);
-    setFaqMessages([WELCOME]);
+    setFaqMessages([welcomeMessage()]);
     setError("");
     activeIdRef.current = null;
     setThread({ conversation: null, messages: [] });
@@ -613,7 +629,7 @@ export default function SupportBubble({
       const json = await sendSupportLive(text, prior, getSupportSessionRef());
       if (!json.ok) {
         setInput(text);
-        setError(json.error || "Impossible d’envoyer. Réessaie dans un instant.");
+        setError(json.error || t("support.sendFail"));
         return false;
       }
       fetchGen.current += 1;
@@ -628,7 +644,7 @@ export default function SupportBubble({
       return true;
     } catch {
       setInput(text);
-      setError("Impossible d’envoyer. Réessaie dans un instant.");
+      setError(t("support.sendFail"));
       return false;
     } finally {
       setSending(false);
@@ -646,17 +662,17 @@ export default function SupportBubble({
     }
 
     if (showClosed) {
-      setError("Cette conversation est clôturée. Ouvre-en une nouvelle.");
+      setError(t("support.threadClosed"));
       return;
     }
 
     const prior = faqMessages.map((m) => ({ role: m.role, text: m.text }));
-    const goLive = forceLive || wantsHuman(text) || matchFaq(text) === FALLBACK;
+    const goLive = forceLive || wantsHuman(text) || matchFaq(text) === supportFallback();
     setFaqMessages((m) => [...m, { role: "user", text }]);
 
     if (goLive) {
       const ok = await escalate(text, prior);
-      if (!ok) setFaqMessages((m) => [...m, { role: "bot", text: FALLBACK }]);
+      if (!ok) setFaqMessages((m) => [...m, { role: "bot", text: supportFallback() }]);
       return;
     }
 
@@ -678,7 +694,7 @@ export default function SupportBubble({
       if (!Array.isArray(json.conversations)) {
         await refreshThread({ markSeen: true, conversationId: conversation.id });
       }
-    } else setError(json.error || "Impossible de clôturer.");
+    } else setError(json.error || t("support.closeFail"));
   };
 
   const askQuestion = ({ preferFresh = false } = {}) => {
@@ -983,7 +999,7 @@ export default function SupportBubble({
                                   </span>
                                 </span>
                                 <span className="support-card-meta" style={{ fontSize: 13 }}>
-                                  {preview || (isOpen ? "Conversation en cours" : "Conversation clôturée")}
+                                  {preview || (isOpen ? t("support.threadOpen") : t("support.threadClosedShort"))}
                                 </span>
                                 {isOpen ? (
                                   <span className="support-inbox-status">{t("support.open")}</span>

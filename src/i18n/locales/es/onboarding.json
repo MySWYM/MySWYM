@@ -297,5 +297,14 @@
     "socialOff": "Este método de acceso aún no está activado en el servidor. Prueba con email y contraseña.",
     "socialAppleConfig": "El acceso con Apple no está bien configurado (Supabase). Prueba con email y contraseña.",
     "socialFail": "El acceso con redes no está disponible."
+  },
+  "saveAccount": {
+    "eyebrow": "Tu sesión",
+    "title": "Guarda esta sesión",
+    "lead": "Crea tu cuenta para tenerla en todos tus dispositivos. Tu prueba de 7 días ya empezó.",
+    "apple": "Continuar con Apple",
+    "email": "Continuar con un correo",
+    "later": "Más tarde",
+    "error": "No se pudo crear la cuenta. Reintenta."
   }
 }

@@ -1,0 +1,9 @@
+#!/bin/sh
+# MySWYM : bloque un commit qui ajoute du français visible sans traduction.
+if git diff --cached --name-only | grep -qE '^src/'; then
+  node scripts/i18n-check.mjs || {
+    echo ""
+    echo "Commit bloqué : traduis les phrases ci-dessus dans src/i18n/fr-dict/ (ou demande à l'agent)."
+    exit 1
+  }
+fi

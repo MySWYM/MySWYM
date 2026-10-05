@@ -297,5 +297,14 @@
     "socialOff": "Den här inloggningen är inte aktiverad på servern ännu. Prova e-post / lösenord.",
     "socialAppleConfig": "Apple-inloggning är inte rätt konfigurerad (Supabase). Prova e-post / lösenord.",
     "socialFail": "Social inloggning är inte tillgänglig."
+  },
+  "saveAccount": {
+    "eyebrow": "Ditt pass",
+    "title": "Spara det här passet",
+    "lead": "Skapa ditt konto för att ha det på alla enheter. Din 7-dagarsprovperiod har redan börjat.",
+    "apple": "Fortsätt med Apple",
+    "email": "Fortsätt med e-post",
+    "later": "Senare",
+    "error": "Kunde inte skapa kontot. Försök igen."
   }
 }

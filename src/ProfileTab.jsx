@@ -69,7 +69,6 @@ import {
 } from "./lib/newsletter-opt-in.js";
 import {
   INJURY_CONSENT_CHECKBOX,
-  HEART_RATE_CONSENT_CHECKBOX,
   INJURY_ZONES,
   INJURY_SEVERITIES,
   formatInjurySummary,
@@ -2470,7 +2469,7 @@ export default function ProfileTab({
                 style={{ marginTop: 3 }}
               />
               <span style={{ fontSize: 13, color: G.ink, lineHeight: 1.4 }}>
-                {HEART_RATE_CONSENT_CHECKBOX}
+                {ta("strava.hrCheck")}
               </span>
             </label>
           </ProfileSection>

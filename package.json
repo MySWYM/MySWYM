@@ -52,7 +52,10 @@
     "email": "email dev --dir api/_lib/emails",
     "email:test": "node scripts/send-test-email.mjs",
     "email:setup-trial-drip": "node --env-file=.env.local scripts/setup-resend-automations-v3-trial-drip.mjs",
-    "email:republish": "node --env-file=.env.local scripts/republish-resend-templates.mjs"
+    "email:republish": "node --env-file=.env.local scripts/republish-resend-templates.mjs",
+    "i18n:check": "node scripts/i18n-check.mjs",
+    "i18n:scan": "node scripts/i18n-scan.mjs --files",
+    "i18n:hook": "cp scripts/git-hooks/pre-commit .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit"
   },
   "dependencies": {
     "@capacitor-community/apple-sign-in": "^7.1.0",
@@ -85,6 +88,8 @@
     "resend": "^6.18.1"
   },
   "devDependencies": {
+    "@babel/parser": "^7.29.2",
+    "@babel/traverse": "^7.29.0",
     "@capacitor/cli": "^8.5.2",
     "@eslint/js": "^9.39.4",
     "@playwright/test": "^1.62.1",

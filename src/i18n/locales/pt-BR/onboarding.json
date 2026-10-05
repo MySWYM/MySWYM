@@ -297,5 +297,14 @@
     "socialOff": "Este modo de entrada ainda não está ativo no servidor. Tente e-mail / senha.",
     "socialAppleConfig": "A entrada com a Apple não está configurada direito (Supabase). Tente e-mail / senha.",
     "socialFail": "O login social não está disponível."
+  },
+  "saveAccount": {
+    "eyebrow": "Seu treino",
+    "title": "Guarde este treino",
+    "lead": "Crie sua conta para ter ele em todos os aparelhos. Seu teste de 7 dias já começou.",
+    "apple": "Continuar com a Apple",
+    "email": "Continuar com e-mail",
+    "later": "Mais tarde",
+    "error": "Não foi possível criar a conta. Tente de novo."
   }
 }

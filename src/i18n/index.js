@@ -97,7 +97,7 @@ export function setAppLanguage(lng) {
     /* ignore */
   }
   persistLanguageCookie(next);
-  document.documentElement.lang = next;
+  if (typeof document !== "undefined") document.documentElement.lang = next;
   return i18n.changeLanguage(next);
 }
 
@@ -114,12 +114,12 @@ void i18n.use(initReactI18next).init({
   returnNull: false,
 });
 
-document.documentElement.lang = i18n.language;
+if (typeof document !== "undefined") document.documentElement.lang = i18n.language;
 setSessionDisplayLang(i18n.language);
 
 i18n.on("languageChanged", (lng) => {
   setSessionDisplayLang(lng);
-  document.documentElement.lang = lng;
+  if (typeof document !== "undefined") document.documentElement.lang = lng;
   try {
     if (isNativeApp()) localStorage.setItem(NATIVE_LANG_STORAGE_KEY, lng);
     else localStorage.setItem(LANG_STORAGE_KEY, lng);

@@ -2,6 +2,9 @@
  * Usage : node src/lib/profile-goal.test.js
  */
 import assert from "node:assert/strict";
+import i18n from "../i18n/index.js";
+
+await i18n.changeLanguage("fr");
 import {
   familyIdFromProfile,
   familyNeedsSub,

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { Lock } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { fadeUp } from '../motion'
@@ -12,6 +13,7 @@ interface Props {
 
 /** Soft-locked week, visible outline, no dark pattern blur spam */
 export function LockedWeek({ weekNumber, sessionCount = 3, metersHint = '~6-8 km', onUnlock }: Props) {
+  const { t } = useTranslation('app')
   return (
     <motion.div
       variants={fadeUp}
@@ -20,7 +22,7 @@ export function LockedWeek({ weekNumber, sessionCount = 3, metersHint = '~6-8 km
       <div className="cv:flex cv:items-start cv:justify-between cv:gap-3">
         <div>
           <p className="cv:text-[11px] cv:font-semibold cv:uppercase cv:tracking-[0.08em] cv:text-cv-ink-tertiary">
-            Semaine {weekNumber}
+            {t('profile.weekN', { n: weekNumber })}
           </p>
           <p className="cv-display cv:mt-1 cv:text-[22px] cv:text-cv-ink">Suite du plan</p>
           <p className="cv:mt-1 cv:text-[13px] cv:text-cv-ink-secondary">
