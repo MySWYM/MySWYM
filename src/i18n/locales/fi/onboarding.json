@@ -297,5 +297,14 @@
     "socialOff": "Tätä kirjautumistapaa ei ole vielä kytketty päälle palvelimella. Kokeile sähköpostia / salasanaa.",
     "socialAppleConfig": "Apple-kirjautuminen ei ole asetettu oikein (Supabase). Kokeile sähköpostia / salasanaa.",
     "socialFail": "Sosiaalinen kirjautuminen ei ole käytettävissä."
+  },
+  "saveAccount": {
+    "eyebrow": "Treenisi",
+    "title": "Säilytä tämä treeni",
+    "lead": "Luo tili, niin treeni on kaikilla laitteillasi. 7 päivän kokeilusi on jo alkanut.",
+    "apple": "Jatka Applella",
+    "email": "Jatka sähköpostilla",
+    "later": "Myöhemmin",
+    "error": "Tilin luonti epäonnistui. Yritä uudelleen."
   }
 }

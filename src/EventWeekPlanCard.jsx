@@ -2,6 +2,7 @@ import { Calendar } from "lucide-react";
 import { FONT, FONT_DISPLAY } from "./theme/brand.js";
 import { G } from "./theme/palette.js";
 import { buildEventWeekTimeline } from "./lib/natation-sheet/sheet-week-role.js";
+import i18n from "./i18n/index.js";
 
 function phaseTone(week) {
   if (week.isRaceWeek) {
@@ -68,10 +69,10 @@ export default function EventWeekPlanCard({ plan, profile, onOpenProfile }) {
 
   const title =
     timeline.mode === "to_race"
-      ? "Jusqu’à la course"
+      ? i18n.t("plan.untilRace", { ns: "app" })
       : timeline.mode === "after_race"
-        ? "Après la course"
-        : "Cycle d’entraînement";
+        ? i18n.t("plan.afterRace", { ns: "app" })
+        : i18n.t("plan.trainingCycle", { ns: "app" });
 
   // Sous-titre calé sur la pastille « cette semaine » (progression plan), pas seulement le calendrier
   const currentS =
@@ -81,10 +82,12 @@ export default function EventWeekPlanCard({ plan, profile, onOpenProfile }) {
   const sub =
     timeline.mode === "to_race" && currentS != null
       ? currentS === 0
-        ? "Semaine de course"
-        : `${currentS} semaine${currentS > 1 ? "s" : ""} avant J`
+        ? i18n.t("plan.raceWeek", { ns: "app" })
+        : currentS === 1
+          ? i18n.t("plan.weekBefore", { ns: "app" })
+          : i18n.t("plan.weeksBefore", { ns: "app", count: currentS })
       : timeline.mode === "cycle" && !profile.eventDate
-        ? "Ajoute ta date de course pour caler S0"
+        ? i18n.t("plan.addRaceDate", { ns: "app" })
         : null;
 
   return (
@@ -145,7 +148,7 @@ export default function EventWeekPlanCard({ plan, profile, onOpenProfile }) {
           scrollbarWidth: "thin",
         }}
         role="list"
-        aria-label="Semaines du planning"
+        aria-label={i18n.t("plan.weeksAria", { ns: "app" })}
       >
         {timeline.weeks.map((w) => {
           const tone = phaseTone(w);

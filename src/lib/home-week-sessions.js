@@ -1,6 +1,7 @@
 /**
  * Séances de la semaine courante pour le carrousel Nager iOS.
  */
+import i18n from "../i18n/index.js";
 import { findNextSession, sessionCardModel } from "./plan-reveal.js";
 import { isSessionResolved } from "./plan-progress-merge.js";
 import {
@@ -10,12 +11,14 @@ import {
   withLoopSessionTitle,
 } from "./swim-plan-bridge.js";
 
-const TYPE_LABELS = {
-  ENDURANCE: "Endurance",
-  SEUIL: "Seuil",
-  VITESSE: "Vitesse",
-  TECHNIQUE: "Technique",
-  RECUPERATION: "Récupération",
+const TYPE_I18N = {
+  ENDURANCE: "strava.focusEndurance",
+  SEUIL: "strava.focusThreshold",
+  VITESSE: "strava.focusSpeed",
+  TECHNIQUE: "strava.focusTechnique",
+  RECUPERATION: "strava.focusEasy",
+  REPOS: "strava.focusEasy",
+  TEST: "strava.focusThreshold",
 };
 
 const TYPE_COVERS = {
@@ -52,7 +55,11 @@ export function sessionTypeKey(type) {
 
 export function humanSessionType(type) {
   const key = sessionTypeKey(type);
-  return TYPE_LABELS[key] || (type ? String(type).trim() : "");
+  const i18nKey = TYPE_I18N[key];
+  if (!i18nKey) return type ? String(type).trim() : "";
+  const label = i18n.t(i18nKey, { ns: "app", defaultValue: "" });
+  if (!label || label === i18nKey) return String(type).trim();
+  return label.charAt(0).toLocaleUpperCase(i18n.language) + label.slice(1);
 }
 
 export function sessionCoverSrc(type, sessionIndex = 0) {

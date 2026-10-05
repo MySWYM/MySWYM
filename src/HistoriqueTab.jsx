@@ -12,6 +12,7 @@ import { getTabUi } from "./tab-ui-registry.js";
 import { PRICING } from "./lib/pricing.js";
 import { isNativeApp } from "./lib/native-platform.js";
 import { isIosSimpleNav } from "./lib/ios-simple-nav.js";
+import i18n from "./i18n/index.js";
 
 /** iOS / chrome simple : Nager (deck). Web legacy : onglet Programme. */
 function goToProgram(onTabChange) {
@@ -42,7 +43,7 @@ export function buildHistoryItems(plan) {
         session,
         ordinal: items.length,
         key: `w${wi}-s${si}`,
-        label: session.title || `Sem. ${week.number ?? wi + 1} · Séance ${si + 1}`,
+        label: session.title || i18n.t("profile.weekSession", { ns: "app", week: week.number ?? wi + 1, n: si + 1 }),
         source: "soft",
         weekNumber: week.number ?? wi + 1,
       });
@@ -190,8 +191,8 @@ export default function HistoriqueTab({
                 </div>
                 <p style={{ margin: "0 0 16px", fontSize: 13, color: G.grey, lineHeight: 1.45 }}>
                   {isIosSimpleNav()
-                    ? "Valide ta première séance dans Nager : elle apparaîtra ici."
-                    : "Valide ta première séance dans Programme : elle apparaîtra ici."}
+                    ? t("hist.emptySwim")
+                    : t("hist.emptyPlan")}
                 </p>
                 <button
                   type="button"
@@ -252,7 +253,7 @@ export default function HistoriqueTab({
                             {s.distance || "-"}
                             {" · "}
                             {done ? t("history.sessionDone") : t("history.sessionSkipped")}
-                            {item.weekNumber ? ` · Sem. ${item.weekNumber}` : ""}
+                            {item.weekNumber ? ` · ${t("profile.weekShort", { n: item.weekNumber })}` : ""}
                           </span>
                         </span>
                         <ChevronRight size={18} color={G.greyMid} />

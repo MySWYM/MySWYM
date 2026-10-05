@@ -4,6 +4,7 @@
  * Chaque notif pose la pastille rouge (badge: 1) sur l’icône.
  */
 import { isNativeIos } from "./native-platform.js";
+import { translateMultiline } from "../i18n/dom-translate.js";
 
 export const NOTIF_IDS = {
   SESSION: 1001,
@@ -175,8 +176,8 @@ export async function scheduleLocalNotifications(items = []) {
     .filter((n) => n.at.getTime() > now + 5000)
     .map((n) => ({
       id: n.id,
-      title: String(n.title).slice(0, 80),
-      body: String(n.body).slice(0, 180),
+      title: translateMultiline(String(n.title)).slice(0, 80),
+      body: translateMultiline(String(n.body)).slice(0, 180),
       schedule: { at: n.at, allowWhileIdle: true },
       extra: n.extra || { myswym: true },
       sound: "default",
@@ -210,8 +211,8 @@ export async function notifyBadgeEarned({ title, body }) {
     await plugin.schedule({
       notifications: [{
         id: NOTIF_IDS.BADGE,
-        title: String(title).slice(0, 80),
-        body: String(body).slice(0, 180),
+        title: translateMultiline(String(title)).slice(0, 80),
+        body: translateMultiline(String(body)).slice(0, 180),
         schedule: { at, allowWhileIdle: true },
         extra: { kind: "badge" },
         sound: "default",

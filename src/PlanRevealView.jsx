@@ -7,6 +7,7 @@ import { FONT, FONT_DISPLAY } from "./theme/brand.js";
 import { buildPlanRevealModel } from "./lib/plan-reveal.js";
 import { markBootWarm } from "./lib/boot-warm.js";
 import SessionHeroCard from "./SessionHeroCard.jsx";
+import { humanSessionType } from "./lib/home-week-sessions.js";
 
 const BUILD_LINE_MS = 900;
 
@@ -97,7 +98,7 @@ export default function PlanRevealView({
                           height: 28 + ((i * 17) % 36),
                           opacity: 0.35 + (i / Math.max(1, model.barCount)) * 0.65,
                         }}
-                        title={`Semaine ${i + 1}`}
+                        title={t("profile.weekN", { n: i + 1 })}
                       />
                     ))}
                   </div>
@@ -110,7 +111,7 @@ export default function PlanRevealView({
               )}
 
               {model.session && (
-                <SessionHeroCard preview={model.session} kicker={model.session.type} />
+                <SessionHeroCard preview={model.session} kicker={humanSessionType(model.session.type)} />
               )}
 
               <div className="ms-plan-reveal-cta">
