@@ -1948,6 +1948,8 @@
   min-height: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  touch-action: pan-y;
   padding: 16px 16px max(20px, env(safe-area-inset-bottom));
 }
 
@@ -1962,7 +1964,7 @@
 /* Prep séance : plein écran mobile, carte centrée dès 640px */
 @media (max-width: 639px) {
   .ms-soft-overlay--fullscreen {
-    justify-content: stretch;
+    justify-content: flex-start;
     align-items: stretch;
     padding: 0;
     background: transparent !important;
@@ -1970,7 +1972,7 @@
     -webkit-backdrop-filter: none !important;
   }
 
-  .ms-soft-sheet--fullscreen {
+  .ms-soft-sheet.ms-soft-sheet--fullscreen {
     width: 100%;
     max-width: none;
     height: 100dvh;
@@ -1980,6 +1982,9 @@
     border: none;
     box-shadow: none;
     animation: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: linear-gradient(180deg, #e6f0fb 0%, #fff 22%, #fff 100%);
   }
 
   .ms-soft-sheet--fullscreen .ms-soft-sheet-head {
