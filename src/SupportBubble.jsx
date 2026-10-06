@@ -8,6 +8,7 @@ import i18n, { getStoredLanguage } from "./i18n/index.js";
 import { closeSupportLive, fetchSupportThread, sendSupportLive } from "./lib/support-api.js";
 import { getSupportSessionRef } from "./lib/support-context.js";
 import "./theme/support-widget-opaque.css";
+import { appLocale } from "./lib/app-locale.js";
 
 const FONT = "Geist, ui-sans-serif, system-ui, sans-serif";
 const TRIAL_DAYS = 7;
@@ -297,8 +298,8 @@ function formatConvWhen(iso) {
   if (!iso) return "";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
-  const date = d.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
-  const time = d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+  const date = d.toLocaleDateString(appLocale(), { day: "numeric", month: "short" });
+  const time = d.toLocaleTimeString(appLocale(), { hour: "2-digit", minute: "2-digit" });
   return `${date} · ${time}`;
 }
 

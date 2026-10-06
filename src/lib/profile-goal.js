@@ -8,6 +8,7 @@ import { translateSessionText } from "../i18n/session-terms.js";
 import { getSessionDisplayLang } from "../i18n/session-display-lang.js";
 import { intlLocaleFor } from "../i18n/languages.js";
 import { humanSessionType, sessionTypeKey } from "./home-week-sessions.js";
+import { appLocale } from "./app-locale.js";
 
 const FAMILIES = new Set(["progression", "triathlon", "eau_libre", "diplome"]);
 
@@ -55,7 +56,7 @@ export function formatEventDateFr(iso) {
   const [y, m, d] = s.split("-").map(Number);
   const date = new Date(y, m - 1, d);
   if (Number.isNaN(date.getTime())) return "";
-  return date.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+  return date.toLocaleDateString(appLocale(), { day: "numeric", month: "long", year: "numeric" });
 }
 
 export function daysUntilEvent(iso, now = new Date()) {

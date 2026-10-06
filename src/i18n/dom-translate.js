@@ -157,7 +157,7 @@ function applyTree(root) {
   const start = root.nodeType === 9 ? root.documentElement : root;
   if (!start || (start.nodeType === 1 && skipElement(start))) return;
   if (start.nodeType === 1) ATTRS.forEach((a) => start.hasAttribute(a) && applyAttr(start, a));
-  const walker = document.createTreeWalker(start, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT, {
+  const walker = (start.ownerDocument || document).createTreeWalker(start, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT, {
     acceptNode(n) {
       if (n.nodeType === 1) return SKIP_TAGS.has(n.tagName.toUpperCase()) || n.getAttribute("translate") === "no" || n.hasAttribute("data-no-translate") || n.isContentEditable ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT;
       return NodeFilter.FILTER_ACCEPT;
@@ -167,6 +167,12 @@ function applyTree(root) {
     if (n.nodeType === 3) applyText(n);
     else ATTRS.forEach((a) => n.hasAttribute(a) && applyAttr(n, a));
   }
+}
+
+/** Traduit un arbre hors écran (HTML d’impression, fenêtre séparée). */
+export function translateDomTree(root) {
+  if (!root || activeLang === "fr" || !rawDict) return;
+  applyTree(root);
 }
 
 function onMutations(records) {
@@ -215,6 +221,18 @@ function patchSinksUnsafe() {
   if (navigator.clipboard?.writeText) {
     const write = navigator.clipboard.writeText.bind(navigator.clipboard);
     navigator.clipboard.writeText = (text) => write(translateMultiline(text));
+  }
+  // Images de partage (canvas) : le texte dessiné ne passe pas par le DOM.
+  if (typeof CanvasRenderingContext2D !== "undefined") {
+    const proto = CanvasRenderingContext2D.prototype;
+    for (const fn of ["fillText", "strokeText", "measureText"]) {
+      const orig = proto[fn];
+      if (typeof orig === "function") {
+        proto[fn] = function patched(text, ...rest) {
+          return orig.call(this, translateDisplayText(String(text ?? "")), ...rest);
+        };
+      }
+    }
   }
   for (const fn of ["alert", "confirm", "prompt"]) {
     const orig = window[fn]?.bind(window);

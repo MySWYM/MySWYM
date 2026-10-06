@@ -10,6 +10,7 @@ import PyramidBlockViz from "../PyramidBlockViz.jsx";
 import DrillInfoSheet from "./DrillInfoSheet.jsx";
 import { useSessionText } from "../i18n/useSessionText.js";
 import { useTranslation } from "react-i18next";
+import { appLocale } from "../lib/app-locale.js";
 
 function storageKey(sessionKey) {
   return `myswym_pool_mode_${sessionKey || "anon"}`;
@@ -150,7 +151,7 @@ export default function PoolMode({
             {index + 1} / {total}
           </div>
           <div style={{ fontSize: 12, fontWeight: 600, color: G.grey, marginTop: 2 }}>
-            {(beforeMeters + (ex.meters || 0)).toLocaleString("fr-FR")} / {totalMeters.toLocaleString("fr-FR")} m
+            {(beforeMeters + (ex.meters || 0)).toLocaleString(appLocale())} / {totalMeters.toLocaleString(appLocale())} m
           </div>
         </div>
         <div style={{ width: 48 }} />

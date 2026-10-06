@@ -16,8 +16,8 @@
   display: block;
   font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  text-transform: none;
   color: color-mix(in srgb, var(--lp-primary, var(--accent)) 62%, white);
 }
 .ms-session-card-head h2 {
@@ -43,8 +43,8 @@
 .ms-session-card-meta-kicker {
   font-size: 10px;
   font-weight: 750;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  text-transform: none;
   color: var(--lp-muted, var(--text));
   font-family: inherit;
 }
@@ -80,8 +80,8 @@
 .ms-session-card-block strong {
   display: block;
   font-size: 0.8rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  text-transform: none;
   color: color-mix(in srgb, var(--lp-primary, var(--accent)) 62%, white);
 }
 .ms-session-card-block p {

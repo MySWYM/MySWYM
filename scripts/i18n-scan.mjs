@@ -33,15 +33,30 @@ export const IGNORE = [
 const ACCENT = /[àâäéèêëïîôùûüçœÀÂÄÉÈÊËÏÎÔÙÛÜÇŒ]/;
 const WORDS = /\b(connexion|retour|annuler|enregistrer|historique|paramètres|séance|séances|nager|natation|bassin|matériel|objectif|niveau|semaine|semaines|aujourd'hui|continuer|réessayer|fermer|valider|ton|ta|tes|pour|avec|dans|sur|une|des|les|est|pas)\b/i;
 
+/**
+ * Mots qui n’existent qu’en français (vocabulaire du dictionnaire moins celui des
+ * 12 autres langues). Avant, un mot seul sans accent (« Enregistrer », « Annuler »,
+ * « Manuel », « ans ») passait pour un identifiant et n’était jamais signalé.
+ */
+const FR_ONLY_WORDS = new Set(
+  JSON.parse(readFileSync(new URL("./i18n-fr-words.json", import.meta.url), "utf8")),
+);
+const WORD_RE = /[A-Za-zÀ-ÿœŒ']+/g;
+function hasFrenchWord(text) {
+  return (text.match(WORD_RE) || []).some((w) => FR_ONLY_WORDS.has(w.toLowerCase()));
+}
+
 export function looksFrench(s) {
   const text = String(s || "").replace(/\s+/g, " ").trim();
-  if (text.length < 4) return false;
+  if (text.length < 2) return false;
   if (!/[a-zA-ZÀ-ÿ]/.test(text)) return false;
-  if (/^[a-z0-9_.:\-/]+$/i.test(text) && !text.includes(" ")) {
-    return ACCENT.test(text);
-  }
   if (/^(https?:|\/|\.\/|#|--|data:)/.test(text)) return false;
-  return ACCENT.test(text) || (text.includes(" ") && WORDS.test(text));
+  if (/^[a-z0-9_.:\-/]+$/i.test(text) && !text.includes(" ")) {
+    // Identifiant technique (snake_case, chemins, clés) : jamais affiché tel quel.
+    if (/[_.:/]|[a-z][A-Z]/.test(text)) return false;
+    return ACCENT.test(text) || FR_ONLY_WORDS.has(text.toLowerCase());
+  }
+  return ACCENT.test(text) || (text.includes(" ") && WORDS.test(text)) || hasFrenchWord(text);
 }
 
 const NON_VISIBLE_ATTRS = new Set(["className", "style", "key", "id", "href", "src", "type", "name", "role", "rel", "target", "htmlFor", "autoComplete", "inputMode", "data-testid"]);

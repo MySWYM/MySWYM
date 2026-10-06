@@ -262,8 +262,8 @@ code {
   margin: 1.25rem 0 0;
   font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  text-transform: none;
   color: #1aad7a;
 }
 .ms-plan-reveal-meta {
@@ -313,8 +313,8 @@ code {
   margin: 0;
   font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  text-transform: none;
   color: var(--text);
 }
 .ms-plan-reveal-bars-row {

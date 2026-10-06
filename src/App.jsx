@@ -284,6 +284,7 @@ import { buildWeekProjection } from "./lib/week-projection.js";
 import { formatCoachAdaptLine, formatFeedbackToast } from "./lib/adapt-message.js";
 import { buildSessionSharePack } from "./lib/session-share-pack.js";
 import { fetchReferralInvite } from "./lib/referral-share.js";
+import { appLocale } from "./lib/app-locale.js";
 
 const PoolMode = lazy(() => import("./workout/PoolMode.jsx"));
 const SettingsDrawer = lazy(() => import("./SettingsDrawer.jsx"));
@@ -803,7 +804,7 @@ const parseISODate = (iso) => {
 const formatDateFR = (iso) => {
   const date = parseISODate(iso);
   if (!date) return "";
-  return date.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  return date.toLocaleDateString(appLocale(), { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 };
 
 const formatDuration = (mins) => {
@@ -1627,7 +1628,7 @@ const MonAllureCard = ({ profile, pace100, pace50 = null, pace400 = null, isPrem
             {[...profile.paceHistory].filter((h) => h?.pace100).slice(-6).reverse().map((h, i) => {
               const when = h.at ? new Date(h.at) : null;
               const whenLabel = when && Number.isFinite(when.getTime())
-                ? when.toLocaleDateString("fr-FR", { day: "numeric", month: "short" })
+                ? when.toLocaleDateString(appLocale(), { day: "numeric", month: "short" })
                 : (h.week ? appT("profile.weekShort", { n: h.week }) : "-");
               const src = h.source === "strava" ? "Strava" : h.source === "program" ? "Programme" : "Manuel";
               return (

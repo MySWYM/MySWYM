@@ -1058,7 +1058,7 @@ html.myswym-ios .ios-cover-lock {
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.02em;
-  text-transform: uppercase;
+  text-transform: none;
   color: var(--ms-ink-soft, #5a6b7d);
 }
 

@@ -3,6 +3,7 @@
  * Jamais de clé globale (évite de coller le profil d’Arthur sur un compte test).
  */
 import { clearCachedAvatar } from "./avatar-url.js";
+import i18next from "i18next";
 
 const FIRSTNAME_GLOBAL_KEY = "myswym_firstname";
 const AVATAR_GLOBAL_KEY = "myswym_avatar";
@@ -29,7 +30,17 @@ export function writeCachedFirstName(userId, name) {
   } catch { /* quota / private mode */ }
 }
 
-export function resolveDisplayFirstName(user, fallback = "Nageur") {
+/** Prénom par défaut dans la langue de l’app (« Bonsoir, Swimmer » et non « Nageur »). */
+const DEFAULT_SWIMMER = {
+  fr: "Nageur", en: "Swimmer", de: "Schwimmer", es: "Nadador", ja: "スイマー", nl: "Zwemmer",
+  it: "Nuotatore", pt: "Nadador", "pt-BR": "Nadador", sv: "Simmare", da: "Svømmer", nb: "Svømmer", fi: "Uimari",
+};
+function defaultSwimmerName() {
+  const lng = String(i18next.language || "fr");
+  return DEFAULT_SWIMMER[lng] || DEFAULT_SWIMMER[lng.split("-")[0]] || "Nageur";
+}
+
+export function resolveDisplayFirstName(user, fallback = defaultSwimmerName()) {
   const fromMeta = String(user?.user_metadata?.firstname || "").trim();
   if (fromMeta) return fromMeta;
   const cached = readCachedFirstName(user?.id);
