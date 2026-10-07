@@ -365,7 +365,7 @@ export default function AnalyseTab({
                       <div className="ms-type-caption" style={{ marginTop: 8 }}>
                         {periodStats.showPrescribed
                           ? `${periodStats.doneSessions}/${periodStats.plannedSessions} séances`
-                          : `${periodStats.doneSessions} séance${periodStats.doneSessions > 1 ? "s" : ""}`}
+                          : t(periodStats.doneSessions > 1 ? "profile.sessionsMany" : "profile.sessionsOne", { count: periodStats.doneSessions })}
                       </div>
                       {periodStats.deltaLabel ? (
                         <p

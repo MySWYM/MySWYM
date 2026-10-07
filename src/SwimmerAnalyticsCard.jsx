@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { FONT, FONT_DISPLAY } from "./theme/brand.js";
 import { G } from "./theme/palette.js";
+import i18n from "./i18n/index.js";
 import {
   PERIODS,
   PERIOD_META,
@@ -174,7 +175,7 @@ export default function SwimmerAnalyticsCard({ plan, profile }) {
 
       {stats.isEmptyTarget ? (
         <p style={{ fontSize: 13, color: G.grey, lineHeight: 1.45, margin: "8px 0 14px" }}>
-          Objectif : {formatKm(stats.plannedMeters)} · {stats.plannedSessions} séance{stats.plannedSessions > 1 ? "s" : ""}
+          Objectif : {formatKm(stats.plannedMeters)} · {i18n.t(stats.plannedSessions > 1 ? "profile.sessionsMany" : "profile.sessionsOne", { ns: "app", count: stats.plannedSessions })}
         </p>
       ) : stats.deltaLabel ? (
         <p style={{
