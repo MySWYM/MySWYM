@@ -6,7 +6,7 @@ import { fileURLToPath, URL } from 'node:url'
 import { writeFileSync, mkdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { POSTS } from './src/posts.js'
-import { withLocalePrefix } from './src/i18n/locale-path.js'
+import { SITE_LANGS, withLocalePrefix } from './src/i18n/locale-path.js'
 
 const SITE = 'https://www.myswym.app'
 
@@ -25,8 +25,20 @@ const STATIC_PATHS = [
   ['/cgv', 'yearly', '0.3'],
 ]
 
-function locXml(path, changefreq, priority) {
-  return `  <url><loc>${SITE}${path}</loc><changefreq>${changefreq}</changefreq><priority>${priority}</priority></url>`
+/** Une entrée par langue, chacune listant toutes les versions (hreflang + x-default). */
+function localizedXml(bare, langs, changefreq, priority) {
+  const alternates = [
+    ...langs.map((l) => `    <xhtml:link rel="alternate" hreflang="${l}" href="${SITE}${withLocalePrefix(bare, l)}"/>`),
+    `    <xhtml:link rel="alternate" hreflang="x-default" href="${SITE}${withLocalePrefix(bare, 'en')}"/>`,
+  ].join('\n')
+  return langs.map((l) => [
+    '  <url>',
+    `    <loc>${SITE}${withLocalePrefix(bare, l)}</loc>`,
+    alternates,
+    `    <changefreq>${changefreq}</changefreq>`,
+    `    <priority>${priority}</priority>`,
+    '  </url>',
+  ].join('\n'))
 }
 
 async function remoteBlogSlugs() {
@@ -56,16 +68,10 @@ function sitemapPlugin() {
       const slugs = new Set(POSTS.map((p) => p.slug))
       for (const slug of await remoteBlogSlugs()) slugs.add(slug)
       const urls = [
-        ...STATIC_PATHS.flatMap(([path, freq, pri]) => [
-          locXml(withLocalePrefix(path, "en"), freq, pri),
-          locXml(withLocalePrefix(path, "fr"), freq, pri),
-        ]),
-        ...[...slugs].sort().flatMap((slug) => [
-          locXml(withLocalePrefix(`/blog/${slug}`, "en"), "monthly", "0.6"),
-          locXml(withLocalePrefix(`/blog/${slug}`, "fr"), "monthly", "0.6"),
-        ]),
+        ...STATIC_PATHS.flatMap(([path, freq, pri]) => localizedXml(path, SITE_LANGS, freq, pri)),
+        ...[...slugs].sort().flatMap((slug) => localizedXml(`/blog/${slug}`, ['en', 'fr'], 'monthly', '0.6')),
       ]
-      const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join('\n')}\n</urlset>\n`
+      const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n${urls.join('\n')}\n</urlset>\n`
       const outDir = join(dirname(fileURLToPath(import.meta.url)), 'dist')
       mkdirSync(outDir, { recursive: true })
       writeFileSync(join(outDir, 'sitemap.xml'), xml)
