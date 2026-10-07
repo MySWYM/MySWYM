@@ -1502,6 +1502,22 @@ export async function expandLoopWeekSessions(plan, profile, isPremium = false, o
  * @returns {Promise<{ session: object|null, focus: string, week: object, sheetError?: boolean, sheetErrorMessage?: string }>}
  */
 export async function buildProgressionLoopSession(profile, cursor = 0, isPremium = false, opts = {}) {
+  const out = await buildProgressionLoopSessionContent(profile, cursor, isPremium, opts);
+  if (!out?.session || out.session.loopId) return out;
+  const session = { ...out.session, loopId: newLoopSessionId(cursor) };
+  const week = out.week
+    ? { ...out.week, sessions: (out.week.sessions || []).map((s) => (s === out.session ? session : s)) }
+    : out.week;
+  return { ...out, session, week };
+}
+
+/** Identité stable d'une séance boucle (dédoublonnage historique, jamais le titre). */
+function newLoopSessionId(cursor) {
+  const rand = Math.random().toString(36).slice(2, 8);
+  return `${Date.now().toString(36)}-${Math.max(0, Number(cursor) || 0)}-${rand}`;
+}
+
+async function buildProgressionLoopSessionContent(profile, cursor = 0, isPremium = false, opts = {}) {
   const c = Math.max(0, Number(cursor) || 0);
   const ordinalIndex = Math.max(
     0,

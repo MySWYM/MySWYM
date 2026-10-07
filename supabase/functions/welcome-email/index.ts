@@ -61,11 +61,22 @@ Deno.serve(async (req) => {
     const { data: { user: fresh } } = await supabaseAdmin.auth.admin.getUserById(user.id);
     const source = fresh ?? user;
 
-    if (source.app_metadata?.welcome_email_sent === true) {
-      return new Response(JSON.stringify({ ok: true, skipped: true }), {
-        headers: { ...cors, "Content-Type": "application/json" },
-      });
+    const skipped = () => new Response(JSON.stringify({ ok: true, skipped: true }), {
+      headers: { ...cors, "Content-Type": "application/json" },
+    });
+
+    if (source.app_metadata?.welcome_email_sent === true) return skipped();
+
+    // Verrou atomique : deux appels simultanés (retry, 2 appareils) → un seul envoi.
+    const { error: claimError } = await supabaseAdmin
+      .from("email_once")
+      .insert({ user_id: source.id, kind: "welcome" });
+    if (claimError) {
+      if (claimError.code === "23505") return skipped();
+      throw new Error(`email_once: ${claimError.message}`);
     }
+    const releaseClaim = () =>
+      supabaseAdmin.from("email_once").delete().eq("user_id", source.id).eq("kind", "welcome");
 
     const firstName = firstNameFromUser(source);
     const result = await sendEmailViaHttp("welcome", {
@@ -75,6 +86,7 @@ Deno.serve(async (req) => {
     });
 
     if (!result.ok) {
+      await releaseClaim();
       console.error("[welcome-email] send failed:", result.error);
       return new Response(JSON.stringify({ ok: false, error: result.error }), {
         status: 502,
@@ -89,14 +101,16 @@ Deno.serve(async (req) => {
       },
     });
 
-    // Démarre l’automation Resend nurture (J+3 si pas d’abo)
-    try {
-      await sendResendEvent("user.signed_up", source.email!, {
-        firstName: firstName || "Salut",
-        userId: source.id,
-      });
-    } catch (evErr) {
-      console.error("[welcome-email] resend event error:", evErr);
+    // Relances marketing Resend (activation J+1…) : seulement avec l’accord newsletter.
+    if (source.user_metadata?.newsletter_opt_in === true) {
+      try {
+        await sendResendEvent("user.signed_up", source.email!, {
+          firstName: firstName || "Salut",
+          userId: source.id,
+        });
+      } catch (evErr) {
+        console.error("[welcome-email] resend event error:", evErr);
+      }
     }
 
     console.log("[welcome-email] sent:", result.id, "→", source.id.slice(0, 8));

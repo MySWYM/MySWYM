@@ -118,7 +118,7 @@ import {
   EQUIPMENT_IDS,
 } from "./lib/sports-engine/index.js";
 import { createSportsPersistence, rowToSportProfileFields } from "./lib/sports-persistence/index.js";
-import { isSessionResolved, shouldPreserveWeek, mergePreservingProgress, planProgressScore, loopSessionNeedsAdvance } from "./lib/plan-progress-merge.js";
+import { isSessionResolved, shouldPreserveWeek, mergePreservingProgress, planProgressScore, loopSessionNeedsAdvance, loopSessionKey, isInLoopHistory, dedupeLoopHistory } from "./lib/plan-progress-merge.js";
 import { buildGoalPatch } from "./lib/profile-goal.js";
 import {
   blankTaste,
@@ -7759,14 +7759,10 @@ const withLoopGenerationCounters = (plan, premium) => {
   };
 };
 
-const loopSessionKey = (s) => (s ? `${s.title || ""}|${s.distance || ""}` : "");
-
 /** Archive + génère la séance suivante. Idempotent si la séance est déjà dans l'historique. */
 const buildAdvancedLoopPlan = async (entryPlan, entryProfile, archivedSession, isPremium, tasteProfile) => {
   const prevHist = entryPlan.history || [];
-  const alreadyInHist = !!(archivedSession && prevHist.some(
-    (s) => loopSessionKey(s) === loopSessionKey(archivedSession),
-  ));
+  const alreadyInHist = !!(archivedSession && isInLoopHistory(prevHist, archivedSession));
   const history = alreadyInHist || !archivedSession
     ? prevHist
     : [...prevHist, { ...archivedSession, archivedAt: new Date().toISOString() }];
@@ -9091,7 +9087,11 @@ export default function App() {
       });
     }
     const finalize = (existing, existingActive, existingHistory = []) => {
-      let merged = stampPlansAccess(dedupePlans(existing || []), userIsPremium);
+      let merged = stampPlansAccess(dedupePlans(existing || []), userIsPremium).map((e) => {
+        if (!e?.plan?.isSessionLoop || !Array.isArray(e.plan.history)) return e;
+        const history = dedupeLoopHistory(e.plan.history);
+        return history === e.plan.history ? e : { ...e, plan: { ...e.plan, history } };
+      });
       let active = existingActive || null;
       const enforced = enforceSingleActivePlan(merged, active, existingHistory);
       merged = enforced.plans;
@@ -9657,7 +9657,7 @@ export default function App() {
       // Assure history complète avant génération
       let hist = entry.plan.history || [];
       for (const s of sessions) {
-        if (!hist.some((h) => loopSessionKey(h) === loopSessionKey(s))) {
+        if (!isInLoopHistory(hist, s)) {
           hist = [...hist, {
             ...s,
             title: formatLoopSessionTitle(hist.length),
@@ -10305,7 +10305,7 @@ export default function App() {
       i === sessionIndex ? { ...archivedSession } : s
     ));
     const prevHist = entry.plan.history || [];
-    const alreadyInHist = prevHist.some((s) => loopSessionKey(s) === loopSessionKey(archivedSession));
+    const alreadyInHist = isInLoopHistory(prevHist, archivedSession);
     // Historique = compteur global (Séance n°16…), pas le titre local « Séance 1 »
     const archivedForHist = {
       ...archivedSession,
@@ -10357,9 +10357,7 @@ export default function App() {
   const handleAdvanceLoopSession = () => {
     const entry = plans.find((e) => e.id === activePlanId);
     const sessions = entry?.plan?.weeks?.[0]?.sessions || [];
-    const si = sessions.findIndex((s) => isSessionResolved(s) && !((entry.plan.history || []).some(
-      (h) => loopSessionKey(h) === loopSessionKey(s),
-    )));
+    const si = sessions.findIndex((s) => isSessionResolved(s) && !isInLoopHistory(entry.plan.history, s));
     // Prefer last resolved not yet advanced, else first resolved
     let idx = si;
     if (idx < 0) {
