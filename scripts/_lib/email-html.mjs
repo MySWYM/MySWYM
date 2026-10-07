@@ -120,14 +120,14 @@ export function getAutomationTemplates(appUrl = EMAIL_BRAND.site) {
   return [
     {
       name: "automation-trial-j1",
-      subject: "Jour 1 — coche ta première séance",
+      subject: "Jour 1 : coche ta première séance",
       html: emailHtml({
         appUrl: app,
         eyebrow: "Essai · Jour 1",
         title: "Ton coach t’attend dans l’eau",
         paragraphs: [
           "{{{GREETING}}}, ton essai Premium a démarré. La meilleure façon de le sentir : ouvrir ton plan et faire la 1ʳᵉ séance.",
-          "Après la séance, dis-nous si c’était trop facile ou trop dur — ton volume des prochaines semaines s’ajuste.",
+          "Après la séance, dis-nous si c’était trop facile ou trop dur : ton volume des prochaines semaines s’ajuste.",
         ],
         bullets: ["Pas besoin d’être parfait. Juste le prochain coup de bras."],
         ctaLabel: "Voir ma 1ʳᵉ séance",
@@ -135,11 +135,11 @@ export function getAutomationTemplates(appUrl = EMAIL_BRAND.site) {
     },
     {
       name: "automation-trial-j3",
-      subject: "Jour 3 — ton plan s’adapte à toi",
+      subject: "Jour 3 : ton plan s’adapte à toi",
       html: emailHtml({
         appUrl: app,
         eyebrow: "Essai · Jour 3",
-        title: "3 jours — où en es-tu ?",
+        title: "3 jours : où en es-tu ?",
         paragraphs: [
           "{{{GREETING}}}, à mi-parcours de ton essai, le coach MySWYM vaut surtout si tu coches des séances et donnes ton ressenti.",
         ],
@@ -153,7 +153,7 @@ export function getAutomationTemplates(appUrl = EMAIL_BRAND.site) {
     },
     {
       name: "automation-trial-j6",
-      subject: "Demain ton essai se termine — tu gardes le coach ?",
+      subject: "Demain ton essai se termine. Tu gardes le coach ?",
       html: emailHtml({
         appUrl: app,
         eyebrow: "Essai · Jour 6",
@@ -175,21 +175,21 @@ export function getAutomationTemplates(appUrl = EMAIL_BRAND.site) {
     },
     {
       name: "automation-activation-j1",
-      subject: "2 minutes — ta 1ʳᵉ séance MySWYM",
+      subject: "2 minutes pour ta 1ʳᵉ séance MySWYM",
       html: emailHtml({
         appUrl: app,
         eyebrow: "Activation",
         title: "Ouvre l’app, coche ta première séance",
         paragraphs: [
           "{{{GREETING}}}, ton compte est prêt. La suite est simple : ouvre ton plan et lance la séance du jour.",
-          "Pas besoin d’être parfait — juste le prochain coup de bras. On structure le reste.",
+          "Pas besoin d’être parfait, juste le prochain coup de bras. On structure le reste.",
         ],
         ctaLabel: "Voir ma séance",
       }),
     },
     {
       name: "automation-trial-ending",
-      subject: "Dernier jour d’essai — 0 € si tu annules",
+      subject: "Dernier jour d’essai : 0 € si tu annules",
       html: emailHtml({
         appUrl: app,
         eyebrow: "Essai · J-1",
@@ -218,7 +218,7 @@ export function getAutomationTemplates(appUrl = EMAIL_BRAND.site) {
         title: "Envie de reprendre ?",
         paragraphs: [
           "{{{GREETING}}}, ça fait deux semaines. Ton compte MySWYM est toujours là, avec ton historique.",
-          "Quand tu veux, tu reprends un plan adapté — sans repartir de zéro.",
+          "Quand tu veux, tu reprends un plan adapté, sans repartir de zéro.",
         ],
         ctaLabel: "Reprendre Premium",
         ctaUrl: `${app}/tarifs`,
@@ -240,13 +240,13 @@ export function getAutomationTemplates(appUrl = EMAIL_BRAND.site) {
     },
     {
       name: "automation-comeback-session",
-      subject: "3 jours — on reprend sans pression ?",
+      subject: "3 jours : on reprend sans pression ?",
       html: emailHtml({
         appUrl: app,
         eyebrow: "Petit rappel",
         title: "3 jours sans séance",
         paragraphs: [
-          "{{{GREETING}}}, pas de jugement — juste un rappel doux. Ta semaine MySWYM est toujours là.",
+          "{{{GREETING}}}, pas de jugement, juste un rappel doux. Ta semaine MySWYM est toujours là.",
           "Une séance courte suffit pour reprendre le fil.",
         ],
         ctaLabel: "Voir ma séance",
@@ -260,7 +260,7 @@ export function getAutomationTemplates(appUrl = EMAIL_BRAND.site) {
         eyebrow: "Ton plan est prêt",
         title: "Reprends exactement où tu en étais",
         paragraphs: [
-          "{{{GREETING}}}, ton plan MySWYM est toujours là — séances structurées, progression claire, sans te perdre.",
+          "{{{GREETING}}}, ton plan MySWYM est toujours là : séances structurées, progression claire, sans te perdre.",
           `Premium débloque le programme complet, le multi-plans et les départs chronométrés. Essai 7 jours sans carte, puis ${B.pricingLine}.`,
         ],
         ctaLabel: "Reprendre mon plan",
@@ -276,7 +276,7 @@ export function getAutomationTemplates(appUrl = EMAIL_BRAND.site) {
         paragraphs: [
           "{{{GREETING}}}, ton abonnement MySWYM est bien annulé. Merci d’avoir nagé avec nous.",
           "Ton compte reste là : tu pourras reprendre un plan quand tu veux, sans tout recommencer.",
-          "Si c’était un souci technique ou un doute, réponds à cet email — on est là.",
+          "Si c’était un souci technique ou un doute, réponds à cet email, on est là.",
         ],
         ctaLabel: "Rouvrir MySWYM",
       }),
