@@ -87,7 +87,7 @@ function dispatchFromLocalExtra(extra) {
     return;
   }
   if (kind === "session_reminder" || kind === "streak_protect" || kind === "comeback" || kind === "comeback_long") {
-    window.dispatchEvent(new CustomEvent("myswym:open-tab", { detail: { tab: "plan" } }));
+    window.dispatchEvent(new CustomEvent("myswym:open-tab", { detail: { tab: "home" } }));
   }
 }
 
