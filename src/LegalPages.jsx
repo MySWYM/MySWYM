@@ -3,7 +3,9 @@ import Footer from "./Footer.jsx";
 import { isNativeApp } from "./lib/native-platform.js";
 import Breadcrumb from "./marketing/Breadcrumb.jsx";
 import CookiePreferencesPanel from "./marketing/CookiePreferences.jsx";
-import { LocalizedLink } from "./i18n/locale-routing.jsx";
+import { Link } from "react-router-dom";
+import { LocalizedLink, useActiveLocale } from "./i18n/locale-routing.jsx";
+import { withLocalePrefix } from "./i18n/locale-path.js";
 import { usePageSeo, breadcrumbJsonLd } from "./lib/seo.js";
 import { useTranslation } from "react-i18next";
 import { LEGAL_ENTITY } from "./lib/legal-entity.js";
@@ -14,6 +16,32 @@ const host = {
   address: "440 N Barranca Ave #4133, Covina, CA 91723, États-Unis",
   website: "https://vercel.com",
 };
+
+/** Hors français, le texte juridique s’affiche en anglais (seule la VF fait foi). */
+function LegalBody({ children }) {
+  const fr = useActiveLocale() === "fr";
+  return (
+    <div className="ms-legal-card" {...(fr ? {} : { lang: "en", "data-translate-lang": "en" })}>
+      {children}
+    </div>
+  );
+}
+
+function LegalLangNotice({ path }) {
+  const { t } = useTranslation("common");
+  const locale = useActiveLocale();
+  if (locale === "fr") {
+    return <p className="ms-legal-meta ms-legal-meta-last">{t("pages.legalFrNotice")}</p>;
+  }
+  return (
+    <p className="ms-legal-meta ms-legal-meta-last">
+      {t("pages.legalEnNotice")}{" "}
+      <Link className="ms-legal-a" to={withLocalePrefix(path, "fr")} data-no-translate>
+        {t("pages.legalFrLink")}
+      </Link>
+    </p>
+  );
+}
 
 function LegalLayout({ title, subtitle, path, description, children, after }) {
   const { t } = useTranslation("common");
@@ -31,7 +59,8 @@ function LegalLayout({ title, subtitle, path, description, children, after }) {
           <div className="ms-legal-wrap">
             <h1 className="ms-legal-h1">{title}</h1>
             <p className="ms-legal-lead">{subtitle}</p>
-            <div className="ms-legal-card">{children}</div>
+            <LegalLangNotice path={path} />
+            <LegalBody>{children}</LegalBody>
             {after ? <div className="ms-legal-after">{after}</div> : null}
           </div>
         </main>
@@ -45,8 +74,8 @@ function LegalLayout({ title, subtitle, path, description, children, after }) {
           <h1 className="ms-legal-h1">{title}</h1>
           <p className="ms-legal-lead">{subtitle}</p>
           <p className="ms-legal-meta">{t("pages.legalUpdated", { date: LEGAL_ENTITY.lastUpdated })}</p>
-          <p className="ms-legal-meta ms-legal-meta-last">{t("pages.legalFrNotice")}</p>
-          <div className="ms-legal-card">{children}</div>
+          <LegalLangNotice path={path} />
+          <LegalBody>{children}</LegalBody>
           {after ? <div className="ms-legal-after">{after}</div> : null}
         </div>
       </main>

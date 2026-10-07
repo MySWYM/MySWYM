@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { ChevronLeft } from "lucide-react";
 import { supabase } from "./supabase.js";
+import i18n from "./i18n/index.js";
+import { humanSessionType } from "./lib/home-week-sessions.js";
 import { G } from "./theme/palette.js";
 import CoachCard from "./CoachCard.jsx";
 import { AppTabShell } from "./app-shell/index.js";
@@ -182,7 +184,7 @@ export default function PlanTab({
           {iosDrill ? (
             <p className="ms-type-body" style={{ margin: 0 }}>
               {planLabel}
-              {isPremium && currentWeek?.focus ? ` · ${currentWeek.focus}` : ""}
+              {isPremium && currentWeek?.focus ? ` · ${humanSessionType(currentWeek.focus)}` : ""}
             </p>
           ) : (
           <h1 className="ms-type-page">
@@ -190,13 +192,13 @@ export default function PlanTab({
           </h1>
           )}
             <span className="ms-chip" style={{ height: 28, fontSize: 11 }}>
-              Sem. {currentWeekIndex >= 0 ? currentWeekIndex + 1 : plan.weeks.length}/{plan.weeks.length}
+              {i18n.t("profile.weekNof", { ns: "app", n: currentWeekIndex >= 0 ? currentWeekIndex + 1 : plan.weeks.length, total: plan.weeks.length })}
             </span>
           </div>
           {iosDrill ? null : (
           <p className="ms-type-body">
             {planLabel}
-            {isPremium && currentWeek?.focus ? ` · ${currentWeek.focus}` : ""}
+            {isPremium && currentWeek?.focus ? ` · ${humanSessionType(currentWeek.focus)}` : ""}
           </p>
           )}
         </div>
@@ -245,7 +247,7 @@ export default function PlanTab({
                 fontSize: 13, fontWeight: 600, color: G.grey,
               }}
             >
-              {showPastWeeks ? "Masquer les semaines passées" : `Semaines passées (${pastWeeks.length})`}
+              {showPastWeeks ? i18n.t("plan.hidePast", { ns: "app" }) : i18n.t("plan.pastWeeks", { ns: "app", count: pastWeeks.length })}
             </button>
             {showPastWeeks && pastWeeks.map(({ week, i }) => (
               <WeekCard

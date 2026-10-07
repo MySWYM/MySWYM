@@ -118,13 +118,21 @@ import {
   assert.equal(keep.preferredStroke, "brasse");
   assert.equal(keep.targetSessionDistance, 3000);
 
+  // Avancé sans réponse : 4 nages par défaut (« Je maîtrise les 4 nages »).
   const avancé = applyFirstPlanDefaults({
+    level: "performance",
+    pool: 25,
+    sessionsPerWeek: 4,
+  });
+  assert.equal(avancé.swimStyle, "4_nages");
+  // Avancé qui a répondu Non dans Paramètres : on garde le crawl.
+  const avancéCrawl = applyFirstPlanDefaults({
     level: "performance",
     pool: 25,
     sessionsPerWeek: 4,
     swimStyle: "crawl",
   });
-  assert.equal(avancé.swimStyle, "4_nages");
+  assert.equal(avancéCrawl.swimStyle, "crawl");
 }
 
 {

@@ -44,6 +44,7 @@ Deno.serve(async (req) => {
     if (linkedUserId && linkedUserId !== user.id) {
       return new Response(JSON.stringify({
         error: "Cet achat Apple est déjà lié à un autre compte MySWYM.",
+        code: "apple_tx_other_account",
       }), {
         status: 409,
         headers: { ...cors, "Content-Type": "application/json" },

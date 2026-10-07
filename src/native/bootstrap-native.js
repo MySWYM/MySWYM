@@ -14,6 +14,7 @@ import {
   completeNativeOAuthFromUrl,
   emitNativeOAuthCompleted,
   isNativeOAuthCallback,
+  parseOAuthCallbackUrl,
 } from "../lib/native-oauth.js";
 import { markPasswordRecoveryIntent } from "../lib/password-recovery-intent.js";
 import {
@@ -23,6 +24,7 @@ import {
   isNativeStravaCallback,
 } from "../lib/native-strava.js";
 import { installProtectMediaAssets } from "../lib/protect-media-assets.js";
+import { installAppleTransactionUpdates } from "../lib/native-iap.js";
 import "./native-shell.css";
 
 export { isNativeApp, isNativeIos };
@@ -33,6 +35,7 @@ export function prepareNativeRuntime() {
   installNativeApiFetch();
   installNativeBillingBlock();
   installNativeOAuthReturn();
+  installAppleTransactionUpdates();
   installNativeInAppLinks();
   installProtectMediaAssets();
   ensureNativeAppLocation();
@@ -47,6 +50,8 @@ export function prepareNativeRuntime() {
 async function handleNativeOAuthUrl(url) {
   if (!isNativeOAuthCallback(url)) return false;
   try {
+    // Avant l’échange : onAuthStateChange(SIGNED_IN) doit déjà voir l’intention reset.
+    if (parseOAuthCallbackUrl(url).isPasswordRecovery) markPasswordRecoveryIntent();
     const data = await completeNativeOAuthFromUrl(supabase, url);
     if (data?.isPasswordRecovery) {
       markPasswordRecoveryIntent();
@@ -95,7 +100,21 @@ async function handleNativeStravaUrl(url) {
   }
 }
 
+const seenReturnUrls = new Set();
+
+function claimReturnUrl(url) {
+  const key = String(url || "");
+  if (!key) return false;
+  if (seenReturnUrls.has(key)) {
+    console.warn("[native-return] url déjà traitée");
+    return false;
+  }
+  seenReturnUrls.add(key);
+  return true;
+}
+
 async function handleNativeReturnUrl(url) {
+  if (!claimReturnUrl(url)) return;
   if (await handleNativeStravaUrl(url)) return;
   await handleNativeOAuthUrl(url);
 }

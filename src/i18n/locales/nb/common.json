@@ -91,6 +91,8 @@
     "thanksAlt": "Glad MySWYM-oter som skvetter i vannet",
     "legalUpdated": "Sist oppdatert: {{date}}",
     "legalFrNotice": "Disse juridiske dokumentene er utstedt på fransk (fransk selskap).",
+    "legalEnNotice": "Dette dokumentet er tilgjengelig på engelsk og fransk. Bare den franske versjonen er juridisk bindende.",
+    "legalFrLink": "Les den franske versjonen",
     "blogMetaTitle": "MySWYM-blogg | Svømmetips",
     "blogMetaDesc": "Svømmeartikler: teknikk, planer, åpent vann og bassengord, uten unødvendig sjargong.",
     "blogHeading": "Svømmetips",

@@ -5,7 +5,8 @@
 import { registerPlugin } from "@capacitor/core";
 import { isNativeIos } from "./native-platform.js";
 
-const AppBadge = registerPlugin("AppBadge");
+/** Instance unique (registerPlugin deux fois = avertissement Capacitor). */
+export const AppBadge = registerPlugin("AppBadge");
 
 export async function setAppIconBadge(count = 1) {
   if (!isNativeIos()) return { count: 0 };

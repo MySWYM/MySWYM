@@ -20,10 +20,10 @@ export default function BottomNav({ active, onChange, newBadge }) {
         { id: "analyse", Icon: ChartNoAxesCombined, label: t("nav.analyse") },
         { id: "history", Icon: History, label: t("nav.history") },
       ];
-  const centerSize = ios ? 40 : 48;
-  const sideW = ios ? 36 : 44;
-  const sideH = ios ? 32 : 36;
-  const iconSize = ios ? 20 : 22;
+  const centerSize = ios ? 44 : 48;
+  const sideW = ios ? 44 : 44;
+  const sideH = ios ? 44 : 36;
+  const iconSize = ios ? 24 : 22;
 
   return (
     <div className="bottom-nav">
@@ -34,8 +34,10 @@ export default function BottomNav({ active, onChange, newBadge }) {
       >
         {tabs.map((tab) => {
           const isActive = active === tab.id;
-          const centerOn = tab.center && isActive;
-          const iconColor = centerOn ? G.white : isActive ? G.blue : G.grey;
+          const centerOn = tab.center && isActive && !ios;
+          const iconColor = ios
+            ? (isActive ? G.blue : G.greyMid)
+            : (centerOn ? G.white : isActive ? G.blue : G.grey);
           return (
             <button
               key={tab.id}
@@ -48,7 +50,7 @@ export default function BottomNav({ active, onChange, newBadge }) {
               aria-label={tab.label}
               className={[
                 tab.center ? "ms-nav-center" : "",
-                isActive ? "is-active" : "",
+                isActive && !ios ? "is-active" : "",
               ].filter(Boolean).join(" ") || undefined}
               style={{
                 flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
@@ -58,23 +60,25 @@ export default function BottomNav({ active, onChange, newBadge }) {
               }}
             >
               <span
-                className={isActive ? "ms-nav-active-halo" : undefined}
+                className={!ios && isActive ? "ms-nav-active-halo" : undefined}
                 style={{
                   position: "relative",
                   display: "inline-flex",
                   alignItems: "center",
                   justifyContent: "center",
+                  boxSizing: "border-box",
                   width: tab.center ? centerSize : sideW,
                   height: tab.center ? centerSize : sideH,
                   borderRadius: 999,
-                  background: centerOn ? G.blue : isActive ? "rgba(0, 107, 253, 0.12)" : "transparent",
-                  transition: "background 0.2s ease",
+                  border: ios ? `2.5px solid ${isActive ? G.blue : "transparent"}` : "none",
+                  background: centerOn ? G.blue : !ios && isActive ? "rgba(0, 107, 253, 0.12)" : "transparent",
+                  transition: "background 0.2s ease, border-color 0.2s ease",
                 }}
               >
                 {tab.brand ? (
-                  <BrandLogo variant="mark" height={ios ? 20 : 22} onDark={centerOn} alt="" />
+                  <BrandLogo variant="mark" height={ios ? 24 : 22} onDark={centerOn} alt="" />
                 ) : (
-                  <tab.Icon size={iconSize} color={iconColor} strokeWidth={isActive ? 2.2 : 1.6} style={{ transition: "all 0.2s" }} />
+                  <tab.Icon size={iconSize} color={iconColor} strokeWidth={ios ? 2.5 : (isActive ? 2.2 : 1.6)} style={{ transition: "all 0.2s" }} />
                 )}
                 {tab.id === "analyse" && newBadge && (
                   <div style={{ position: "absolute", top: 2, right: 2, width: 8, height: 8, borderRadius: "50%", background: G.coral }} />

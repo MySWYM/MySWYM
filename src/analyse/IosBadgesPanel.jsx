@@ -9,7 +9,7 @@ import {
   BADGE_FILTERS,
 } from "../lib/badge-progress.js";
 import { resolveAvatarUrl } from "../lib/avatar.js";
-import { resolveDisplayFirstName } from "../lib/identity-cache.js";
+import { resolveDisplayFirstName, avatarInitials } from "../lib/identity-cache.js";
 import { playUiSound } from "../lib/ui-sounds.js";
 import { G } from "../theme/palette.js";
 
@@ -29,7 +29,7 @@ export default function IosBadgesPanel({ stats, user }) {
   const NextIcon = next?.def?.icon;
   const avatarUrl = resolveAvatarUrl(user);
   const first = resolveDisplayFirstName(user);
-  const initials = String(first || "M").slice(0, 2).toUpperCase();
+  const initials = avatarInitials(first, "M");
   const fillPct = summary.total ? Math.round((summary.earned / summary.total) * 100) : 0;
 
   return (

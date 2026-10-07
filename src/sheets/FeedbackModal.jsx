@@ -1,9 +1,11 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { G } from "../theme/palette.js";
 import { SMILEY_OPTS } from "./feedback-faces.jsx";
 import SheetCardShell from "./SheetCardShell.jsx";
 
 export default function FeedbackModal({ weekNumber, onSubmit, onSkip, isPremium }) {
+  const { t } = useTranslation("app");
   const [selected, setSelected] = useState(null);
 
   const confirm = (id) => {
@@ -17,7 +19,7 @@ export default function FeedbackModal({ weekNumber, onSubmit, onSkip, isPremium 
   return (
     <SheetCardShell onClose={onSkip}>
         <p style={{ fontSize: 11, fontWeight: 700, color: G.grey, letterSpacing: 2, textTransform: "uppercase", textAlign: "center", marginBottom: 8 }}>
-          Semaine {weekNumber} terminée
+          {t("profile.weekDone", { n: weekNumber })}
         </p>
         <h3 style={{ fontFamily: "Geist, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif", fontSize: 24, fontWeight: 700, letterSpacing: "-0.02em", color: G.ink, textAlign: "center", marginBottom: 6 }}>
           Comment tu t'es senti·e ?

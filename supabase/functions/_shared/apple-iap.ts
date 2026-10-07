@@ -87,6 +87,15 @@ export async function findUserIdByOriginalTx(
   return (data?.user_id as string | undefined) ?? null;
 }
 
+const APP_ACCOUNT_UUID =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** appAccountToken StoreKit = id utilisateur Supabase, posé à l'achat. */
+export function userIdFromAppAccountToken(payload: Record<string, unknown>) {
+  const raw = String(payload.appAccountToken || "").trim();
+  return APP_ACCOUNT_UUID.test(raw) ? raw : null;
+}
+
 export async function persistAppleTransaction(opts: {
   supabaseAdmin: ReturnType<typeof createClient>;
   user: AuthUser;

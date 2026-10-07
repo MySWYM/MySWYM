@@ -53,15 +53,52 @@ export function clearNatationSheetCache() {
   inflight = null;
 }
 
-async function fetchSheetCsv(sheetName) {
-  const q = new URLSearchParams({ sheet: sheetName });
-  const res = await fetch(`/api/natation-sheet?${q}`);
-  if (!res.ok) {
-    const err = await res.text().catch(() => "");
-    throw new Error(`natation-sheet ${sheetName}: ${res.status} ${err.slice(0, 120)}`);
+const STORE_PREFIX = "myswym_sheet_csv_v1:";
+
+function readStoredCsv(sheetName) {
+  try {
+    const raw = localStorage.getItem(STORE_PREFIX + sheetName);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return typeof parsed?.csv === "string" && parsed.csv ? parsed.csv : null;
+  } catch {
+    return null;
   }
-  const data = await res.json();
-  return String(data.csv || "");
+}
+
+function writeStoredCsv(sheetName, csv) {
+  try {
+    localStorage.setItem(STORE_PREFIX + sheetName, JSON.stringify({ at: Date.now(), csv }));
+  } catch {
+    /* quota / mode privé : on garde seulement le cache mémoire */
+  }
+}
+
+/**
+ * CSV d’un onglet. Réseau d’abord ; si le réseau ou l’API tombe (piscine sans
+ * réseau, Vercel/Google en panne), on retombe sur la dernière copie connue de
+ * l’appareil au lieu de bloquer la génération du plan.
+ */
+async function fetchSheetCsv(sheetName) {
+  try {
+    const q = new URLSearchParams({ sheet: sheetName });
+    const res = await fetch(`/api/natation-sheet?${q}`);
+    if (!res.ok) {
+      const err = await res.text().catch(() => "");
+      throw new Error(`natation-sheet ${sheetName}: ${res.status} ${err.slice(0, 120)}`);
+    }
+    const data = await res.json();
+    const csv = String(data.csv || "");
+    if (csv) writeStoredCsv(sheetName, csv);
+    return csv;
+  } catch (err) {
+    const stored = readStoredCsv(sheetName);
+    if (stored) {
+      console.warn("[natation-sheet] hors ligne, copie locale utilisée :", sheetName);
+      return stored;
+    }
+    throw err;
+  }
 }
 
 /**
@@ -77,14 +114,17 @@ export async function loadNatationCatalogue(familyIds = [...SHEET_SOFT_FAMILIES]
   if (inflight) return inflight;
 
   inflight = (async () => {
-    const eduCsv = await fetchSheetCsv(EDUCATIFS_SHEET);
+    // Requêtes en parallèle (avant : 1 + N appels l’un après l’autre → génération lente).
+    const ids = familyIds.filter((id) => SHEET_FAMILIES.includes(id));
+    const [eduCsv, ...familyCsvs] = await Promise.all([
+      fetchSheetCsv(EDUCATIFS_SHEET),
+      ...ids.map((id) => fetchSheetCsv(id)),
+    ]);
     const educatifs = parseEducatifsCsv(eduCsv);
     const sessionsByFamily = { ...(cache?.sessionsByFamily || {}) };
-    for (const id of familyIds) {
-      if (!SHEET_FAMILIES.includes(id)) continue;
-      const csv = await fetchSheetCsv(id);
-      sessionsByFamily[id] = parseSessionsCsv(csv, { hasPhase: isEventFamilyId(id) });
-    }
+    ids.forEach((id, i) => {
+      sessionsByFamily[id] = parseSessionsCsv(familyCsvs[i], { hasPhase: isEventFamilyId(id) });
+    });
     cache = { at: Date.now(), educatifs, sessionsByFamily };
     inflight = null;
     return cache;

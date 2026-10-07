@@ -18,7 +18,7 @@ import { hasPerformanceConsent } from "../lib/cookie-consent.js";
 import VersionGate from "../VersionGate.jsx";
 import { RouteFallback, RoutedErrorBoundary } from "./RoutedBoot.jsx";
 import { LocaleSync } from "../i18n/locale-routing.jsx";
-import { localeFromPathname, withLocalePrefix } from "../i18n/locale-path.js";
+import { localeFromPathname, URL_PREFIX_BY_LANG, withLocalePrefix } from "../i18n/locale-path.js";
 import { isNativeApp, isNativeMarketingPath } from "../lib/native-platform.js";
 import {
   markNativeQuizStarted,
@@ -146,6 +146,49 @@ function enMarketingRoutes() {
     </>
   );
 }
+
+/** `/es`, `/de`… : mêmes pages que l’anglais (slugs EN), slugs FR redirigés dans la même langue. */
+function prefixedMarketingRoutes(prefix) {
+  const to = (enSlug) => `${prefix}${enSlug}`;
+  return (
+    <>
+      <Route index element={<Landing />} />
+      <Route path="homepage" element={<Navigate to={prefix} replace />} />
+      <Route path="how-it-works" element={<HowItWorksPage />} />
+      <Route path="faq" element={<FaqPage />} />
+      <Route path="reviews" element={<ReviewsPage />} />
+      <Route path="contact" element={<ContactPage />} />
+      <Route path="pricing" element={<TarifsPage />} />
+      <Route path="thanks" element={<MerciPage />} />
+      <Route path="go" element={<GoStoreRedirect />} />
+      <Route path="blog" element={<Blog />} />
+      <Route path="blog/:slug" element={<BlogPost />} />
+      <Route path="legal-notice" element={<MentionsLegalesPage />} />
+      <Route path="privacy" element={<PolitiqueConfidentialitePage />} />
+      <Route path="cookies" element={<PolitiqueCookiesPage />} />
+      <Route path="terms" element={<CguPage />} />
+      <Route path="terms-of-sale" element={<CgvPage />} />
+      <Route path="tarifs" element={<Navigate to={to("/pricing")} replace />} />
+      <Route path="comment-ca-marche" element={<Navigate to={to("/how-it-works")} replace />} />
+      <Route path="mentions-legales" element={<Navigate to={to("/legal-notice")} replace />} />
+      <Route path="politique-confidentialite" element={<Navigate to={to("/privacy")} replace />} />
+      <Route path="politique-cookies" element={<Navigate to={to("/cookies")} replace />} />
+      <Route path="cgu" element={<Navigate to={to("/terms")} replace />} />
+      <Route path="cgv" element={<Navigate to={to("/terms-of-sale")} replace />} />
+      <Route path="merci" element={<Navigate to={to("/thanks")} replace />} />
+      <Route path="avis" element={<Navigate to={to("/reviews")} replace />} />
+      <Route path="app" element={<Navigate to="/app" replace />} />
+      <Route path="app/*" element={<Navigate to="/app" replace />} />
+      <Route path="connexion" element={<Navigate to="/connexion" replace />} />
+      <Route path="inscription" element={<Navigate to="/inscription" replace />} />
+      <Route path="*" element={<NotFoundPage />} />
+    </>
+  );
+}
+
+const EXTRA_SITE_PREFIXES = Object.entries(URL_PREFIX_BY_LANG)
+  .filter(([lang]) => lang !== "fr")
+  .map(([, prefix]) => prefix);
 
 function LegacyQueryRedirects() {
   const location = useLocation();
@@ -296,6 +339,9 @@ export default function AppTree() {
               <Route path="/en" element={<Navigate to="/" replace />} />
               <Route path="/en/*" element={<LegacyEnRedirect />} />
               <Route path="/fr">{frMarketingRoutes()}</Route>
+              {EXTRA_SITE_PREFIXES.map((prefix) => (
+                <Route key={prefix} path={prefix}>{prefixedMarketingRoutes(prefix)}</Route>
+              ))}
               {enMarketingRoutes()}
                 </>
               )}

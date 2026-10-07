@@ -10,6 +10,7 @@ import {
   parseFourNagesMode,
   stripFourNagesModeToken,
 } from "./natation-sheet/parse.js";
+import { appLocale } from "./app-locale.js";
 
 const REST_CHUNK_RE = /^(R\d+["']?|repos\s+\d+\s*(?:s|sec|min)?|D(?:toutes les )?\d+['′]\d+"|D\d+")$/i;
 const SWIM_SET_PART_RE = /^(?:\d+\s*[x×]\s*\d+\s*m|\d+\s*m)\b/i;
@@ -1183,7 +1184,7 @@ export function buildWorkoutView(session = {}) {
         ...SECTION_META[id],
         exercises: list,
         meters,
-        metersLabel: meters > 0 ? `${meters.toLocaleString("fr-FR")} m` : null,
+        metersLabel: meters > 0 ? `${meters.toLocaleString(appLocale())} m` : null,
       };
     })
     .filter((s) => s.exercises.length > 0);
@@ -1196,7 +1197,7 @@ export function buildWorkoutView(session = {}) {
       label: "Séance",
       exercises: numbered,
       meters,
-      metersLabel: meters > 0 ? `${meters.toLocaleString("fr-FR")} m` : null,
+      metersLabel: meters > 0 ? `${meters.toLocaleString(appLocale())} m` : null,
     });
   }
 
@@ -1204,7 +1205,7 @@ export function buildWorkoutView(session = {}) {
     header: {
       title: safe.title || "Séance",
       type: safe.type || null,
-      distanceLabel: totalMeters ? `${totalMeters.toLocaleString("fr-FR")} m` : (safe.distance || null),
+      distanceLabel: totalMeters ? `${totalMeters.toLocaleString(appLocale())} m` : (safe.distance || null),
       durationLabel: formatDurationShort(safe.duration),
       intensityZone: intensity.zone,
       intensityCue: intensity.cue,

@@ -261,7 +261,7 @@
     "loginTitle": "Entrar",
     "registerTitle": "Criar uma conta",
     "resetTitle": "Esqueci a senha",
-    "loginLead": "Entre com Apple, Google ou seu e-mail.",
+    "loginLead": "Entre com Apple, Google, Facebook ou seu e-mail.",
     "registerLead": "Teste de 7 dias, sem cartão. Depois seus treinos pausam.",
     "registerReferral": "Código de indicação {{code}} : 20% na sua primeira cobrança Premium.",
     "resetLead": "Informe o e-mail da sua conta. Você receberá um link seguro para escolher uma nova senha.",
@@ -279,6 +279,7 @@
     "newsletter": "Aceito receber novidades da MySWYM por e-mail.",
     "trial": "Teste de 7 dias ao criar a conta, sem cartão. Depois seus treinos pausam até você assinar.",
     "google": "Continuar com o Google",
+    "facebook": "Continuar com o Facebook",
     "apple": "Continuar com a Apple",
     "comingSoon": "Em breve",
     "redirecting": "Redirecionando…",
@@ -296,5 +297,14 @@
     "socialOff": "Este modo de entrada ainda não está ativo no servidor. Tente e-mail / senha.",
     "socialAppleConfig": "A entrada com a Apple não está configurada direito (Supabase). Tente e-mail / senha.",
     "socialFail": "O login social não está disponível."
+  },
+  "saveAccount": {
+    "eyebrow": "Seu treino",
+    "title": "Guarde este treino",
+    "lead": "Crie sua conta para ter ele em todos os aparelhos. Seu teste de 7 dias já começou.",
+    "apple": "Continuar com a Apple",
+    "email": "Continuar com e-mail",
+    "later": "Mais tarde",
+    "error": "Não foi possível criar a conta. Tente de novo."
   }
 }

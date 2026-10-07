@@ -97,7 +97,7 @@ html.myswym-ios .native-auth-legal.is-native .native-auth-check input[type="chec
 }
 
 html.myswym-ios {
-  --bottom-nav-h: 52px;
+  --bottom-nav-h: 60px;
 }
 
 html.myswym-ios .bottom-nav {
@@ -132,9 +132,8 @@ html.myswym-ios .myswym-native-onboarding [style*="padding-top: 84px"] {
   padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px)) !important;
 }
 
-html.myswym-ios .myswym-native-onboarding [style*="padding-top: 84px"] > div:first-child {
-  display: none;
-}
+/* Le wordmark n’est plus rendu en natif (App.jsx) : ne pas masquer le 1er enfant ici,
+   ce serait maintenant l’OnboardingWizard. */
 
 html.myswym-ios .myswym-native-onboarding img[alt="MySWYM"] {
   display: none;
@@ -300,6 +299,33 @@ html.myswym-ios .myswym-native-onboarding .ms-freq-gauge {
 
 html.myswym-ios .is-funnel .ms-app-immersive-bg {
   display: none;
+}
+
+.ms-lang-flag-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid rgba(15, 27, 45, 0.1);
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(15, 27, 45, 0.12);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.ms-lang-flag-btn .ms-lang-flag {
+  border-radius: 50%;
+  overflow: hidden;
+}
+
+.native-welcome-lang {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  justify-content: flex-end;
 }
 
 .native-welcome-fork {
@@ -586,9 +612,26 @@ html.myswym-ios .ios-premium-bar {
   justify-content: center;
   gap: 8px;
 }
+/* Essai en cours : pastille discrète (comme sur l’Accueil), pas le plus gros
+   bouton de l’écran. Le bouton bleu plein revient hors essai (« Passer Premium »). */
 html.myswym-ios .ios-premium-bar.is-trial {
-  background: linear-gradient(135deg, #006bfd 0%, #3b8cff 100%);
-  color: #fff;
+  width: auto;
+  min-height: 44px;
+  padding: 8px 16px;
+  align-self: flex-start;
+  background: rgba(255, 255, 255, 0.92);
+  color: #0F1B2D;
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  box-shadow: 0 6px 18px rgba(50, 110, 180, 0.12);
+}
+html.myswym-ios .ios-premium-bar.is-trial .ios-premium-bar-label {
+  flex-direction: row;
+  gap: 8px;
+  align-items: baseline;
+}
+html.myswym-ios .ios-premium-bar.is-trial .ios-premium-bar-sub {
+  color: #4a5d72;
+  opacity: 1;
 }
 html.myswym-ios .ios-premium-bar-label {
   display: inline-flex;
@@ -602,4 +645,37 @@ html.myswym-ios .ios-premium-bar-sub {
   font-size: 12px;
   font-weight: 600;
   opacity: 0.88;
+}
+
+/* DESIGN.md : pas de libellés en MAJUSCULES espacées dans l’app (sentence case).
+   Couvre les styles inline `textTransform: "uppercase"` (sheets en portal inclus). */
+html.myswym-native [style*="text-transform: uppercase"],
+.myswym-app [style*="text-transform: uppercase"] {
+  text-transform: none !important;
+  letter-spacing: 0.01em !important;
+}
+
+/* Exemples (0:42, 1:45, 7:30…) : clairement des exemples, pas des valeurs saisies. */
+html.myswym-native input::placeholder,
+html.myswym-native textarea::placeholder {
+  color: rgba(74, 93, 114, 0.34);
+  font-weight: 500;
+  opacity: 1;
+}
+
+/* Bouton principal du parcours bleu (Commencer, Continuer, Générer mon plan) :
+   blanc plein, texte bleu. Avant : même verre bleu clair que « Se connecter »,
+   contraste faible et aucune hiérarchie. Le secondaire garde le verre. */
+.native-welcome-cta.is-primary {
+  background: #fff;
+  color: #006bfd;
+  border-color: #fff;
+}
+.native-welcome-cta.is-primary .native-welcome-cta-sheen {
+  display: none;
+}
+html.myswym-ios .myswym-native-onboarding .ms-app-btn:not(:disabled) {
+  background: #fff !important;
+  color: #006bfd !important;
+  border-color: #fff;
 }

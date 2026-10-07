@@ -20,8 +20,12 @@ Binary : iPhone only (`TARGETED_DEVICE_FAMILY = 1`). Pas de screenshots iPad.
 | Politique de confidentialité | https://www.myswym.app/politique-confidentialite |
 | CGU | https://www.myswym.app/cgu |
 | CGV | https://www.myswym.app/cgv |
-| Copyright | 2026 Arthur Noël |
+| Copyright | 2026 A.Natation |
 | Contact review | Arthur Noël · contact@myswym.app |
+
+### Coller dans ASC → Version 1.0.1 (FR)
+
+Ordre : Texte promotionnel → Description → Nouveautés → Mots-clés (déjà OK) → Enregistrer.
 
 Mots-clés (100 car. max, 93 ici) :
 
@@ -29,10 +33,10 @@ Mots-clés (100 car. max, 93 ici) :
 natation,nage,triathlon,entrainement,coach,piscine,seance,plan,eau libre,crawl,nageur,ironman
 ```
 
-Texte promotionnel (optionnel, 170 car.) :
+Texte promotionnel (optionnel, 170 car. max, ~131 ici) :
 
 ```
-Objectif, niveau, fréquence : MySWYM compose tes séances de natation. Essai 7 jours sans carte, puis 6,99 €/mois ou 59,99 €/an via l’App Store.
+Objectif, niveau, fréquence : MySWYM compose tes séances. Essai 7 jours sans carte, puis 6,99 €/mois ou 59,99 €/an via l'App Store.
 ```
 
 ## 2. Description (FR)
@@ -43,26 +47,42 @@ MySWYM compose tes séances de natation. Objectif, niveau, fréquence : tu as un
 Pour qui
 Nager en piscine, triathlon, eau libre, prépa diplôme. Du débutant au nageur confirmé.
 
-Ce que tu trouves dans l’app
+Ce que tu trouves dans l'app
 • Des séances claires : échauffement, corps, retour au calme, plus un conseil coach
-• Un plan qui s’adapte après ton feedback
+• Un plan qui s'adapte après ton feedback
 • Tes allures si tu connais ton T100
+• Notifications utiles (séance, série, binômes, support), réglées depuis Profil
+• Appareils connectés : gérer iPhone et sessions web
 • Une photo de profil, tes stats, et Buddy pour trouver un nageur près de toi (optionnel)
 
 Essai et abonnement
-7 jours d’essai offerts à la création du compte, sans carte. Ensuite les séances se mettent en pause jusqu’à un abonnement.
+7 jours d'essai offerts à la création du compte, sans carte. Ensuite les séances se mettent en pause jusqu'à un abonnement.
 
-Sur l’iPhone : 6,99 €/mois sans engagement, ou 59,99 €/an. Paiement et résiliation via ton Apple ID (Réglages → Apple ID → Abonnements). L’accès reste actif jusqu’à la fin de la période déjà payée.
+Sur l'iPhone : 6,99 €/mois sans engagement, ou 59,99 €/an. Paiement et résiliation via ton Apple ID (Réglages → Apple ID → Abonnements). L'accès reste actif jusqu'à la fin de la période déjà payée.
 
-MySWYM n’est pas un dispositif médical et ne pose aucun diagnostic. Entraîne-toi selon ta forme. Eau libre : ne nage jamais seul.
+MySWYM n'est pas un dispositif médical et ne pose aucun diagnostic. Entraîne-toi selon ta forme. Eau libre : ne nage jamais seul.
 
 Compte réservé aux personnes de 18 ans révolus.
 
-Conditions d’utilisation : https://www.myswym.app/cgu
+Conditions d'utilisation : https://www.myswym.app/cgu
 Politique de confidentialité : https://www.myswym.app/politique-confidentialite
 ```
 
-Nouveautés (v1.0) :
+Nouveautés (v1.0.1) : coller dans « Nouveautés de cette version »
+
+```
+MySWYM 1.0.1
+
+• Notifications alignées avec Réglages iPhone : Activer, Ouvrir Réglages si bloqué, choix séance / série / badges / binômes / support / actus
+• Appareils connectés : liste iPhone et web, déconnexion d'un appareil ou de tous
+• Navigation plus claire, zoom page désactivé
+• Export montre (Garmin), stickers dans Photos, reset mot de passe dans l'app
+• Corrections séances, essai 7 jours et paywall App Store (prix Apple, pas Stripe web)
+
+Bonne nage.
+```
+
+Nouveautés (v1.0, archive) :
 
 ```
 Première version iPhone : plan, séances, essai 7 jours sans carte, et abonnement App Store.
@@ -80,7 +100,7 @@ Ordre suggéré :
 2. Détail de séance (échauffement / corps / retour)
 3. Semaine / plan
 4. Analyse ou historique
-5. Paywall IAP (prix 6,99 € / 59,99 € visibles)
+5. Paywall IAP (prix 6,99 EUR / 59,99 EUR visibles)
 6. Profil (photo optionnelle)
 
 Pas d’iPad. Pas d’admin. Pas de simulateur si le rendu glass / safe area diffère.
@@ -164,7 +184,11 @@ Account deletion: Profile → Settings → My data → Delete my account. Deleti
 
 Password reset: the email link opens the iOS app via myswym://auth/callback?reset=1 (same scheme as Sign in with Apple / Google). If Safari opens instead, sign in again in the app and use Settings → password reset.
 
-Notifications are optional: Profile → Settings → Notifications (switch).
+Notifications are optional: Profile → Settings → Notifications.
+If iOS Settings shows Notifications = Off for MySWYM, the app shows Open Settings (no fake enabled state).
+The system permission prompt is requested after the first completed session on this iPhone.
+
+Connected devices: Profile → Settings → My data → Connected devices (list / revoke).
 
 Health: optional. Apple Health reads swimming workouts and heart rate only. It does not write health data. Skip it if you prefer. Buddy matching is optional.
 

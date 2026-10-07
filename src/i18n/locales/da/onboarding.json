@@ -261,7 +261,7 @@
     "loginTitle": "Log ind",
     "registerTitle": "Opret en konto",
     "resetTitle": "Glemt adgangskode",
-    "loginLead": "Log ind med Apple, Google eller din e-mail.",
+    "loginLead": "Log ind med Apple, Google, Facebook eller din e-mail.",
     "registerLead": "7 dages prøve, intet kort. Derefter sættes dine pas på pause.",
     "registerReferral": "Henvisningskode {{code}} : 20% rabat på din første Premium-faktura.",
     "resetLead": "Angiv e-mailen til din konto. Du får et sikkert link til at vælge en ny adgangskode.",
@@ -279,6 +279,7 @@
     "newsletter": "Jeg vil gerne modtage nyheder fra MySWYM på e-mail.",
     "trial": "7 dages prøve ved oprettelse af konto, intet kort. Derefter sættes dine pas på pause, indtil du abonnerer.",
     "google": "Fortsæt med Google",
+    "facebook": "Fortsæt med Facebook",
     "apple": "Fortsæt med Apple",
     "comingSoon": "Kommer snart",
     "redirecting": "Omdirigerer…",
@@ -296,5 +297,14 @@
     "socialOff": "Den her loginmetode er ikke slået til på serveren endnu. Prøv e-mail / adgangskode.",
     "socialAppleConfig": "Apple-login er ikke konfigureret korrekt (Supabase). Prøv e-mail / adgangskode.",
     "socialFail": "Socialt login er ikke tilgængeligt."
+  },
+  "saveAccount": {
+    "eyebrow": "Dit pas",
+    "title": "Gem dette pas",
+    "lead": "Opret din konto for at have det på alle enheder. Din 7-dages prøve er allerede startet.",
+    "apple": "Fortsæt med Apple",
+    "email": "Fortsæt med e-mail",
+    "later": "Senere",
+    "error": "Kunne ikke oprette kontoen. Prøv igen."
   }
 }

@@ -91,6 +91,8 @@
     "thanksAlt": "Glad MySWYM-odder, der plasker i vandet",
     "legalUpdated": "Senest opdateret: {{date}}",
     "legalFrNotice": "De juridiske dokumenter er på fransk (fransk virksomhed).",
+    "legalEnNotice": "Dette dokument findes på engelsk og fransk. Kun den franske version er juridisk bindende.",
+    "legalFrLink": "Læs den franske version",
     "blogMetaTitle": "MySWYM-bloggen | Tips til svømmetræning",
     "blogMetaDesc": "Svømmeartikler: teknik, planer, åbent vand og bassinord, uden ekstra jargon.",
     "blogHeading": "Svømmetips",

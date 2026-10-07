@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { CheckCheck, Copy, Share2 } from "lucide-react";
 import { G } from "../theme/palette.js";
 import { copySessionText } from "../lib/session-export.js";
@@ -15,6 +16,7 @@ export default function SessionExportBar({
   onShare,
   colors = G,
 }) {
+  const { t } = useTranslation("app");
   const [copied, setCopied] = useState(false);
   const [invite, setInvite] = useState(null);
   const c = colors || G;
@@ -81,11 +83,11 @@ export default function SessionExportBar({
           color: copied ? (c.white || G.white) : (c.inkLight || G.inkLight),
         }}
       >
-        {copied ? <><CheckCheck size={13} /> Copié</> : <><Copy size={13} /> Copier</>}
+        {copied ? <><CheckCheck size={13} /> {t("share.copied")}</> : <><Copy size={13} /> {t("share.copy")}</>}
       </button>
       {typeof onShare === "function" ? (
         <button type="button" onClick={runShareImage} style={btn}>
-          <Share2 size={13} /> Partager
+          <Share2 size={13} /> {t("share.share")}
         </button>
       ) : null}
     </div>

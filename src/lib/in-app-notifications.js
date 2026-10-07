@@ -5,7 +5,9 @@ import { CreditCard, Shield, Star, BookOpen, Users, Trophy, Bell } from "lucide-
 import { supabase } from "../supabase.js";
 import { ACCESS_STATUS, getAccessState } from "./access.js";
 import { G } from "../theme/palette.js";
+import i18n from "../i18n/index.js";
 import { BADGE_DEFS, computeStats, checkBadges } from "./plan-stats.js";
+import { appLocale } from "./app-locale.js";
 
 export const DAY_MS = 86400000;
 export const NOTIFICATION_KIND_META = {
@@ -68,7 +70,7 @@ export const writeSeenNotifications = (userOrId, seenMap) => {
 export const formatNotificationDate = (value) => {
   const time = parseNotificationTime(value, 0);
   if (!time) return "";
-  return new Date(time).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+  return new Date(time).toLocaleDateString(appLocale(), { day: "numeric", month: "short" });
 };
 
 export const notificationAudienceMatches = (audience, accessState) => {
@@ -154,8 +156,8 @@ export const buildBadgeNotifications = (plan) => {
     .map((badge, index) => ({
       id: `badge:${badge.id}`,
       type: "badge",
-      title: `Badge obtenu : ${badge.label}`,
-      body: badge.desc,
+      title: i18n.t("share.badgeEarned", { ns: "app", label: i18n.t(`badge.${badge.id}.label`, { ns: "app" }) }),
+      body: i18n.t(`badge.${badge.id}.desc`, { ns: "app" }),
       createdAt: index + 1,
       accentColor: badge.color,
       accentIcon: badge.icon,

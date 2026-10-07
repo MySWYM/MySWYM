@@ -81,7 +81,8 @@ export default function SessionPrepSheet({
               aria-label={t("session.abandonYes")}
               onClick={requestAbandon}
             >
-              <X size={22} strokeWidth={2.5} />
+              <X size={18} strokeWidth={2.5} aria-hidden />
+              <span>{t("session.skipShort")}</span>
             </button>
             <button
               type="button"

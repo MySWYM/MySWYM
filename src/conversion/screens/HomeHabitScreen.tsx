@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { motion } from 'framer-motion'
 import { Flame, Trophy, Waves } from 'lucide-react'
 import { fadeUp, stagger } from '../motion'
@@ -35,6 +36,7 @@ export function HomeHabitScreen({
   onOpenSession,
   onUpgrade,
 }: Props) {
+  const { t } = useTranslation('app')
   const greeting = firstName ? `Salut ${firstName}` : 'Salut'
   const next = sessions.find((s) => !s.done) ?? sessions[0]
 
@@ -62,13 +64,13 @@ export function HomeHabitScreen({
             value={weekMeters}
             max={weekGoalMeters}
             label={`${Math.round((weekMeters / Math.max(weekGoalMeters, 1)) * 100)}%`}
-            sublabel="semaine"
+            sublabel={t('profile.weekWord')}
             size={100}
             stroke={7}
           />
           <div>
             <p className="cv:text-[11px] cv:font-semibold cv:uppercase cv:tracking-[0.08em] cv:text-cv-ink-tertiary">
-              Semaine {weekNumber}
+              {t('profile.weekN', { n: weekNumber })}
             </p>
             <p className="cv-display cv:mt-1 cv:text-[26px] cv:text-cv-ink">
               {weekMeters}

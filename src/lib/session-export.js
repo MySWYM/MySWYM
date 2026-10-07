@@ -11,6 +11,7 @@ import {
 } from "./natation-sheet/parse.js";
 import { isNativeIos } from "./native-platform.js";
 import { translateSessionText } from "../i18n/session-terms.js";
+import { translateDisplayText, translateDomTree } from "../i18n/dom-translate.js";
 
 const SECTION_ORDER = ["warm", "main", "cool"];
 
@@ -248,7 +249,7 @@ export async function buildSessionPrintPdf(session) {
     doc.setFont("helvetica", style);
     doc.setFontSize(size);
     doc.setTextColor(...color);
-    const lines = doc.splitTextToSize(line, contentW - indent);
+    const lines = doc.splitTextToSize(translateDisplayText(line), contentW - indent);
     const lineH = size * 0.42;
     ensureSpace(lines.length * lineH + 1);
     doc.text(lines, marginX + indent, y);
@@ -359,6 +360,18 @@ export async function buildSessionPrintPdf(session) {
  * @param {object} session
  * @param {{ autoPrint?: boolean }} [opts] autoPrint=false pour Share iOS (pas de window.print).
  */
+/** La fiche imprimée est du HTML hors écran : on la traduit avant de l’ouvrir. */
+function translatePrintHtml(html) {
+  try {
+    if (typeof DOMParser === "undefined") return html;
+    const parsed = new DOMParser().parseFromString(html, "text/html");
+    translateDomTree(parsed.documentElement);
+    return `<!doctype html>${parsed.documentElement.outerHTML}`;
+  } catch {
+    return html;
+  }
+}
+
 export function buildSessionPrintHtml(session, opts = {}) {
   const autoPrint = opts.autoPrint !== false;
   const view = buildWorkoutView(session || {});
@@ -685,7 +698,7 @@ export async function openSessionPrint(session) {
   if (isNativeIos()) {
     return shareSessionPrint(session);
   }
-  const html = buildSessionPrintHtml(session);
+  const html = translatePrintHtml(buildSessionPrintHtml(session));
   let w = null;
   try {
     w = window.open("", "_blank");

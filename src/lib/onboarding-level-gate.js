@@ -26,13 +26,21 @@ export function isDebutantLevelId(level) {
   return l === "régulier" || l === "regulier" || l === "beginner";
 }
 
-/** Avancé (`performance`) : 4 nages implicite, pas de question. */
+/**
+ * Avancé (`performance`). Règle coach (5 oct. 2026) : le 4 nages vient de ce que le
+ * nageur déclare. Choisir Avancé (« Je maîtrise les 4 nages ») le déclare par défaut,
+ * mais il peut répondre Non dans Paramètres → le moteur suit swimStyle, pas le niveau.
+ */
 export function isAvanceLevelId(level) {
   const l = String(level || "").toLowerCase();
   return l === "performance" || l === "advanced";
 }
 
-/** Style imposé par le niveau, ou `null` si le nageur choisit (Intermédiaire). */
+/**
+ * Style par défaut au choix du niveau : Débutant = crawl (imposé),
+ * Avancé = 4 nages (déclaré par la case « Je maîtrise les 4 nages », modifiable
+ * dans Paramètres), Intermédiaire = `null` (le nageur choisit).
+ */
 export function impliedSwimStyleForLevel(level) {
   if (isDebutantLevelId(level)) return "crawl";
   if (isAvanceLevelId(level)) return "4_nages";

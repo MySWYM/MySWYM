@@ -261,7 +261,7 @@
     "loginTitle": "Inloggen",
     "registerTitle": "Account aanmaken",
     "resetTitle": "Wachtwoord vergeten",
-    "loginLead": "Log in met Apple, Google of je e-mail.",
+    "loginLead": "Log in met Apple, Google, Facebook of je e-mail.",
     "registerLead": "7 dagen proberen, geen kaart. Daarna gaan je trainingen op pauze.",
     "registerReferral": "Verwijzingscode {{code}} : 20% korting op je eerste Premium-factuur.",
     "resetLead": "Vul het e-mailadres van je account in. Je ontvangt een veilige link om een nieuw wachtwoord te kiezen.",
@@ -279,6 +279,7 @@
     "newsletter": "Ik wil nieuws van MySWYM per e-mail ontvangen.",
     "trial": "7 dagen proberen bij het aanmaken van je account, geen kaart. Daarna gaan je trainingen op pauze tot je een abonnement neemt.",
     "google": "Verder met Google",
+    "facebook": "Verder met Facebook",
     "apple": "Verder met Apple",
     "comingSoon": "Binnenkort",
     "redirecting": "Doorsturen…",
@@ -296,5 +297,14 @@
     "socialOff": "Deze inlogmethode staat op de server nog niet aan. Probeer e-mail / wachtwoord.",
     "socialAppleConfig": "Inloggen met Apple is niet goed ingesteld (Supabase). Probeer e-mail / wachtwoord.",
     "socialFail": "Sociaal inloggen is niet beschikbaar."
+  },
+  "saveAccount": {
+    "eyebrow": "Je training",
+    "title": "Bewaar deze training",
+    "lead": "Maak je account om hem op al je apparaten te hebben. Je proefperiode van 7 dagen is al begonnen.",
+    "apple": "Doorgaan met Apple",
+    "email": "Doorgaan met e-mail",
+    "later": "Later",
+    "error": "Account maken lukte niet. Probeer opnieuw."
   }
 }

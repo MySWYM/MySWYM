@@ -172,8 +172,8 @@
   margin: 0 0 6px;
   font-size: var(--ms-type-caption, 0.75rem);
   font-weight: 750;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  text-transform: none;
   color: var(--ms-blue, #006BFD);
 }
 
@@ -236,13 +236,19 @@
   gap: 12px;
 }
 
+/* Action « pas faite » avec un vrai libellé (avant : croix rouge muette
+   collée à « Valider », facile à toucher par erreur). */
 .ios-session-mark-skip {
   appearance: none;
   -webkit-appearance: none;
-  flex: 0 0 48px;
-  width: 48px;
+  flex: 0 0 auto;
+  width: auto;
   height: 48px;
-  padding: 0;
+  padding: 0 16px;
+  gap: 6px;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
   border: none;
   border-radius: var(--ms-pill-radius, 999px);
   background: var(--ms-coral-soft, #FDE8EA);

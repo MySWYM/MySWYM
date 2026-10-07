@@ -14,7 +14,7 @@ import { normalizeAppLanguage } from "./languages.js";
 export function useActiveLocale() {
   const { pathname } = useLocation();
   const { i18n: i18nHook } = useTranslation();
-  if (!isAppPath(pathname)) return localeFromPathname(pathname);
+  if (!isNativeApp() && !isAppPath(pathname)) return localeFromPathname(pathname);
   return normalizeAppLanguage(i18nHook.language);
 }
 

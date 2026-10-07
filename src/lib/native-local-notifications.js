@@ -4,6 +4,7 @@
  * Chaque notif pose la pastille rouge (badge: 1) sur l’icône.
  */
 import { isNativeIos } from "./native-platform.js";
+import { translateMultiline } from "../i18n/dom-translate.js";
 
 export const NOTIF_IDS = {
   SESSION: 1001,
@@ -41,11 +42,16 @@ export function markLocalNotificationPermissionAsked(userId) {
   } catch { /* ignore */ }
 }
 
-async function getPlugin() {
+/**
+ * ⚠️ Ne jamais `return` un plugin Capacitor depuis une fonction async : le proxy
+ * répond à `.then` → await appelle `Plugin.then()` (« not implemented on ios ») et la
+ * promesse reste bloquée pour toujours. On l’emballe dans un objet `{ plugin }`.
+ */
+async function getPluginBox() {
   if (!isNativeIos()) return null;
   try {
     const { LocalNotifications } = await import("@capacitor/local-notifications");
-    return LocalNotifications;
+    return { plugin: LocalNotifications };
   } catch {
     return null;
   }
@@ -81,7 +87,7 @@ function dispatchFromLocalExtra(extra) {
     return;
   }
   if (kind === "session_reminder" || kind === "streak_protect" || kind === "comeback" || kind === "comeback_long") {
-    window.dispatchEvent(new CustomEvent("myswym:open-tab", { detail: { tab: "plan" } }));
+    window.dispatchEvent(new CustomEvent("myswym:open-tab", { detail: { tab: "home" } }));
   }
 }
 
@@ -96,7 +102,7 @@ async function ensureActionListeners(plugin) {
 }
 
 export async function getLocalNotificationPermission() {
-  const plugin = await getPlugin();
+  const plugin = (await getPluginBox())?.plugin;
   if (!plugin) return "denied";
   try {
     const { display } = await plugin.checkPermissions();
@@ -116,7 +122,7 @@ export async function ensureIosNotificationPermission(userId) {
   if (ensureInFlight) return ensureInFlight;
 
   ensureInFlight = (async () => {
-    const plugin = await getPlugin();
+    const plugin = (await getPluginBox())?.plugin;
     if (!plugin) return "denied";
 
     let status = "prompt";
@@ -155,7 +161,7 @@ export async function requestLocalNotificationPermission(userId) {
 }
 
 export async function cancelMySwymLocalNotifications() {
-  const plugin = await getPlugin();
+  const plugin = (await getPluginBox())?.plugin;
   if (!plugin) return;
   try {
     await plugin.cancel({ notifications: ALL_IDS.map((id) => ({ id })) });
@@ -166,7 +172,7 @@ export async function cancelMySwymLocalNotifications() {
  * @param {Array<{ id: number, title: string, body: string, at: Date, extra?: object, badge?: number }>} items
  */
 export async function scheduleLocalNotifications(items = []) {
-  const plugin = await getPlugin();
+  const plugin = (await getPluginBox())?.plugin;
   if (!plugin) return { scheduled: 0 };
   await ensureActionListeners(plugin);
   const now = Date.now();
@@ -175,8 +181,8 @@ export async function scheduleLocalNotifications(items = []) {
     .filter((n) => n.at.getTime() > now + 5000)
     .map((n) => ({
       id: n.id,
-      title: String(n.title).slice(0, 80),
-      body: String(n.body).slice(0, 180),
+      title: translateMultiline(String(n.title)).slice(0, 80),
+      body: translateMultiline(String(n.body)).slice(0, 180),
       schedule: { at: n.at, allowWhileIdle: true },
       extra: n.extra || { myswym: true },
       sound: "default",
@@ -193,7 +199,7 @@ export async function scheduleLocalNotifications(items = []) {
 
 /** Notif immédiate (badge gagné). Min +6s pour passer le filtre schedule. */
 export async function notifyBadgeEarned({ title, body }) {
-  const plugin = await getPlugin();
+  const plugin = (await getPluginBox())?.plugin;
   if (!plugin || !title || !body) return;
   try {
     const { supabase } = await import("../supabase.js");
@@ -210,8 +216,8 @@ export async function notifyBadgeEarned({ title, body }) {
     await plugin.schedule({
       notifications: [{
         id: NOTIF_IDS.BADGE,
-        title: String(title).slice(0, 80),
-        body: String(body).slice(0, 180),
+        title: translateMultiline(String(title)).slice(0, 80),
+        body: translateMultiline(String(body)).slice(0, 180),
         schedule: { at, allowWhileIdle: true },
         extra: { kind: "badge" },
         sound: "default",

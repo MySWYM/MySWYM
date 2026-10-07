@@ -419,18 +419,35 @@ export function IosDataPanel({
       <p className="ios-settings-warn">{t("settings.irreversible")}</p>
       {user && onDeleteAccount ? (
         <>
-          {deleteGate?.allowed ? (
-            deleteWarning ? (
-              <p className="ios-settings-copy" style={{ marginBottom: 8 }}>
-                {deleteWarning}
+          {deleteWarning ? (
+            <p className="ios-settings-copy" style={{ marginBottom: 8 }}>
+              {deleteWarning}
+            </p>
+          ) : null}
+          {deleteGate?.appleKeepsBilling && isNativeApp() ? (
+            // App Store 5.1.1(v) : un abo Apple ne peut pas être résilié par l’app ;
+            // on donne l’accès direct à la gestion des abonnements.
+            <div style={{ margin: "4px 0 12px" }}>
+              <button
+                type="button"
+                className="ms-pill-cta ms-pill-cta-secondary"
+                onClick={() => {
+                  playUiSound("soft");
+                  void import("../lib/native-iap.js").then((m) => m.openAppleSubscriptionManagement());
+                }}
+              >
+                {t("settings.manageAppleSub")}
+              </button>
+              <p className="ios-settings-copy" style={{ marginTop: 6, fontSize: 13 }}>
+                {t("settings.manageAppleSubHint")}
               </p>
-            ) : null
+            </div>
           ) : null}
           <div style={{ margin: "8px 0 12px" }}>
             <TimedUndoAction
-              disabled={deleteBusy || deleteGate?.code === "pending"}
+              disabled={deleteBusy}
               busy={deleteBusy}
-              blocked={deleteGate?.code !== "pending" && !deleteGate?.allowed}
+              blocked={false}
               onBlocked={() => {
                 playUiSound("soft");
                 setDeleteBlockedOpen(true);
@@ -810,7 +827,11 @@ export function IosNotificationsPanel({ user, plan, onBack, onUserUpdated }) {
     const refresh = async () => {
       try {
         const mod = await import("../lib/native-push.js");
-        const state = await mod.getNotificationActivationState();
+        // Filet de sécurité : jamais « Chargement… » à vie si le pont natif ne répond pas.
+        const state = await Promise.race([
+          mod.getNotificationActivationState(),
+          new Promise((_, reject) => setTimeout(() => reject(new Error("notif_state_timeout")), 4000)),
+        ]);
         if (cancelled) return;
         setOsStatus(state.os);
         setActive(state.active);

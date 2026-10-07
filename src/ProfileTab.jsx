@@ -25,6 +25,7 @@ import {
   resolveDisplayFirstName,
   resolveDisplayLastName,
   resolveDisplayFullName,
+  avatarInitials,
 } from "./lib/identity-cache.js";
 import "./profile/ios-profile.css";
 import {
@@ -69,7 +70,6 @@ import {
 } from "./lib/newsletter-opt-in.js";
 import {
   INJURY_CONSENT_CHECKBOX,
-  HEART_RATE_CONSENT_CHECKBOX,
   INJURY_ZONES,
   INJURY_SEVERITIES,
   formatInjurySummary,
@@ -267,12 +267,14 @@ export default function ProfileTab({
       const token = data?.session?.access_token;
       const status = user?.app_metadata?.subscription_status;
       const looksPaid = status === "active" || status === "canceled";
+      // Apple 5.1.1(v) : la vérification ne doit jamais empêcher la suppression.
+      // Le serveur coupe l’abonnement Stripe au moment de la suppression.
       const paidFallback = {
-        allowed: false,
-        code: "unverified",
-        message: "Impossible de vérifier l’abonnement. Le compte n’a pas été supprimé.",
-        willCancelSubscription: false,
-        appleKeepsBilling: false,
+        allowed: true,
+        code: "ok",
+        message: null,
+        willCancelSubscription: user?.app_metadata?.billing_provider !== "apple",
+        appleKeepsBilling: user?.app_metadata?.billing_provider === "apple",
       };
       const freeFallback = {
         allowed: true,
@@ -282,15 +284,7 @@ export default function ProfileTab({
         appleKeepsBilling: false,
       };
       if (!token) {
-        if (!cancelled) {
-          setDeleteGate({
-            allowed: false,
-            code: "unverified",
-            message: "Reconnecte-toi pour vérifier si le compte peut être supprimé.",
-            willCancelSubscription: false,
-            appleKeepsBilling: false,
-          });
-        }
+        if (!cancelled) setDeleteGate(looksPaid ? paidFallback : freeFallback);
         return;
       }
       try {
@@ -304,16 +298,13 @@ export default function ProfileTab({
         const json = await res.json().catch(() => ({}));
         if (cancelled) return;
         if (!res.ok) {
-          setDeleteGate(looksPaid ? {
-            ...paidFallback,
-            message: json.error || paidFallback.message,
-            code: json.code || "unverified",
-          } : freeFallback);
+          setDeleteGate(looksPaid ? paidFallback : freeFallback);
           return;
         }
         setDeleteGate({
-          allowed: json.allowed === true,
-          code: json.code || (json.allowed ? "ok" : "unverified"),
+          // Jamais bloquant (ancienne version du serveur incluse).
+          allowed: true,
+          code: "ok",
           message: json.message || null,
           willCancelSubscription: json.willCancelSubscription === true,
           appleKeepsBilling: json.appleKeepsBilling === true,
@@ -699,7 +690,7 @@ export default function ProfileTab({
 
   const fullName = [firstName || resolveDisplayFirstName(user), lastName].filter(Boolean).join(" ")
     || resolveDisplayFullName(user);
-  const initials = fullName.slice(0, 2).toUpperCase();
+  const initials = avatarInitials(fullName);
   const iosNav = isIosSimpleNav();
   const iosCover = iosNav && (settingsOpen || helpPanel || editProfileOpen);
   const levelId = profile?.level;
@@ -1161,9 +1152,9 @@ export default function ProfileTab({
                   </p>
                 ) : null}
                 <TimedUndoAction
-                  disabled={deleteBusy || deleteGate.code === "pending"}
+                  disabled={deleteBusy}
                   busy={deleteBusy}
-                  blocked={deleteGate.code !== "pending" && !deleteGate.allowed}
+                  blocked={false}
                   onBlocked={() => {
                     playUiSound("soft");
                     setDeleteBlockedOpen(true);
@@ -2470,7 +2461,7 @@ export default function ProfileTab({
                 style={{ marginTop: 3 }}
               />
               <span style={{ fontSize: 13, color: G.ink, lineHeight: 1.4 }}>
-                {HEART_RATE_CONSENT_CHECKBOX}
+                {ta("strava.hrCheck")}
               </span>
             </label>
           </ProfileSection>

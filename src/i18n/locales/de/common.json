@@ -91,6 +91,8 @@
     "thanksAlt": "Fröhlicher MySWYM-Otter, der im Wasser plantscht",
     "legalUpdated": "Zuletzt aktualisiert: {{date}}",
     "legalFrNotice": "Diese rechtlichen Dokumente sind auf Französisch verfasst (französisches Unternehmen).",
+    "legalEnNotice": "Dieses Dokument ist auf Englisch und Französisch verfügbar. Nur die französische Fassung ist rechtsverbindlich.",
+    "legalFrLink": "Französische Fassung lesen",
     "blogMetaTitle": "MySWYM-Blog | Schwimmtipps",
     "blogMetaDesc": "Schwimmartikel: Technik, Pläne, Freiwasser und Beckenvokabular, ohne extra Fachchinesisch.",
     "blogHeading": "Schwimmtipps",

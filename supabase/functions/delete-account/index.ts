@@ -3,13 +3,11 @@ import Stripe from "npm:stripe@14";
 import { corsHeaders } from "../_shared/cors.ts";
 import { sendEmailViaHttp } from "../_shared/email-http.ts";
 import {
-  DELETE_BLOCK,
   DeleteAccountBlockedError,
   evaluateDeleteGate,
   gateFromAppleAccess,
   gateFromUnverifiedAccess,
   paidAccessLooksLive,
-  throwIfBlocked,
   type DeleteGate,
 } from "../_shared/delete-account-policy.ts";
 
@@ -100,14 +98,49 @@ async function resolveDeleteGate(opts: {
   }
 }
 
-async function cancelListedSubscriptions(stripe: Stripe, ids: string[]) {
+/** Annule tout de suite (pas en fin de période). Retourne les ids qui ont échoué. */
+async function cancelListedSubscriptions(stripe: Stripe, ids: string[]): Promise<string[]> {
+  const failed: string[] = [];
   for (const id of ids) {
-    try {
-      await stripe.subscriptions.cancel(id, { prorate: false });
-    } catch (err) {
-      console.error("[delete-account] stripe cancel failed", id, err);
-      throw new DeleteAccountBlockedError(DELETE_BLOCK.cancelFailed, "cancel_failed", 409);
+    let ok = false;
+    for (let attempt = 0; attempt < 3 && !ok; attempt++) {
+      try {
+        await stripe.subscriptions.cancel(id, { prorate: false });
+        ok = true;
+      } catch (err) {
+        console.error("[delete-account] stripe cancel failed", id, attempt, err);
+        if (attempt < 2) await new Promise((r) => setTimeout(r, 600 * (attempt + 1)));
+      }
     }
+    if (!ok) failed.push(id);
+  }
+  return failed;
+}
+
+/** Stripe en panne au moment de la suppression : on ne bloque pas, on alerte le support. */
+async function alertSupportStripeFollowup(opts: {
+  uid: string;
+  email?: string;
+  reason: string;
+  subscriptionIds: string[];
+}) {
+  try {
+    const result = await sendEmailViaHttp("contact", {
+      name: "Suppression de compte (auto)",
+      email: opts.email && opts.email.includes("@") ? opts.email : "support@myswym.app",
+      subject: "À FAIRE : annuler un abonnement Stripe après suppression de compte",
+      message: [
+        `Compte supprimé : ${opts.uid} (${opts.email || "sans e-mail"})`,
+        `Raison : ${opts.reason}`,
+        opts.subscriptionIds.length
+          ? `Abonnements Stripe à annuler : ${opts.subscriptionIds.join(", ")}`
+          : "Abonnements Stripe : à vérifier dans Stripe (recherche par e-mail).",
+        "Annule-les immédiatement dans Stripe, sans prorata, pour éviter un prélèvement orphelin.",
+      ].join("\n"),
+    });
+    if (!result.ok) console.error("[delete-account] support alert failed:", result.error);
+  } catch (err) {
+    console.error("[delete-account] support alert unexpected:", err);
   }
 }
 
@@ -173,13 +206,29 @@ Deno.serve(async (req) => {
       });
     }
 
-    throwIfBlocked(gate);
-
-    if (gate.cancelIds.length > 0) {
+    // Apple 5.1.1(v) : la suppression n’est jamais refusée. On coupe Stripe d’abord ;
+    // si Stripe ne répond pas, on supprime quand même et le support annule à la main.
+    let finalGate = gate;
+    if (gate.stripeUnverified && stripe) {
+      // Une 2ᵉ tentative de lecture Stripe avant de passer au mode « support ».
+      finalGate = await resolveDeleteGate({ stripe, user: sourceUser, access });
+    }
+    let stripeFollowup: string[] | null = finalGate.stripeUnverified ? [] : null;
+    if (finalGate.cancelIds.length > 0) {
       if (!stripe) {
-        throw new DeleteAccountBlockedError(DELETE_BLOCK.cancelFailed, "cancel_failed", 409);
+        stripeFollowup = [...finalGate.cancelIds];
+      } else {
+        const failed = await cancelListedSubscriptions(stripe, finalGate.cancelIds);
+        if (failed.length) stripeFollowup = failed;
       }
-      await cancelListedSubscriptions(stripe, gate.cancelIds);
+    }
+    if (stripeFollowup) {
+      await alertSupportStripeFollowup({
+        uid,
+        email: notifyEmail,
+        reason: finalGate.stripeUnverified ? "Stripe injoignable" : "annulation Stripe refusée",
+        subscriptionIds: stripeFollowup,
+      });
     }
 
     const tables = [

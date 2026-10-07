@@ -459,6 +459,7 @@ function AllureInfoChip({ tipKey, label, tone = "neutral", onClick, G, ariaName,
   return (
     <button
       type="button"
+      className="ms-hit-44"
       onClick={onClick}
       aria-label={`Qu’est-ce que ${ariaName || resolvedLabel.toLowerCase()} ?`}
       style={{
@@ -698,6 +699,7 @@ export default function WorkoutExerciseCard({
                   {drills.length > 0 && (
                     <button
                       type="button"
+                      className="ms-hit-44"
                       onClick={() =>
                         onOpenDrill?.(
                           multiDrills

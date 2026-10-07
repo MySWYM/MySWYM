@@ -5,7 +5,7 @@
  * Le « token » = adresse Apple de cet iPhone. Sans ligne dans device_push_tokens,
  * le serveur ne peut pas envoyer bannière / pastille.
  */
-import { registerPlugin } from "@capacitor/core";
+import { AppBadge } from "./native-app-badge.js";
 import { supabase } from "../supabase.js";
 import { isNativeIos, nativeApiOrigin } from "./native-platform.js";
 import { ensureIosNotificationPermission, getLocalNotificationPermission } from "./native-local-notifications.js";
@@ -50,31 +50,39 @@ export async function getNotificationActivationState() {
     active: os === "granted" && wanted,
   };
 }
-const AppBadge = registerPlugin("AppBadge");
 let listenersReady = false;
 let registerInFlight = null;
 /** Jeton reçu avant session auth (boot AppDelegate). */
 let pendingToken = null;
+/** true entre prepareNativeSignOut et la prochaine session : aucun réenregistrement. */
+let suppressTokenUpsert = false;
 
 function normalizeToken(token) {
   return String(token || "").replace(/\s+/g, "").toLowerCase();
 }
 
+/**
+ * ⚠️ Ne jamais `return` un plugin Capacitor depuis une fonction async : le proxy
+ * répond à `.then` → await appelle `Plugin.then()` (« not implemented on ios ») et la
+ * promesse reste bloquée pour toujours. On l’emballe dans un objet `{ plugin }`.
+ */
 async function getPushPlugin() {
   if (!isNativeIos()) return null;
   try {
     const { PushNotifications } = await import("@capacitor/push-notifications");
-    return PushNotifications;
+    return { plugin: PushNotifications };
   } catch {
     return null;
   }
 }
 
-async function readCachedNativeToken() {
+async function readCachedNativeToken({ replay = true } = {}) {
   if (!isNativeIos()) return null;
-  try {
-    await AppBadge.replayApnsToken?.();
-  } catch { /* ignore */ }
+  if (replay) {
+    try {
+      await AppBadge.replayApnsToken?.();
+    } catch { /* ignore */ }
+  }
   try {
     const res = await AppBadge.getApnsToken();
     const t = normalizeToken(res?.token);
@@ -123,6 +131,11 @@ async function upsertTokenViaApi(token) {
 }
 
 async function upsertDeviceToken(token) {
+  // Déconnexion en cours ou switch MySWYM coupé : AppDelegate rejoue le jeton à
+  // chaque retour au premier plan, il ne doit pas réinscrire ce téléphone.
+  if (suppressTokenUpsert || !pushNotificationsWanted()) {
+    return { ok: false, reason: suppressTokenUpsert ? "signing_out" : "opt_out" };
+  }
   const clean = normalizeToken(token);
   if (!clean || clean.length < 64) return { ok: false, reason: "bad_token" };
 
@@ -159,6 +172,7 @@ async function upsertDeviceToken(token) {
 /** Si un jeton était en attente (boot avant login), l’écrit maintenant. */
 export async function flushPendingPushToken() {
   if (!isNativeIos()) return { ok: false, reason: "none" };
+  suppressTokenUpsert = false;
   const cached = await readCachedNativeToken();
   if (cached) pendingToken = cached;
   if (!pendingToken) return { ok: false, reason: "none" };
@@ -203,15 +217,44 @@ export async function notificationsSwitchOn() {
   return state.active;
 }
 
+/** Retire ce téléphone seulement (pas les autres appareils du compte). */
+async function deleteThisDevicePushToken() {
+  // Pas de replay ici : le replay relance le listener « registration » qui réinscrit le jeton.
+  const token = await readCachedNativeToken({ replay: false });
+  if (!token) return;
+  const { data: { session } } = await supabase.auth.getSession();
+  const uid = session?.user?.id;
+  if (!uid) return;
+  const { error } = await supabase
+    .from("device_push_tokens")
+    .delete()
+    .eq("user_id", uid)
+    .eq("token", token);
+  if (error) console.warn("[push] delete device token", error.message || error);
+}
+
+/** Avant signOut : jeton de cet iPhone + rappels locaux. La session doit encore exister. */
+export async function prepareNativeSignOut() {
+  if (!isNativeIos()) return;
+  suppressTokenUpsert = true;
+  pendingToken = null;
+  // La table peut être absente du cache PostgREST (PGRST205). Ne jamais bloquer la déconnexion.
+  await Promise.race([
+    deleteThisDevicePushToken().catch((e) => {
+      console.warn("[push] sign-out token", e);
+    }),
+    new Promise((resolve) => setTimeout(resolve, 1500)),
+  ]);
+  void import("./native-local-notifications.js")
+    .then((m) => m.cancelMySwymLocalNotifications())
+    .catch(() => {});
+}
+
 /** Retire ce téléphone de la liste d’envoi (push global + rappels locaux). */
 export async function disableNativeNotifications() {
   writePushPref(false);
   try {
-    const { data: { session } } = await supabase.auth.getSession();
-    const uid = session?.user?.id;
-    if (uid) {
-      await supabase.from("device_push_tokens").delete().eq("user_id", uid);
-    }
+    await deleteThisDevicePushToken();
   } catch (e) {
     console.warn("[push] disable", e);
   }
@@ -277,11 +320,13 @@ export async function openNativeAppSettings() {
 
 export async function registerNativePush({ request = false } = {}) {
   if (!isNativeIos()) return { ok: false, reason: "not_ios" };
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.user?.id) suppressTokenUpsert = false;
   if (!request && !pushNotificationsWanted()) return { ok: false, reason: "opt_out" };
   if (registerInFlight) return registerInFlight;
 
   registerInFlight = (async () => {
-    const PushNotifications = await getPushPlugin();
+    const PushNotifications = (await getPushPlugin())?.plugin;
     if (!PushNotifications) return { ok: false, reason: "no_plugin" };
 
     try {
