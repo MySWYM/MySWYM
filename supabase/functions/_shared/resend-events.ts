@@ -8,7 +8,19 @@ export type ResendEventName =
   | "subscription.canceled"
   | "trial.started"
   | "trial.ending_soon"
-  | "session.completed";
+  | "session.completed"
+  | "referral.eligible"
+  | "winback.eligible";
+
+/**
+ * Consentement newsletter (inscription ou Réglages → Email → Actus).
+ * Sans lui : seuls les emails compte, sécurité et paiement partent.
+ */
+export function hasNewsletterConsent(
+  user: { user_metadata?: Record<string, unknown> | null } | null | undefined,
+): boolean {
+  return user?.user_metadata?.newsletter_opt_in === true;
+}
 
 export type ResendEventResult =
   | { ok: true; id?: string }

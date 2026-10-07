@@ -13,7 +13,7 @@ import {
   type AuthUser,
 } from "../_shared/access-state.ts";
 import { sendEmailViaHttp } from "../_shared/email-http.ts";
-import { sendResendEvent } from "../_shared/resend-events.ts";
+import { hasNewsletterConsent, sendResendEvent } from "../_shared/resend-events.ts";
 import { revertEarlyCancelIfCommitment } from "../_shared/stripe-commitment.ts";
 
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, { apiVersion: "2024-04-10" });
@@ -328,7 +328,8 @@ Deno.serve(async (req) => {
           console.error("[stripe-webhook] confirmation email error:", mailErr);
         }
 
-        // Stoppe le nurture Resend (wait_for_event subscription.started)
+        // subscription.started stoppe le nurture (wait_for_event) : envoyé à tous.
+        // Parrainage et drip d'essai = marketing : consentement newsletter requis.
         try {
           if (user.email) {
             await sendResendEvent("subscription.started", user.email, {
@@ -336,7 +337,14 @@ Deno.serve(async (req) => {
               userId: user.id,
               planLabel,
             });
-            if (nextState?.access_status === ACCESS_STATUS.trial) {
+            const consent = hasNewsletterConsent(user as AuthUser);
+            if (consent) {
+              await sendResendEvent("referral.eligible", user.email, {
+                firstName: firstNameFromUser(user as AuthUser) || "Salut",
+                userId: user.id,
+              });
+            }
+            if (consent && nextState?.access_status === ACCESS_STATUS.trial) {
               await sendResendEvent("trial.started", user.email, {
                 firstName: firstNameFromUser(user as AuthUser) || "Salut",
                 userId: user.id,
@@ -413,6 +421,12 @@ Deno.serve(async (req) => {
               firstName: firstNameFromUser(user) || "Salut",
               userId: user.id,
             });
+            if (hasNewsletterConsent(user)) {
+              await sendResendEvent("winback.eligible", user.email, {
+                firstName: firstNameFromUser(user) || "Salut",
+                userId: user.id,
+              });
+            }
           } catch (evErr) {
             console.error("[stripe-webhook] subscription.canceled event error:", evErr);
           }
@@ -447,6 +461,12 @@ Deno.serve(async (req) => {
             firstName: firstNameFromUser(user) || "Salut",
             userId: user.id,
           });
+          if (hasNewsletterConsent(user)) {
+            await sendResendEvent("winback.eligible", user.email, {
+              firstName: firstNameFromUser(user) || "Salut",
+              userId: user.id,
+            });
+          }
         } catch (evErr) {
           console.error("[stripe-webhook] subscription.canceled (deleted) event error:", evErr);
         }
