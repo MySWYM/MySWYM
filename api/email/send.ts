@@ -453,6 +453,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: built.error });
   }
 
+  // Bienvenue : un seul envoi par compte même si deux appels se croisent (Resend garde la clé 24 h).
+  const welcomeId = typeof payload.userId === "string" && payload.userId.trim()
+    ? payload.userId.trim()
+    : built.to.toLowerCase();
+  const idempotencyKey = kind === "welcome" ? `welcome/${welcomeId}` : undefined;
+
   try {
     const resend = new Resend(apiKey);
     const { data, error } = await resend.emails.send({
@@ -462,7 +468,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       subject: built.subject,
       html: built.html,
       tags: [{ name: "category", value: built.category }],
-    });
+    }, idempotencyKey ? { idempotencyKey } : undefined);
 
     if (error) {
       console.error("[api/email/send] resend error:", error.message);

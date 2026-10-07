@@ -91,6 +91,8 @@
     "thanksAlt": "Glad MySWYM-utter som plaskar i vattnet",
     "legalUpdated": "Senast uppdaterad: {{date}}",
     "legalFrNotice": "De här juridiska dokumenten är på franska (franskt bolag).",
+    "legalEnNotice": "Detta dokument finns på engelska och franska. Endast den franska versionen är juridiskt bindande.",
+    "legalFrLink": "Läs den franska versionen",
     "blogMetaTitle": "MySWYM-bloggen | Simträningstips",
     "blogMetaDesc": "Simartiklar: teknik, planer, öppet vatten och bassängord, utan extra jargong.",
     "blogHeading": "Simtips",

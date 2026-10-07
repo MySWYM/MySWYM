@@ -91,6 +91,8 @@
     "thanksAlt": "Nutria de MySWYM contenta chapoteando en el agua",
     "legalUpdated": "Última actualización: {{date}}",
     "legalFrNotice": "Estos documentos legales se emiten en francés (empresa francesa).",
+    "legalEnNotice": "Este documento está disponible en inglés y en francés. Solo la versión francesa tiene validez jurídica.",
+    "legalFrLink": "Leer la versión francesa",
     "blogMetaTitle": "Blog de MySWYM | Consejos de entrenamiento de natación",
     "blogMetaDesc": "Artículos de natación: técnica, planes, aguas abiertas y vocabulario de piscina, sin jerga de más.",
     "blogHeading": "Consejos de natación",

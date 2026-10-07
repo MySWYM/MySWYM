@@ -1,9 +1,12 @@
+import i18n from "../i18n/index.js";
 import {
   currentWeekSessionCards,
   initialWeekCardIndex,
   humanSessionType,
   sessionCoverSrc,
 } from "./home-week-sessions.js";
+
+await i18n.changeLanguage("fr");
 
 function assert(cond, msg) {
   if (!cond) throw new Error(msg);

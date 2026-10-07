@@ -3,6 +3,7 @@
  * d'une nage Strava du même jour. Pas de durée inventée.
  * Le PNG n'a pas de fond, pour être collé sur une photo Instagram.
  */
+import { appLocale } from "./app-locale.js";
 
 const FONT = "Geist, ui-sans-serif, system-ui, sans-serif";
 
@@ -30,7 +31,7 @@ export function formatStoryDistance(distance) {
     const text = String(distance || "").trim();
     return text || null;
   }
-  return `${meters.toLocaleString("fr-FR")} m`;
+  return `${meters.toLocaleString(appLocale())} m`;
 }
 
 const SWIM_TYPES = new Set(["Swim", "OpenWaterSwim"]);

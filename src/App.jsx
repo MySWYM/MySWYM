@@ -74,7 +74,7 @@ import {
   getLocalNotificationPermission,
   notifyBadgeEarned,
 } from "./lib/native-local-notifications.js";
-import { registerNativePush, flushPendingPushToken, pushNotificationsWanted } from "./lib/native-push.js";
+import { registerNativePush, flushPendingPushToken, pushNotificationsWanted, prepareNativeSignOut } from "./lib/native-push.js";
 import { startStravaOAuth, stravaRedirectUri } from "./lib/native-strava.js";
 import { clearAppIconBadge } from "./lib/native-app-badge.js";
 import {
@@ -202,7 +202,8 @@ import LanguageSwitcher from "./i18n/LanguageSwitcher.jsx";
 import { withLocalePrefix } from "./i18n/locale-path.js";
 import { intlLocaleFor } from "./i18n/languages.js";
 import { useSessionText } from "./i18n/useSessionText.js";
-import i18n, { getStoredLanguage } from "./i18n/index.js";
+import i18n, { siteLanguage } from "./i18n/index.js";
+import { humanSessionType } from "./lib/home-week-sessions.js";
 import HomeBlogCarousel from "./HomeBlogCarousel.jsx";
 import FeedbackModal from "./sheets/FeedbackModal.jsx";
 import SessionFeedbackSheet from "./sheets/SessionFeedbackSheet.jsx";
@@ -258,9 +259,6 @@ import {
 import {
   INJURY_ZONES,
   INJURY_SEVERITIES,
-  HEART_RATE_CONSENT_TITLE,
-  HEART_RATE_CONSENT_BODY,
-  HEART_RATE_CONSENT_CHECKBOX,
   HEALTH_DECLARATION_LABEL,
   MEDICAL_WARNING_SHORT,
   formatInjurySummary,
@@ -286,6 +284,7 @@ import { buildWeekProjection } from "./lib/week-projection.js";
 import { formatCoachAdaptLine, formatFeedbackToast } from "./lib/adapt-message.js";
 import { buildSessionSharePack } from "./lib/session-share-pack.js";
 import { fetchReferralInvite } from "./lib/referral-share.js";
+import { appLocale } from "./lib/app-locale.js";
 
 const PoolMode = lazy(() => import("./workout/PoolMode.jsx"));
 const SettingsDrawer = lazy(() => import("./SettingsDrawer.jsx"));
@@ -311,16 +310,16 @@ if (typeof window !== "undefined") {
 
 // Couleurs lues sur G (DA soft mist clair).
 const TYPE_KIND = {
-  ENDURANCE:    { Icon: Waves, color: "blue", bg: "blueLight", tooltip: "Nage à allure confortable, tu pourrais parler. C'est la base de toute progression." },
-  SEUIL:        { Icon: Activity, color: "gold", bg: "goldLight", tooltip: "Effort soutenu mais contrôlé, tu travailles à la limite de ton confort. Améliore ton endurance." },
-  VITESSE:      { Icon: Zap, color: "coral", bg: "coralLight", tooltip: "Sprints courts et intenses, récup complète entre chaque. Développe ta puissance." },
-  TECHNIQUE:    { Icon: Target, color: "water", bg: "waterLight", tooltip: "On travaille la façon de nager, position, bras, jambes. Moins d'effort, plus d'efficacité." },
-  RÉCUPÉRATION: { Icon: Droplets, color: "mint", bg: "mintLight", tooltip: "Séance très légère pour récupérer. Bouge sans te fatiguer, c'est là que le corps progresse." },
+  ENDURANCE:    { Icon: Waves, color: "blue", bg: "blueLight", tooltipKey: "session.tipEndurance" },
+  SEUIL:        { Icon: Activity, color: "gold", bg: "goldLight", tooltipKey: "session.tipThreshold" },
+  VITESSE:      { Icon: Zap, color: "coral", bg: "coralLight", tooltipKey: "session.tipSpeed" },
+  TECHNIQUE:    { Icon: Target, color: "water", bg: "waterLight", tooltipKey: "session.tipTechnique" },
+  RÉCUPÉRATION: { Icon: Droplets, color: "mint", bg: "mintLight", tooltipKey: "session.tipEasy" },
 };
 
 function getTypeMeta(type) {
-  const kind = TYPE_KIND[type] || TYPE_KIND.ENDURANCE;
-  return { Icon: kind.Icon, tooltip: kind.tooltip, bg: G[kind.bg], color: G[kind.color] };
+  const kind = TYPE_KIND[type] || TYPE_KIND[String(type || "").toUpperCase()] || TYPE_KIND.ENDURANCE;
+  return { Icon: kind.Icon, tooltip: appT(kind.tooltipKey), bg: G[kind.bg], color: G[kind.color] };
 }
 
 const css = `
@@ -805,7 +804,7 @@ const parseISODate = (iso) => {
 const formatDateFR = (iso) => {
   const date = parseISODate(iso);
   if (!date) return "";
-  return date.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  return date.toLocaleDateString(appLocale(), { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 };
 
 const formatDuration = (mins) => {
@@ -1615,7 +1614,7 @@ const MonAllureCard = ({ profile, pace100, pace50 = null, pace400 = null, isPrem
             ))}
           </div>
           <p style={{ fontSize: 11, color: G.greyMid, margin: 0, lineHeight: 1.45 }}>
-            Indicatif · entraînement régulier (~{evolSvg.gainPct}% / −{evolSvg.gainSec}s sur {horizonYears} ans).
+            {`Indicatif · entraînement régulier (~${evolSvg.gainPct}% / −${evolSvg.gainSec}s sur ${horizonYears} ans).`}
           </p>
         </div>
       )}
@@ -1629,8 +1628,8 @@ const MonAllureCard = ({ profile, pace100, pace50 = null, pace400 = null, isPrem
             {[...profile.paceHistory].filter((h) => h?.pace100).slice(-6).reverse().map((h, i) => {
               const when = h.at ? new Date(h.at) : null;
               const whenLabel = when && Number.isFinite(when.getTime())
-                ? when.toLocaleDateString("fr-FR", { day: "numeric", month: "short" })
-                : (h.week ? `Sem. ${h.week}` : "-");
+                ? when.toLocaleDateString(appLocale(), { day: "numeric", month: "short" })
+                : (h.week ? appT("profile.weekShort", { n: h.week }) : "-");
               const src = h.source === "strava" ? "Strava" : h.source === "program" ? "Programme" : "Manuel";
               return (
                 <div
@@ -1809,10 +1808,10 @@ const UpdateProgramCard = ({ profile, isPremium, onUpgrade, onSave, stravaBestPa
               <button onClick={applyStravaPace} style={{
                 padding: "2px 8px", borderRadius: 6, border: "none",
                 background: G.blue, color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer",
-              }}>Utiliser</button>
+              }}>{appT("strava.use")}</button>
             )}
             {stravaIsUsed && (
-              <span style={{ fontSize: 11, color: G.blue, fontWeight: 600 }}>utilisé</span>
+              <span style={{ fontSize: 11, color: G.blue, fontWeight: 600 }}>{appT("strava.used")}</span>
             )}
           </div>
         )}
@@ -1856,13 +1855,30 @@ const UpdateProgramCard = ({ profile, isPremium, onUpgrade, onSave, stravaBestPa
 
 // ── STRAVA ────────────────────────────────────────────────────────────────────
 
-const STRAVA_ACTIVITY_META = {
-  Swim:          { label: "Nage piscine", color: G.blue, bg: G.blueLight, Icon: Waves    },
-  OpenWaterSwim: { label: "Eau libre", color: G.water, bg: G.waterLight, Icon: Waves    },
-  Triathlon:     { label: "Triathlon", color: G.purple, bg: G.purpleLight, Icon: Activity },
-  Run:           { label: "Course", color: G.coral, bg: G.coralLight, Icon: Activity },
-  Ride:          { label: "Vélo", color: G.mint, bg: G.mintLight, Icon: Activity },
+function appT(key, opts) {
+  return i18n.t(key, { ns: "app", ...(opts || {}) });
+}
+
+const STRAVA_FOCUS_KEYS = {
+  VITESSE: "strava.focusSpeed",
+  SEUIL: "strava.focusThreshold",
+  ENDURANCE: "strava.focusEndurance",
+  RÉCUPÉRATION: "strava.focusEasy",
+  TECHNIQUE: "strava.focusTechnique",
 };
+
+const STRAVA_ACTIVITY_META = {
+  Swim:          { labelKey: "strava.typePool", color: G.blue, bg: G.blueLight, Icon: Waves    },
+  OpenWaterSwim: { labelKey: "strava.typeOpen", color: G.water, bg: G.waterLight, Icon: Waves    },
+  Triathlon:     { labelKey: "strava.typeTri", color: G.purple, bg: G.purpleLight, Icon: Activity },
+  Run:           { labelKey: "strava.typeRun", color: G.coral, bg: G.coralLight, Icon: Activity },
+  Ride:          { labelKey: "strava.typeRide", color: G.mint, bg: G.mintLight, Icon: Activity },
+};
+
+function stravaActivityLabel(type) {
+  const key = STRAVA_ACTIVITY_META[type]?.labelKey;
+  return key ? appT(key) : (type || appT("strava.typeActivity"));
+}
 
 const fmtDist = (m) => {
   if (!m) return "-";
@@ -1890,7 +1906,7 @@ const formatActivityLongDate = (iso) => {
   if (!iso) return "-";
   const date = new Date(`${iso}T12:00:00`);
   if (Number.isNaN(date.getTime())) return "-";
-  return date.toLocaleDateString("fr-FR", {
+  return date.toLocaleDateString(intlLocaleFor(i18n.language), {
     weekday: "long",
     day: "numeric",
     month: "long",
@@ -1913,30 +1929,30 @@ const inferSwimFocus = (pace100Ref, activityPace, durationSec, distanceMeters) =
   if (pace100Ref && activityPace) {
     const mult = appZoneMultForT100(pace100Ref);
     if (activityPace <= pace100Ref * ((mult.sprint ?? 0.95) + 0.05)) {
-      return { key: "VITESSE", label: "vitesse", explanation: "Allure très rapide par rapport à ton T100" };
+      return { key: "VITESSE", labelKey: "strava.focusSpeed", whyKey: "strava.focusSpeedWhy" };
     }
     if (activityPace <= pace100Ref * ((mult.threshold ?? 1.08) + 0.08)) {
-      return { key: "SEUIL", label: "seuil", explanation: "Allure soutenue, proche d'un travail au seuil" };
+      return { key: "SEUIL", labelKey: "strava.focusThreshold", whyKey: "strava.focusThresholdWhy" };
     }
     if (activityPace <= pace100Ref * ((mult.easy ?? 1.35) + 0.08)) {
-      return { key: "ENDURANCE", label: "endurance", explanation: "Allure contrôlée, utile pour construire l'endurance" };
+      return { key: "ENDURANCE", labelKey: "strava.focusEndurance", whyKey: "strava.focusEnduranceWhy" };
     }
-    return { key: "RÉCUPÉRATION", label: "récupération", explanation: "Allure très relâchée, proche d'une séance facile" };
+    return { key: "RÉCUPÉRATION", labelKey: "strava.focusEasy", whyKey: "strava.focusEasyWhy" };
   }
 
   if ((distanceMeters || 0) >= 2500 || (durationSec || 0) >= 45 * 60) {
-    return { key: "ENDURANCE", label: "endurance", explanation: "Volume assez long, orienté endurance" };
+    return { key: "ENDURANCE", labelKey: "strava.focusEndurance", whyKey: "strava.focusLongWhy" };
   }
   if ((durationSec || 0) <= 20 * 60) {
-    return { key: "VITESSE", label: "vitesse", explanation: "Format court, souvent orienté qualité ou intensité" };
+    return { key: "VITESSE", labelKey: "strava.focusSpeed", whyKey: "strava.focusShortWhy" };
   }
-  return { key: "SEUIL", label: "seuil", explanation: "Charge intermédiaire, entre endurance active et seuil" };
+  return { key: "SEUIL", labelKey: "strava.focusThreshold", whyKey: "strava.focusMidWhy" };
 };
 
-const getStravaVenueLabel = (activity) => {
+const getStravaVenueKey = (activity) => {
   const type = activity?.activity_type || activity?.raw_data?.type || activity?.raw_data?.sport_type;
-  if (type === "OpenWaterSwim") return "eau libre";
-  if (type === "Swim") return "piscine";
+  if (type === "OpenWaterSwim") return "strava.venueOpen";
+  if (type === "Swim") return "strava.venuePool";
   return null;
 };
 
@@ -1946,25 +1962,28 @@ const buildPremiumActivityAnalysis = ({ activity, detail, currentSessionRef, pro
   const actualDuration = Number(detail?.moving_time || activity.duration) || 0;
   const actualPace = Number(activity.pace) || null;
   const focus = inferSwimFocus(profile?.pace100 || null, actualPace, actualDuration, actualDistance);
-  const venue = getStravaVenueLabel(activity);
-  const venueTitle = venue === "eau libre"
-    ? `Séance eau libre · travail d'${focus.label}`
-    : venue === "piscine"
-      ? `Séance piscine · travail d'${focus.label}`
-      : `Tu as surtout travaillé l'${focus.label}`;
-  const venueChip = venue ? { label: "Lieu", value: venue } : null;
+  const venueKey = getStravaVenueKey(activity);
+  const venue = venueKey ? appT(venueKey) : null;
+  const focusLabel = appT(focus.labelKey);
+  const why = appT(focus.whyKey);
+  const venueTitle = venueKey === "strava.venueOpen"
+    ? appT("strava.titleOpen", { focus: focusLabel })
+    : venueKey === "strava.venuePool"
+      ? appT("strava.titlePool", { focus: focusLabel })
+      : appT("strava.titleFocus", { focus: focusLabel });
+  const venueChip = venue ? { label: appT("strava.chipPlace"), value: venue } : null;
 
   if (!planned) {
     return {
       title: venueTitle,
-      verdict: "Analyse disponible, mais sans séance de référence à comparer.",
+      verdict: appT("strava.verdictNoRef"),
       chips: [
         ...(venueChip ? [venueChip] : []),
-        { label: "Focus détecté", value: focus.label },
+        { label: appT("strava.chipFocus"), value: focusLabel },
       ],
       summary: venue
-        ? `${focus.explanation}. Activité Strava détectée en ${venue}.`
-        : focus.explanation,
+        ? appT("strava.summaryDetected", { why, venue })
+        : why,
     };
   }
 
@@ -1974,24 +1993,31 @@ const buildPremiumActivityAnalysis = ({ activity, detail, currentSessionRef, pro
   const typeMatch = plannedType === focus.key || (plannedType === "RÉCUPÉRATION" && focus.key === "ENDURANCE");
   const distanceMatch = distanceGap == null ? true : distanceGap <= 0.2;
 
-  let verdict = "Partiellement conforme à la séance prévue";
-  if (typeMatch && distanceMatch) verdict = "Très cohérent avec la séance prévue";
-  else if (!typeMatch && !distanceMatch) verdict = "Plutôt éloigné de la séance prévue";
+  let verdict = appT("strava.verdictPartial");
+  if (typeMatch && distanceMatch) verdict = appT("strava.verdictMatch");
+  else if (!typeMatch && !distanceMatch) verdict = appT("strava.verdictFar");
+
+  const plannedKey = STRAVA_FOCUS_KEYS[plannedType];
+  const doneNote = venue ? ` ${appT("strava.summaryInVenue", { venue })}` : "";
+  const nextNote = planned.title
+    ? appT("strava.summaryNext", { title: planned.title })
+    : appT("strava.summaryRef");
 
   return {
     title: venueTitle,
     verdict,
     chips: [
       ...(venueChip ? [venueChip] : []),
-      { label: "Prévu", value: (plannedType || "ENDURANCE").toLowerCase() },
-      { label: "Réalisé", value: focus.label },
-      { label: "Volume", value: plannedDistance ? `${Math.round((actualDistance / plannedDistance) * 100)}%` : fmtDist(actualDistance) },
+      { label: appT("strava.chipPlanned"), value: plannedKey ? appT(plannedKey) : plannedType.toLowerCase() },
+      { label: appT("strava.chipDone"), value: focusLabel },
+      { label: appT("strava.chipVolume"), value: plannedDistance ? `${Math.round((actualDistance / plannedDistance) * 100)}%` : fmtDist(actualDistance) },
     ],
-    summary: `${focus.explanation}${venue ? ` · séance en ${venue}` : ""}. ${planned.title ? `La prochaine séance prévue est "${planned.title}".` : "La séance prévue sert ici de référence de comparaison."}`,
+    summary: `${why}${doneNote} ${nextNote}`,
   };
 };
 
 const StravaActivityModal = ({ activity, onClose, currentSessionRef, isPremium, onUpgrade, profile, showHeartRate = false }) => {
+  const { t } = useTranslation("app");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [detailPayload, setDetailPayload] = useState(null);
@@ -2005,7 +2031,7 @@ const StravaActivityModal = ({ activity, onClose, currentSessionRef, isPremium, 
       setError(null);
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        if (!session) throw new Error("Session expirée");
+        if (!session) throw new Error(t("strava.sessionExpiredShort"));
 
         const res = await fetch(
           `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/strava-activity-detail`,
@@ -2020,10 +2046,10 @@ const StravaActivityModal = ({ activity, onClose, currentSessionRef, isPremium, 
           }
         );
         const json = await res.json();
-        if (!res.ok || json.error) throw new Error(json.error || "Impossible de charger le détail");
+        if (!res.ok || json.error) throw new Error(json.error || t("strava.detailFail"));
         if (!cancelled) setDetailPayload(json);
       } catch (e) {
-        if (!cancelled) setError(e.message || "Impossible de charger le détail Strava");
+        if (!cancelled) setError(e.message || t("strava.detailError"));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -2031,43 +2057,43 @@ const StravaActivityModal = ({ activity, onClose, currentSessionRef, isPremium, 
 
     load();
     return () => { cancelled = true; };
-  }, [activity?.strava_activity_id]);
+  }, [activity?.strava_activity_id, t]);
 
   if (!activity) return null;
 
   const detail = detailPayload?.detail || null;
   const streams = detailPayload?.streams || {};
   const raw = detail || activity.raw_data || {};
-  const venueLabel = getStravaVenueLabel(activity)
-    || STRAVA_ACTIVITY_META[activity.activity_type]?.label
-    || activity.activity_type
-    || "Activité";
+  const venueKey = getStravaVenueKey(activity);
+  const venueLabel = venueKey
+    ? t(venueKey)
+    : stravaActivityLabel(activity.activity_type);
   const cadenceValue = raw.average_cadence
     ? `${Number(raw.average_cadence).toFixed(1)} / min`
     : null;
 
   const metricCards = [
-    { label: "Distance", value: fmtDist(detail?.distance || activity.distance), color: G.blue, bg: G.blueLight },
-    { label: "Temps", value: fmtDur(detail?.moving_time || activity.duration), color: G.mint, bg: G.mintLight },
-    { label: "Allure", value: fmtPace(activity.pace) || "-", color: G.coral, bg: G.coralLight },
-    { label: "Vitesse moy.", value: fmtSpeedKmh(raw.average_speed), color: G.water, bg: G.waterLight },
-    { label: "Vitesse max", value: fmtSpeedKmh(raw.max_speed), color: G.gold, bg: G.goldLight },
-    { label: "FC moy.", value: showHeartRate && (raw.average_heartrate || activity.heart_rate) ? `${Math.round(raw.average_heartrate || activity.heart_rate)} bpm` : (showHeartRate ? "-" : "Masquée"), color: G.ink, bg: G.greyXLight },
-    { label: "Lieu", value: venueLabel, color: G.blue, bg: G.blueLight },
-    { label: cadenceValue ? "Cadence" : "Calories", value: cadenceValue || (activity.calories ? `${Math.round(activity.calories)} kcal` : "-"), color: G.mint, bg: G.mintLight },
+    { id: "distance", label: t("strava.distance"), value: fmtDist(detail?.distance || activity.distance), color: G.blue, bg: G.blueLight },
+    { id: "time", label: t("strava.time"), value: fmtDur(detail?.moving_time || activity.duration), color: G.mint, bg: G.mintLight },
+    { id: "pace", label: t("strava.pace"), value: fmtPace(activity.pace) || "-", color: G.coral, bg: G.coralLight },
+    { id: "avgSpeed", label: t("strava.avgSpeed"), value: fmtSpeedKmh(raw.average_speed), color: G.water, bg: G.waterLight },
+    { id: "maxSpeed", label: t("strava.maxSpeed"), value: fmtSpeedKmh(raw.max_speed), color: G.gold, bg: G.goldLight },
+    { id: "hr", label: t("strava.avgHr"), value: showHeartRate && (raw.average_heartrate || activity.heart_rate) ? `${Math.round(raw.average_heartrate || activity.heart_rate)} bpm` : (showHeartRate ? "-" : t("strava.hidden")), color: G.ink, bg: G.greyXLight },
+    { id: "place", label: t("strava.place"), value: venueLabel, color: G.blue, bg: G.blueLight },
+    { id: "cadence", label: cadenceValue ? t("strava.cadence") : t("strava.calories"), value: cadenceValue || (activity.calories ? `${Math.round(activity.calories)} kcal` : "-"), color: G.mint, bg: G.mintLight },
   ];
 
   const extraRows = [
-    { label: "Temps écoulé", value: raw.elapsed_time ? fmtDur(raw.elapsed_time) : null },
-    { label: "Sport", value: raw.sport_type || null },
-    { label: "Appareil", value: raw.device_name || null },
-    { label: "Date", value: formatActivityLongDate(activity.activity_date) },
+    { id: "elapsed", label: t("strava.elapsed"), value: raw.elapsed_time ? fmtDur(raw.elapsed_time) : null },
+    { id: "sport", label: t("strava.sport"), value: raw.sport_type || null },
+    { id: "device", label: t("strava.device"), value: raw.device_name || null },
+    { id: "date", label: t("strava.date"), value: formatActivityLongDate(activity.activity_date) },
   ].filter((row) => row.value);
 
   const streamCards = [
     {
       key: "heartrate",
-      label: "Fréquence cardiaque",
+      label: t("strava.hr"),
       unit: "bpm",
       color: G.coral,
       values: showHeartRate && Array.isArray(streams?.heartrate?.data) ? streams.heartrate.data : [],
@@ -2075,7 +2101,7 @@ const StravaActivityModal = ({ activity, onClose, currentSessionRef, isPremium, 
     },
     {
       key: "velocity_smooth",
-      label: "Vitesse",
+      label: t("strava.speed"),
       unit: "km/h",
       color: G.blue,
       values: Array.isArray(streams?.velocity_smooth?.data) ? streams.velocity_smooth.data.map((v) => Number(v) * 3.6) : [],
@@ -2083,7 +2109,7 @@ const StravaActivityModal = ({ activity, onClose, currentSessionRef, isPremium, 
     },
     {
       key: "cadence",
-      label: "Cadence / coups de bras",
+      label: t("strava.strokeRate"),
       unit: "/min",
       color: G.mint,
       values: Array.isArray(streams?.cadence?.data) ? streams.cadence.data : [],
@@ -2119,30 +2145,30 @@ const StravaActivityModal = ({ activity, onClose, currentSessionRef, isPremium, 
       onClick={(e) => e.target === e.currentTarget && onClose()}
       role="dialog"
       aria-modal="true"
-      aria-label="Détail activité Strava"
+      aria-label={t("strava.activityAria")}
     >
       <div className="sheet-panel scale-in" style={{ background: G.surface, borderRadius: "24px 24px 0 0", padding: "24px 18px", paddingBottom: "max(28px, env(safe-area-inset-bottom))", maxHeight: "88vh", overflowY: "auto" }}>
         <div style={{ width: 40, height: 4, borderRadius: 2, background: G.greyLight, margin: "0 auto 20px" }} />
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 18 }}>
           <div style={{ minWidth: 0 }}>
             <div style={{ fontSize: 12, fontWeight: 700, color: G.blue, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>
-              Activité Strava
+              {t("strava.activityKicker")}
             </div>
             <h3 style={{ fontSize: 22, fontWeight: 800, color: G.ink, lineHeight: 1.15, margin: "0 0 6px" }}>
-              {activity.title || "Séance"}
+              {activity.title || t("strava.sessionFallback")}
             </h3>
             <p style={{ margin: 0, fontSize: 13, color: G.grey, lineHeight: 1.45 }}>
               {formatActivityLongDate(activity.activity_date)}
             </p>
           </div>
-          <button type="button" onClick={onClose} aria-label="Fermer" style={{ width: 44, height: 44, borderRadius: 14, border: `1px solid ${G.greyLight}`, background: G.greyXLight, color: G.ink, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
+          <button type="button" onClick={onClose} aria-label={t("strava.close")} style={{ width: 44, height: 44, borderRadius: 14, border: `1px solid ${G.greyLight}`, background: G.greyXLight, color: G.ink, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
             <X size={18} />
           </button>
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
           {metricCards.map((card) => (
-            <div key={card.label} style={{ background: card.bg, borderRadius: 16, padding: "14px 12px", border: `1px solid ${G.greyLight}` }}>
+            <div key={card.id} style={{ background: card.bg, borderRadius: 16, padding: "14px 12px", border: `1px solid ${G.greyLight}` }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: card.color, marginBottom: 6 }}>{card.label}</div>
               <div style={{ fontSize: 18, fontWeight: 800, color: G.ink, lineHeight: 1.15 }}>{card.value}</div>
             </div>
@@ -2150,10 +2176,10 @@ const StravaActivityModal = ({ activity, onClose, currentSessionRef, isPremium, 
         </div>
 
         <div style={{ background: G.greyXLight, borderRadius: 18, padding: "16px 14px", marginBottom: 16 }}>
-          <div style={{ fontSize: 14, fontWeight: 800, color: G.ink, marginBottom: 12 }}>Détails synchronisés</div>
+          <div style={{ fontSize: 14, fontWeight: 800, color: G.ink, marginBottom: 12 }}>{t("strava.syncedDetails")}</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {extraRows.map((row) => (
-              <div key={row.label} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+              <div key={row.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
                 <div style={{ fontSize: 12, color: G.grey }}>{row.label}</div>
                 <div style={{ fontSize: 13, fontWeight: 700, color: G.ink, textAlign: "right" }}>{row.value}</div>
               </div>
@@ -2168,7 +2194,7 @@ const StravaActivityModal = ({ activity, onClose, currentSessionRef, isPremium, 
                 <Zap size={16} color={G.blue} />
               </div>
               <div>
-                <div style={{ fontSize: 14, fontWeight: 800, color: G.ink }}>Analyse Premium MySWYM</div>
+                <div style={{ fontSize: 14, fontWeight: 800, color: G.ink }}>{t("strava.premiumTitle")}</div>
                 <div style={{ fontSize: 12, color: G.grey }}>{premiumAnalysis.verdict}</div>
               </div>
             </div>
@@ -2184,19 +2210,19 @@ const StravaActivityModal = ({ activity, onClose, currentSessionRef, isPremium, 
           </div>
         ) : (
           <div style={{ background: G.surface, borderRadius: 18, padding: "16px 14px", border: `1px solid ${G.greyLight}`, marginBottom: 16 }}>
-            <div style={{ fontSize: 14, fontWeight: 800, color: G.ink, marginBottom: 8 }}>Analyse Premium MySWYM</div>
+            <div style={{ fontSize: 14, fontWeight: 800, color: G.ink, marginBottom: 8 }}>{t("strava.premiumTitle")}</div>
             <p style={{ margin: "0 0 12px", fontSize: 13, color: G.grey, lineHeight: 1.5 }}>
-              Débloque l&apos;analyse automatique de ta séance pour comprendre ce que tu as travaillé et si cela correspond à la séance prévue.
+              {t("strava.unlockModal")}
             </p>
             <button type="button" onClick={onUpgrade} style={{ width: "100%", padding: "12px", borderRadius: 12, border: "none", background: G.blue, color: G.white, fontWeight: 700, cursor: "pointer" }}>
-              Voir mes recommandations
+              {t("strava.seeReco")}
             </button>
           </div>
         )}
 
         {loading ? (
           <div style={{ background: G.surface, borderRadius: 18, padding: "16px 14px", border: `1px solid ${G.greyLight}`, fontSize: 13, color: G.grey }}>
-            Chargement des détails avancés Strava…
+            {t("strava.loadingDetail")}
           </div>
         ) : error ? (
           <div style={{ background: G.coralLight, borderRadius: 18, padding: "16px 14px", color: G.coral, fontSize: 13 }}>
@@ -2215,9 +2241,9 @@ const StravaActivityModal = ({ activity, onClose, currentSessionRef, isPremium, 
                   <div style={{ background: G.greyXLight, borderRadius: 12, padding: "10px 10px 6px" }}>
                     {renderStreamChart(stream.values, stream.color)}
                     <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4 }}>
-                      <span style={{ fontSize: 10, color: G.greyMid }}>Début</span>
-                      <span style={{ fontSize: 10, color: G.greyMid }}>Temps</span>
-                      <span style={{ fontSize: 10, color: G.greyMid }}>Fin</span>
+                      <span style={{ fontSize: 10, color: G.greyMid }}>{t("strava.chartStart")}</span>
+                      <span style={{ fontSize: 10, color: G.greyMid }}>{t("strava.chartTime")}</span>
+                      <span style={{ fontSize: 10, color: G.greyMid }}>{t("strava.chartEnd")}</span>
                     </div>
                   </div>
                 </div>
@@ -2226,9 +2252,9 @@ const StravaActivityModal = ({ activity, onClose, currentSessionRef, isPremium, 
           </div>
         ) : (
           <div style={{ background: G.surface, borderRadius: 18, padding: "16px 14px", border: `1px solid ${G.greyLight}` }}>
-            <div style={{ fontSize: 14, fontWeight: 800, color: G.ink, marginBottom: 8 }}>Analyse</div>
+            <div style={{ fontSize: 14, fontWeight: 800, color: G.ink, marginBottom: 8 }}>{t("strava.analysis")}</div>
             <p style={{ margin: 0, fontSize: 13, color: G.grey, lineHeight: 1.5 }}>
-              Aucun stream détaillé n&apos;a été renvoyé par Strava pour cette activité. Si ta montre partage la fréquence cardiaque, la vitesse ou la cadence pour cette nage, elles apparaîtront ici automatiquement.
+              {t("strava.noStream")}
             </p>
           </div>
         )}
@@ -2362,7 +2388,7 @@ const StravaSection = ({
     } catch { /* best effort */ }
     setHealthGateOpen(false);
     if (connected) {
-      setMsg({ type: "ok", text: "FC activée. Synchronise pour l’importer." });
+      setMsg({ type: "ok", text: t("strava.hrOn") });
       return;
     }
     void startStravaOAuth(clientId);
@@ -2372,7 +2398,7 @@ const StravaSection = ({
     setSyncing(true); setMsg(null);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) throw new Error("Session expirée, reconnecte-toi.");
+      if (!session?.access_token) throw new Error(t("strava.sessionExpired"));
       const res = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/strava-sync`,
         {
@@ -2387,7 +2413,7 @@ const StravaSection = ({
       );
       const json = await res.json();
       if (json.error) throw new Error(json.error);
-      setMsg({ type: "ok", text: `${json.synced} activité(s) synchronisée(s)` });
+      setMsg({ type: "ok", text: Number(json.synced) > 1 ? t("strava.syncedMany", { count: json.synced }) : t("strava.syncedOne", { count: json.synced }) });
       await loadActivities();
     } catch (e) {
       setMsg({ type: "err", text: e.message });
@@ -2397,11 +2423,11 @@ const StravaSection = ({
   };
 
   const disconnect = async () => {
-    if (!window.confirm("Déconnecter Strava et supprimer les activités synchronisées ?")) return;
+    if (!window.confirm(t("strava.disconnectConfirm"))) return;
     setDisconnecting(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) throw new Error("Session expirée, reconnecte-toi.");
+      if (!session?.access_token) throw new Error(t("strava.sessionExpired"));
       const res = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/strava-disconnect`,
         {
@@ -2501,7 +2527,7 @@ const StravaSection = ({
             disabled={syncing}
             style={{ padding: "7px 14px", borderRadius: 10, border: `1.5px solid ${G.blue}`, background: G.blueLight, color: G.blue, fontSize: 13, fontWeight: 600, cursor: syncing ? "not-allowed" : "pointer", opacity: syncing ? 0.5 : 1, fontFamily: FONT }}
           >
-            {syncing ? "Sync…" : "Synchroniser"}
+            {syncing ? t("strava.syncing") : t("strava.sync")}
           </button>
         )}
       </div>
@@ -2529,7 +2555,7 @@ const StravaSection = ({
             lineHeight: 1.35,
           }}
         >
-          Afficher la fréquence cardiaque dans MySWYM
+          {t("strava.showHr")}
         </button>
       )}
 
@@ -2561,13 +2587,13 @@ const StravaSection = ({
           {!showDetails && (
             <div style={{ background: G.greyXLight, borderRadius: 14, padding: "12px 14px", marginBottom: 12, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
               <div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: G.ink }}>Compte connecte</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: G.ink }}>{t("strava.accountConnected")}</div>
                 <div style={{ fontSize: 11, color: G.grey }}>
-                  {athlete?.firstname ? `${athlete.firstname}${athlete.lastname ? ` ${athlete.lastname}` : ""}` : "Strava relie a ton compte"}
+                  {athlete?.firstname ? `${athlete.firstname}${athlete.lastname ? ` ${athlete.lastname}` : ""}` : t("strava.linkedAccount")}
                 </div>
               </div>
               <div style={{ fontSize: 11, fontWeight: 700, color: G.mint, background: G.mintLight, padding: "6px 10px", borderRadius: 999 }}>
-                Connecte
+                {t("strava.connected")}
               </div>
             </div>
           )}
@@ -2577,7 +2603,7 @@ const StravaSection = ({
             <div style={{ background: G.blueLight, borderRadius: 12, padding: "10px 14px", marginBottom: 14, display: "flex", alignItems: "center", gap: 10 }}>
               <Waves size={16} color={G.blue} />
               <span style={{ fontSize: 13, fontWeight: 600, color: G.blue }}>
-                {(weeklySwimM / 1000).toFixed(1)} km nagés cette semaine
+                {t("strava.weeklyKm", { km: (weeklySwimM / 1000).toFixed(1) })}
               </span>
             </div>
           )}
@@ -2589,11 +2615,11 @@ const StravaSection = ({
                 <Waves size={18} color="#fff" />
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: G.ink }}>Tu as nagé {fmtDist(todaySwim.distance)} aujourd'hui !</div>
-                <div style={{ fontSize: 11, color: G.grey }}>Valide ta séance du programme ?</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: G.ink }}>{t("strava.swamToday", { distance: fmtDist(todaySwim.distance) })}</div>
+                <div style={{ fontSize: 11, color: G.grey }}>{t("strava.validatePrompt")}</div>
               </div>
               <button
-                onClick={() => { onValidateSession(currentSessionRef.weekIndex, currentSessionRef.sessionIndex); setMsg({ type: "ok", text: "Séance validée depuis Strava" }); }}
+                onClick={() => { onValidateSession(currentSessionRef.weekIndex, currentSessionRef.sessionIndex); setMsg({ type: "ok", text: t("strava.validated") }); }}
                 style={{ padding: "8px 14px", borderRadius: 10, border: "none", background: G.blue, color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", flexShrink: 0, fontFamily: FONT }}
               >
                 {t("session.validate")}
@@ -2609,21 +2635,21 @@ const StravaSection = ({
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 13, fontWeight: 700, color: G.ink }}>
-                  Meilleur 100m Strava : {fmtPace(bestPace)}
-                  {hasBetterPace && ", record"}
+                  {t("strava.best100", { pace: fmtPace(bestPace) })}
+                  {hasBetterPace && `, ${t("strava.record")}`}
                 </div>
                 <div style={{ fontSize: 11, color: G.grey }}>
                   {hasBetterPace
-                    ? `Plus rapide que ta référence (${fmtPace(currentPace100)})`
-                    : `Identique à ta référence actuelle`}
+                    ? t("strava.fasterThan", { pace: fmtPace(currentPace100) })
+                    : t("strava.sameAs")}
                 </div>
               </div>
               {hasBetterPace && onPaceUpdate && (
                 <button
-                  onClick={() => { onPaceUpdate(bestPace); setMsg({ type: "ok", text: `Référence mise à jour : ${fmtPace(bestPace)}` }); }}
+                  onClick={() => { onPaceUpdate(bestPace); setMsg({ type: "ok", text: t("strava.paceUpdated", { pace: fmtPace(bestPace) }) }); }}
                   style={{ padding: "8px 12px", borderRadius: 10, border: "none", background: G.gold, color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", flexShrink: 0, fontFamily: FONT }}
                 >
-                  Utiliser
+                  {t("strava.use")}
                 </button>
               )}
             </div>
@@ -2647,8 +2673,8 @@ const StravaSection = ({
                       <Zap size={16} color={G.blue} />
                     </div>
                     <div>
-                      <div style={{ fontSize: 14, fontWeight: 800, color: G.ink }}>Analyse de la dernière séance</div>
-                      <div style={{ fontSize: 12, color: G.grey }}>Premium MySWYM x Strava</div>
+                      <div style={{ fontSize: 14, fontWeight: 800, color: G.ink }}>{t("strava.lastAnalysis")}</div>
+                      <div style={{ fontSize: 12, color: G.grey }}>{t("strava.premiumTag")}</div>
                     </div>
                   </div>
                   <Eye size={16} color={G.greyMid} />
@@ -2673,12 +2699,12 @@ const StravaSection = ({
                     <Lock size={15} color={G.greyMid} />
                   </div>
                   <div>
-                    <div style={{ fontSize: 14, fontWeight: 800, color: G.ink }}>Analyse de la dernière séance</div>
-                    <div style={{ fontSize: 12, color: G.grey }}>Réservé aux abonnés Premium</div>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: G.ink }}>{t("strava.lastAnalysis")}</div>
+                    <div style={{ fontSize: 12, color: G.grey }}>{t("strava.premiumOnly")}</div>
                   </div>
                 </div>
                 <div style={{ fontSize: 13, color: G.grey, lineHeight: 1.5 }}>
-                  Débloque un résumé automatique de ta dernière séance Strava pour comprendre ce que tu as travaillé et si cela correspond à ton plan.
+                  {t("strava.unlockLead")}
                 </div>
               </div>
             )
@@ -2687,13 +2713,14 @@ const StravaSection = ({
           {/* Liste des activités, 3 visibles, le reste derrière « Voir plus » */}
           {showDetails && (activities.length === 0 ? (
             <div style={{ fontSize: 13, color: G.grey, textAlign: "center", padding: "16px 0" }}>
-              Aucune activité, clique sur "Synchroniser".
+              {t("strava.empty")}
             </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", marginBottom: 12 }}>
               {activitiesVisible.map((a, i) => {
-                const meta = STRAVA_ACTIVITY_META[a.activity_type] ?? { label: a.activity_type ?? "Activité", color: G.grey, bg: G.greyXLight, Icon: Activity };
-                const { Icon: AIcon, color, bg, label } = meta;
+                const meta = STRAVA_ACTIVITY_META[a.activity_type] ?? { color: G.grey, bg: G.greyXLight, Icon: Activity };
+                const { Icon: AIcon, color, bg } = meta;
+                const label = stravaActivityLabel(a.activity_type);
                 return (
                   <button
                     key={a.strava_activity_id}
@@ -2709,7 +2736,7 @@ const StravaSection = ({
                         {a.title || label}
                       </div>
                       <div style={{ fontSize: 11, color: G.grey }}>
-                        {a.activity_date ? new Date(a.activity_date + "T12:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "short" }) + " · " : ""}{label}
+                        {a.activity_date ? new Date(a.activity_date + "T12:00:00").toLocaleDateString(intlLocaleFor(i18n.language), { day: "numeric", month: "short" }) + " · " : ""}{label}
                       </div>
                     </div>
                     <div style={{ textAlign: "right", flexShrink: 0 }}>
@@ -2734,7 +2761,7 @@ const StravaSection = ({
                     fontFamily: FONT,
                   }}
                 >
-                  Voir plus ({activities.length - STRAVA_ACTIVITIES_PREVIEW})
+                  {t("strava.seeMore", { count: activities.length - STRAVA_ACTIVITIES_PREVIEW })}
                 </button>
               )}
               {activities.length > STRAVA_ACTIVITIES_PREVIEW && activitiesOpen && (
@@ -2747,7 +2774,7 @@ const StravaSection = ({
                     fontFamily: FONT,
                   }}
                 >
-                  Réduire
+                  {t("strava.collapse")}
                 </button>
               )}
             </div>
@@ -2775,7 +2802,7 @@ const StravaSection = ({
               minHeight: 48,
             }}
           >
-            {disconnecting ? "Déconnexion…" : "Déconnecter Strava"}
+            {disconnecting ? t("strava.disconnecting") : t("strava.disconnect")}
           </button>
         </>
       )}
@@ -2793,18 +2820,18 @@ const StravaSection = ({
           <div className="sheet-panel scale-in" style={{ background: G.surface, borderRadius: "24px 24px 0 0", padding: "28px 20px", paddingBottom: "max(28px, env(safe-area-inset-bottom))", maxHeight: "90vh", overflowY: "auto" }}>
             <div style={{ width: 40, height: 4, borderRadius: 2, background: G.greyLight, margin: "0 auto 20px" }} />
             <h3 style={{ fontFamily: FONT_DISPLAY, fontSize: 28, fontWeight: 700, textTransform: "none", letterSpacing: "-0.03em", color: G.ink, marginBottom: 10 }}>
-              {HEART_RATE_CONSENT_TITLE}
+              {t("strava.hrTitle")}
             </h3>
-            <p style={{ fontSize: 13, color: G.grey, lineHeight: 1.5, marginBottom: 14 }}>{HEART_RATE_CONSENT_BODY}</p>
+            <p style={{ fontSize: 13, color: G.grey, lineHeight: 1.5, marginBottom: 14 }}>{t("strava.hrBody")}</p>
             <label style={{ display: "flex", gap: 10, alignItems: "flex-start", fontSize: 12, lineHeight: 1.45, color: G.ink, marginBottom: 16 }}>
               <input type="checkbox" checked={healthGateChecked} onChange={(e) => setHealthGateChecked(e.target.checked)} style={{ marginTop: 2 }} />
-              <span>{HEART_RATE_CONSENT_CHECKBOX}</span>
+              <span>{t("strava.hrCheck")}</span>
             </label>
             <Btn variant="blue" onClick={persistHealthConsentAndConnect} disabled={!healthGateChecked}>
-              {connected ? "Accepter" : "Accepter et connecter Strava"}
+              {connected ? t("strava.accept") : t("strava.acceptConnect")}
             </Btn>
             <button type="button" onClick={() => setHealthGateOpen(false)} style={{ width: "100%", marginTop: 10, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 13 }}>
-              Annuler
+              {t("strava.cancel")}
             </button>
           </div>
         </div>,
@@ -3421,11 +3448,13 @@ const OnboardingWizard = ({
 
 // ── SHARE MODAL ───────────────────────────────────────────────────────────
 const ShareModal = ({ session, goalLabel, badge = null, onClose }) => {
+  const { t } = useTranslation("app");
   const tm = getTypeMeta(session.type);
+  const badgeLabel = badge ? t(`badge.${badge}.label`, { defaultValue: badge }) : "";
   const badgeMeta = badge
-    ? (BADGE_DEFS.find((d) => d.id === badge) || { label: badge, color: G.gold })
+    ? (BADGE_DEFS.find((d) => d.id === badge) || { label: badgeLabel, color: G.gold })
     : null;
-  const canvasBadge = badgeMeta ? { label: badgeMeta.label, color: badgeMeta.color } : null;
+  const canvasBadge = badgeMeta ? { label: badgeLabel || badgeMeta.label, color: badgeMeta.color } : null;
   const [invite, setInvite] = useState(null);
   const [copied, setCopied] = useState(false);
   const [stickerUrl, setStickerUrl] = useState("");
@@ -3561,17 +3590,17 @@ const ShareModal = ({ session, goalLabel, badge = null, onClose }) => {
             </Btn>
             {stickerState === "copied" && (
               <p style={{ fontSize: 12, color: G.inkLight, lineHeight: 1.4, margin: "8px 0 0" }}>
-                Ouvre Instagram, nouvelle story, colle.
+                {appT("share.storyPaste")}
               </p>
             )}
             {stickerState === "saved" && (
               <p style={{ fontSize: 12, color: G.inkLight, lineHeight: 1.4, margin: "8px 0 0" }}>
-                Ajoute l'image dans ta story.
+                {appT("share.storyAdd")}
               </p>
             )}
             {stickerState === "failed" && (
               <p style={{ fontSize: 12, color: G.inkLight, lineHeight: 1.4, margin: "8px 0 0" }}>
-                Copie impossible. Réessaie.
+                {appT("share.storyFail")}
               </p>
             )}
           </div>
@@ -3580,7 +3609,7 @@ const ShareModal = ({ session, goalLabel, badge = null, onClose }) => {
           <div style={{ position: "absolute", top: -40, right: -20, width: 160, height: 160, borderRadius: "50%", background: "rgba(0,87,253,0.35)" }} />
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
             <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: G.mint, borderRadius: 20, padding: "5px 12px" }}>
-              <Check size={12} color={G.white} /><span style={{ fontSize: 12, fontWeight: 700, color: G.white }}>Séance terminée</span>
+              <Check size={12} color={G.white} /><span style={{ fontSize: 12, fontWeight: 700, color: G.white }}>{appT("share.done")}</span>
             </div>
             {badgeMeta && (
               <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(255,184,0,0.18)", border: `1px solid ${badgeMeta.color}`, borderRadius: 20, padding: "5px 12px" }}>
@@ -3589,10 +3618,10 @@ const ShareModal = ({ session, goalLabel, badge = null, onClose }) => {
               </div>
             )}
           </div>
-          <div style={{ fontSize: 11, fontWeight: 700, color: tm.color, letterSpacing: 1.5, marginBottom: 6, textTransform: "uppercase" }}>{session.type}</div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: tm.color, letterSpacing: 1.5, marginBottom: 6, textTransform: "uppercase" }}>{humanSessionType(session.type)}</div>
           <div style={{ fontFamily: FONT_DISPLAY, fontSize: 22, fontWeight: 700, letterSpacing: "-0.02em", color: G.white, marginBottom: 16 }}>{session.title}</div>
           <div style={{ display: "flex", gap: 10, marginBottom: invite?.code ? 14 : 0 }}>
-            {[{ v: session.distance, l: "Distance" }, { v: formatDuration(session.duration), l: "Durée" }, { v: session.intensity, l: "Intensité" }].map((s, i) => (
+            {[{ v: session.distance, l: appT("share.distance") }, { v: formatDuration(session.duration), l: appT("share.duration") }, { v: session.intensity, l: appT("share.intensity") }].map((s, i) => (
               <div key={i} style={{ flex: 1, background: "rgba(255,255,255,0.08)", borderRadius: 12, padding: "10px" }}>
                 <div style={{ fontSize: 10, color: "rgba(255,255,255,0.45)", marginBottom: 2 }}>{s.l}</div>
                 <div style={{ fontSize: 14, fontWeight: 700, color: G.white }}>{s.v}</div>
@@ -3613,25 +3642,25 @@ const ShareModal = ({ session, goalLabel, badge = null, onClose }) => {
             disabled={downloadState === "saving"}
           >
             {downloadState === "saving"
-              ? "Enregistrement…"
+              ? t("share.saving")
               : downloadState === "saved"
-                ? "Dans Photos ✓"
+                ? `${t("share.savedPhotos")} ✓`
                 : downloadState === "failed"
-                  ? "Échec, réessaie"
-                  : "Enregistrer"}
+                  ? t("share.saveFail")
+                  : t("share.save")}
           </Btn>
           <Btn onClick={handleShare} variant="blue" style={{ flex: 1 }}>
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><Share2 size={14} /> Partager</span>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><Share2 size={14} /> {t("share.share")}</span>
           </Btn>
         </div>
         {downloadState === "saved" ? (
           <p style={{ fontSize: 12, color: G.inkLight, lineHeight: 1.4, margin: "0 0 10px", textAlign: "center" }}>
-            Image enregistrée dans tes Photos.
+            {t("share.savedInPhotos")}
           </p>
         ) : null}
         {downloadState === "failed" ? (
           <p style={{ fontSize: 12, color: G.inkLight, lineHeight: 1.4, margin: "0 0 10px", textAlign: "center" }}>
-            Autorise Photos dans Réglages si besoin, puis réessaie.
+            {t("share.photosPermission")}
           </p>
         ) : null}
         <button
@@ -3646,10 +3675,10 @@ const ShareModal = ({ session, goalLabel, badge = null, onClose }) => {
           }}
         >
           {copied
-            ? <><CheckCheck size={14} /> Copié (séance + invite)</>
-            : <><Copy size={14} /> Copier pour Strava / WhatsApp</>}
+            ? <><CheckCheck size={14} /> {t("share.copiedInvite")}</>
+            : <><Copy size={14} /> {t("share.copyStrava")}</>}
         </button>
-        <button onClick={onClose} style={{ width: "100%", marginTop: 4, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 13 }}>Fermer</button>
+        <button onClick={onClose} style={{ width: "100%", marginTop: 4, padding: "12px", background: "none", border: "none", color: G.grey, cursor: "pointer", fontSize: 13 }}>{t("share.close")}</button>
     </SoftMistSheet>
   );
 };
@@ -3659,6 +3688,7 @@ const ShareModal = ({ session, goalLabel, badge = null, onClose }) => {
 
 // ── BADGE CÉLÉBRATION + EXPORT + SEMAINE ───────────────────────────────────
 const BadgeCelebrateSheet = ({ badgeId, session = null, onShare, onClose }) => {
+  const { t } = useTranslation("app");
   const b = BADGE_DEFS.find((d) => d.id === badgeId);
   const { headProps, panelStyle, overlayStyle, panelClassExtra } = useSheetSwipeDismiss(onClose);
   if (!b) return null;
@@ -3691,12 +3721,12 @@ const BadgeCelebrateSheet = ({ badgeId, session = null, onShare, onClose }) => {
           <Icon size={40} color="#fff" />
         </div>
         <p style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: G.gold, margin: "0 0 8px" }}>
-          Badge débloqué
+          {t("share.badgeUnlocked")}
         </p>
         <h3 style={{ fontFamily: FONT_DISPLAY, fontSize: 26, fontWeight: 700, color: G.ink, margin: "0 0 8px", letterSpacing: "-0.03em" }}>
-          {b.label}
+          {t(`badge.${b.id}.label`)}
         </h3>
-        <p style={{ fontSize: 14, color: G.grey, lineHeight: 1.45, margin: "0 0 24px" }}>{b.desc}</p>
+        <p style={{ fontSize: 14, color: G.grey, lineHeight: 1.45, margin: "0 0 24px" }}>{t(`badge.${b.id}.desc`)}</p>
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {onShare && (
             <Btn
@@ -3704,7 +3734,7 @@ const BadgeCelebrateSheet = ({ badgeId, session = null, onShare, onClose }) => {
               onClick={() => { onShare(session || null, badgeId); onClose?.(); }}
               style={{ width: "100%" }}
             >
-              Partager mon badge
+              {t("share.shareBadge")}
             </Btn>
           )}
           <button
@@ -3715,7 +3745,7 @@ const BadgeCelebrateSheet = ({ badgeId, session = null, onShare, onClose }) => {
               background: G.greyXLight, color: G.inkLight, fontWeight: 600, fontSize: 14, cursor: "pointer",
             }}
           >
-            Continuer
+            {t("share.continue")}
           </button>
         </div>
       </div>
@@ -4088,8 +4118,8 @@ const LockedWeeksPreview = ({ weeks, totalBlocked, daysToEvent, onUpgrade }) => 
           {totalBlocked} semaine{totalBlocked > 1 ? "s" : ""} pour arriver prêt
         </div>
         <p style={{ fontSize: 13, color: G.grey, lineHeight: 1.5, marginBottom: 4, maxWidth: 280 }}>
-          {weeks[0]?.focus ? `Sem. ${weeks[0].number} : ${weeks[0].focus}` : "La suite de ton programme t'attend"}
-          {weeks[1]?.focus ? ` · Sem. ${weeks[1].number} : ${weeks[1].focus}` : ""}
+          {weeks[0]?.focus ? `${appT("profile.weekShort", { n: weeks[0].number })} : ${humanSessionType(weeks[0].focus)}` : appT("profile.restOfPlan")}
+          {weeks[1]?.focus ? ` · ${appT("profile.weekShort", { n: weeks[1].number })} : ${humanSessionType(weeks[1].focus)}` : ""}
         </p>
         {daysToEvent !== null && (
           <p style={{ fontSize: 12, color: G.blue, fontWeight: 600, marginBottom: 14 }}>J−{daysToEvent} avant ton objectif</p>
@@ -4448,7 +4478,7 @@ const SessionCard = ({
       <div style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "16px 16px 14px 18px" }}>
         <button
           onClick={() => !locked && setShowTooltip(v => !v)}
-          aria-label={`Type ${session.type}`}
+          aria-label={humanSessionType(session.type)}
           style={{
             width: 44, height: 44, borderRadius: 14, flexShrink: 0,
             background: resolved || locked ? G.greyLight : tm.bg,
@@ -4478,7 +4508,7 @@ const SessionCard = ({
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
             <div style={{ flex: 1, minWidth: 0, paddingRight: locked ? 28 : 0 }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: resolved || locked ? G.greyMid : tm.color, letterSpacing: "0.07em", textTransform: "uppercase", marginBottom: 3 }}>{session.type}</div>
+              <div style={{ fontSize: 10, fontWeight: 700, color: resolved || locked ? G.greyMid : tm.color, letterSpacing: "0.07em", textTransform: "uppercase", marginBottom: 3 }}>{humanSessionType(session.type)}</div>
               <div style={{ fontFamily: FONT_DISPLAY, fontSize: 20, fontWeight: 700, color: resolved || locked ? G.grey : G.ink, lineHeight: 1.2, letterSpacing: "-0.01em" }}>{titleShown}</div>
               {skipped && (
                 <span style={{ display: "inline-block", marginTop: 5, fontSize: 10, fontWeight: 700, color: skipped === "missed" ? G.gold : G.grey, background: skipped === "missed" ? G.goldLight : G.greyXLight, padding: "2px 8px", borderRadius: 100 }}>
@@ -4724,7 +4754,7 @@ const WeekCard = ({ week, weekIndex, onComplete, onShare, onEditFeedback, isCurr
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
           <div style={{ textAlign: "left", flex: 1, minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, flexWrap: "wrap" }}>
-              <span style={{ fontSize: 17, fontWeight: 700, fontFamily: FONT_DISPLAY, color: G.ink, letterSpacing: "-0.03em" }}>Semaine {week.number}</span>
+              <span style={{ fontSize: 17, fontWeight: 700, fontFamily: FONT_DISPLAY, color: G.ink, letterSpacing: "-0.03em" }}>{appT("profile.weekN", { n: week.number })}</span>
               {isCurrentWeek && (
                 <span className="ms-chip is-active" style={{ height: 24, fontSize: 10, padding: "0 10px" }}>En cours</span>
               )}
@@ -8637,7 +8667,7 @@ export default function App() {
     const handle = async () => {
       // Attend que la session soit prête (l'utilisateur était déjà connecté avant le redirect)
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { showToast("Erreur Strava : session expirée, reconnecte-toi.", 8000); return; }
+      if (!session) { showToast(appT("strava.errorToast", { message: appT("strava.sessionExpired") }), 8000); return; }
 
       try {
         const res = await fetch(
@@ -8657,16 +8687,18 @@ export default function App() {
         );
         const json = await res.json();
         if (json.error) throw new Error(json.error);
+        const imported = Number(json.initial_sync?.synced) || 0;
         const syncNote = json.initial_sync?.error
-          ? " · sync manuelle depuis Profil si besoin"
-          : json.initial_sync?.synced
-            ? ` · ${json.initial_sync.synced} activité(s) importée(s)`
+          ? ` · ${appT("strava.syncManual")}`
+          : imported
+            ? ` · ${imported > 1 ? appT("strava.importedMany", { count: imported }) : appT("strava.importedOne", { count: imported })}`
             : "";
-        showToast(`Strava connecté${json.athlete ? `, Bonjour ${json.athlete}` : ""}${syncNote}`, 8000);
+        const hello = json.athlete ? `, ${appT("strava.hello", { name: json.athlete })}` : "";
+        showToast(`${appT("strava.connectedToast")}${hello}${syncNote}`, 8000);
         window.dispatchEvent(new Event("myswym:strava-connected"));
         setActiveTab("home");
       } catch (e) {
-        showToast(`Erreur Strava : ${e.message}`, 8000);
+        showToast(appT("strava.errorToast", { message: e.message }), 8000);
         setActiveTab("home");
       }
     };
@@ -8681,16 +8713,18 @@ export default function App() {
       const detail = e?.detail;
       if (!detail || typeof detail.ok !== "boolean") return;
       if (detail.ok) {
+        const imported = Number(detail.synced) || 0;
         const syncNote = detail.syncError
-          ? " · sync manuelle depuis Profil si besoin"
-          : detail.synced
-            ? ` · ${detail.synced} activité(s) importée(s)`
+          ? ` · ${appT("strava.syncManual")}`
+          : imported
+            ? ` · ${imported > 1 ? appT("strava.importedMany", { count: imported }) : appT("strava.importedOne", { count: imported })}`
             : "";
-        showToast(`Strava connecté${detail.athlete ? `, Bonjour ${detail.athlete}` : ""}${syncNote}`, 8000);
+        const hello = detail.athlete ? `, ${appT("strava.hello", { name: detail.athlete })}` : "";
+        showToast(`${appT("strava.connectedToast")}${hello}${syncNote}`, 8000);
         setActiveTab("home");
         return;
       }
-      showToast(`Erreur Strava : ${detail.error || "connexion impossible"}`, 8000);
+      showToast(appT("strava.errorToast", { message: detail.error || appT("strava.connectFail") }), 8000);
     };
     window.addEventListener("myswym:strava-connected", onNative);
     return () => window.removeEventListener("myswym:strava-connected", onNative);
@@ -8812,12 +8846,18 @@ export default function App() {
           if (isNativeIos()) {
             void flushPendingPushToken();
             void registerNativePush();
+            void import("./lib/native-iap.js").then((m) => m.flushPendingAppleTransactions());
           }
           // Appareils connectés : heartbeat + force logout si révoqué à distance
           void import("./lib/user-devices.js").then(({ heartbeatUserDevice }) => (
             heartbeatUserDevice().then((res) => {
               if (res?.force_logout || res?.revoked) {
-                void supabase.auth.signOut();
+                void prepareNativeSignOut()
+                  .catch(() => {})
+                  .finally(() => {
+                    clearIdentityLocalCache(u.id);
+                    void supabase.auth.signOut();
+                  });
               }
             }).catch(() => { /* function pas encore déployée */ })
           ));
@@ -9664,8 +9704,8 @@ export default function App() {
       const badgeMeta = BADGE_DEFS.find((b) => b.id === unseenBadges[0]);
       if (badgeMeta) {
         void notifyBadgeEarned({
-          title: `Badge obtenu : ${badgeMeta.label}`,
-          body: badgeMeta.desc,
+          title: appT("share.badgeEarned", { label: appT(`badge.${badgeMeta.id}.label`) }),
+          body: appT(`badge.${badgeMeta.id}.desc`),
         });
       }
     }
@@ -9674,20 +9714,39 @@ export default function App() {
 
   useEffect(() => {
     if (screen !== "app" || !user?.id || !isNativeIos()) return undefined;
-    const sync = () => {
+    const syncPush = () => {
       void clearAppIconBadge();
       void (async () => {
         const perm = await getLocalNotificationPermission();
         if (perm === "granted" && pushNotificationsWanted()) {
           void registerNativePush();
+        }
+      })();
+    };
+    syncPush();
+    window.addEventListener("myswym:push-pref", syncPush);
+    return () => window.removeEventListener("myswym:push-pref", syncPush);
+  }, [screen, user?.id]);
+
+  useEffect(() => {
+    if (screen !== "app" || !user?.id || !isNativeIos()) return undefined;
+    let cancelled = false;
+    const syncLocal = () => {
+      void (async () => {
+        const perm = await getLocalNotificationPermission();
+        if (cancelled) return;
+        if (perm === "granted" && pushNotificationsWanted()) {
           void syncLocalNotificationsFromState({ user, plan });
         }
       })();
     };
-    sync();
-    window.addEventListener("myswym:push-pref", sync);
-    return () => window.removeEventListener("myswym:push-pref", sync);
-  }, [screen, user?.id, user?.app_metadata?.subscription_status, plan, accessState.hasPremiumAccess, accessState.trialDaysLeft]);
+    syncLocal();
+    window.addEventListener("myswym:push-pref", syncLocal);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("myswym:push-pref", syncLocal);
+    };
+  }, [screen, user?.id, plan, accessState.hasPremiumAccess, accessState.trialDaysLeft]);
 
   useEffect(() => {
     if (!isNativeIos()) return undefined;
@@ -10154,14 +10213,16 @@ export default function App() {
         if (openSaveAccountAfter) setShowSaveAccount(true);
         else if (openPaywallAfter) setShowPlanReady(true);
       }
-    } catch {
+    } catch (err) {
+      console.error("[generatePlan]", err);
       planRevealActiveRef.current = false;
       setPlanReveal(null);
       planRevealPaywallRef.current = false;
       planRevealSaveAccountRef.current = false;
       setError("Impossible de générer le plan. Réessaie !");
       track("generation_failed", { reason: "exception", context: "generate_plan" });
-      const retryStep = sourceProfile.category === "progression" ? 3 : 5;
+      // Revenir sur l’écran « Séances par semaine » (bouton Générer), pas sur le niveau.
+      const retryStep = 5;
       setStep(retryStep);
       if (user && !(isNativeApp() && isAnonymousUser(user))) {
         setScreen("app");
@@ -11572,6 +11633,9 @@ export default function App() {
     forceAuthRef.current = true;
     authOpenedFromUrlRef.current = true;
     setSettingsOpen(false);
+    try {
+      await prepareNativeSignOut();
+    } catch { /* jeton ou notifs locales */ }
     clearIdentityLocalCache(user?.id);
     // signOut AVANT navigate : sinon user encore set + /connexion → effet renvoie vers /app
     try {
@@ -11604,6 +11668,9 @@ export default function App() {
     forceAuthRef.current = true;
     authOpenedFromUrlRef.current = true;
     setSettingsOpen(false);
+    try {
+      await prepareNativeSignOut();
+    } catch { /* jeton ou notifs locales */ }
     clearIdentityLocalCache(user?.id);
     try {
       await supabase.auth.signOut();
@@ -11776,11 +11843,14 @@ export default function App() {
       <div style={{ minHeight: "100vh", background: G.bg, paddingTop: 64 }}>
         <div style={{ maxWidth: 440, margin: "0 auto", padding: "0 20px" }}>
           <div style={{ paddingTop: 84, paddingBottom: 40 }}>
-            <div style={{ display: "flex", alignItems: "center", marginBottom: 40 }}>
-              <div style={{ display: "flex", alignItems: "center" }}>
-                <BrandLogo variant="wordmark" height={22} />
+            {/* iOS : fond bleu, le wordmark bleu y était un « fantôme » quasi invisible. */}
+            {!isNativeApp() && (
+              <div style={{ display: "flex", alignItems: "center", marginBottom: 40 }}>
+                <div style={{ display: "flex", alignItems: "center" }}>
+                  <BrandLogo variant="wordmark" height={22} />
+                </div>
               </div>
-            </div>
+            )}
             <OnboardingWizard
               profile={profile}
               step={step}
@@ -12069,7 +12139,7 @@ export default function App() {
             onOpenContact={() => {
               completeLoveFunnel();
               setLoveReviewStep(null);
-              const path = withLocalePrefix("/contact", getStoredLanguage());
+              const path = withLocalePrefix("/contact", siteLanguage());
               const url = absoluteSiteUrl(path) || `https://www.myswym.app${path}`;
               openInSystemBrowser(url);
             }}

@@ -105,6 +105,15 @@ export async function handlePushNotifyHttp(
         console.error("[api/push/notify] register_token no_admin");
         return res.status(500).json({ ok: false, error: "no_admin" });
       }
+      const { error: dropError } = await admin
+        .from("device_push_tokens")
+        .delete()
+        .eq("token", token)
+        .neq("user_id", user.id);
+      if (dropError) {
+        console.error("[api/push/notify] register_token drop", dropError.message);
+        return res.status(500).json({ ok: false, error: dropError.message || "drop" });
+      }
       const now = new Date().toISOString();
       const { error } = await admin.from("device_push_tokens").upsert(
         {

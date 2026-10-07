@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { ChevronLeft, ChevronRight, CircleHelp, Mail, Bug, ExternalLink, Info, Globe, Star } from "lucide-react";
 import { G } from "./theme/palette.js";
 import { legalHref } from "./lib/legal-copy.js";
-import { getStoredLanguage } from "./i18n/index.js";
+import { siteLanguage } from "./i18n/index.js";
 import { withLocalePrefix } from "./i18n/locale-path.js";
 import { playUiSound } from "./lib/ui-sounds.js";
 import { appStoreWriteReviewHref } from "./lib/store-links.js";
@@ -157,7 +157,7 @@ function HelpRow({ icon: Icon, title, subtitle, onClick, href, external }) {
 /** Écran Support (réf. Miracle). */
 export function ProfileSupportPanel({ onBack }) {
   const { t } = useTranslation("app");
-  const locale = getStoredLanguage();
+  const locale = siteLanguage();
   const faqHref = withLocalePrefix("/faq", locale);
   const contactHref = withLocalePrefix("/contact", locale);
 
@@ -250,7 +250,7 @@ export function ProfileSupportPanel({ onBack }) {
 /** Écran Politiques / documents légaux. */
 export function ProfileLegalPanel({ onBack }) {
   const { t } = useTranslation("app");
-  const locale = getStoredLanguage();
+  const locale = siteLanguage();
   const docs = [
     { key: "cgu", label: t("help.cgu") },
     { key: "privacy", label: t("help.privacy") },

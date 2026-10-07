@@ -1,9 +1,37 @@
 import { normalizeAppLanguage } from "./languages.js";
 
-/** EN à la racine (`/pricing`). FR sous `/fr` (`/fr/tarifs`). */
+/** EN à la racine (`/pricing`). FR sous `/fr` (`/fr/tarifs`). Autres langues : préfixe + slug EN (`/es/pricing`). */
 export const FR_PREFIX = "/fr";
 export const LEGACY_EN_PREFIX = "/en";
 export const LANG_COOKIE = "myswym_lang";
+
+/** Préfixe d’URL par langue du site (EN = racine, sans préfixe). */
+export const URL_PREFIX_BY_LANG = {
+  fr: "/fr",
+  de: "/de",
+  es: "/es",
+  it: "/it",
+  ja: "/ja",
+  nl: "/nl",
+  pt: "/pt",
+  "pt-BR": "/pt-br",
+  sv: "/sv",
+  da: "/da",
+  nb: "/nb",
+  fi: "/fi",
+};
+
+const LANG_BY_URL_PREFIX = Object.fromEntries(
+  Object.entries(URL_PREFIX_BY_LANG).map(([lang, prefix]) => [prefix, lang]),
+);
+
+/** Langues du site public, EN en premier (x-default). */
+export const SITE_LANGS = ["en", ...Object.keys(URL_PREFIX_BY_LANG)];
+
+function prefixOf(pathname) {
+  const seg = `/${String(pathname || "/").split("/")[1] || ""}`.toLowerCase();
+  return LANG_BY_URL_PREFIX[seg] ? seg : null;
+}
 
 /** Slug interne = FR. L’anglais a un slug distinct quand le mot change. */
 export const EN_SLUG_BY_FR = {
@@ -36,20 +64,19 @@ function stripKnownPrefix(pathname, prefix) {
   return p;
 }
 
-/** Sans `/fr` ni `/en`, en slug FR canonique (`/pricing` → `/tarifs`). */
+/** Sans préfixe de langue (`/fr`, `/es`…, `/en`), en slug FR canonique (`/pricing` → `/tarifs`). */
 export function stripLocalePrefix(pathname = "/") {
   let p = pathname || "/";
-  p = stripKnownPrefix(p, FR_PREFIX);
+  const prefix = prefixOf(p);
+  if (prefix) p = stripKnownPrefix(p.replace(/^\/[^/]+/, prefix), prefix);
   p = stripKnownPrefix(p, LEGACY_EN_PREFIX);
   if (FR_SLUG_BY_EN[p]) return FR_SLUG_BY_EN[p];
   return p || "/";
 }
 
 export function localeFromPathname(pathname = "/") {
-  const p = pathname || "/";
-  if (p === FR_PREFIX || p.startsWith(`${FR_PREFIX}/`)) return "fr";
-  if (p === LEGACY_EN_PREFIX || p.startsWith(`${LEGACY_EN_PREFIX}/`)) return "en";
-  return "en";
+  const prefix = prefixOf(pathname);
+  return prefix ? LANG_BY_URL_PREFIX[prefix] : "en";
 }
 
 export function isAppPath(pathname = "/") {
@@ -88,12 +115,17 @@ export function shouldLocalizePath(pathname = "/") {
 
 export function withLocalePrefix(pathname = "/", locale = "en") {
   if (!shouldLocalizePath(pathname)) {
-    return stripKnownPrefix(stripKnownPrefix(pathname || "/", FR_PREFIX), LEGACY_EN_PREFIX);
+    const prefix = prefixOf(pathname);
+    const bare = prefix ? stripKnownPrefix(pathname.replace(/^\/[^/]+/, prefix), prefix) : pathname || "/";
+    return stripKnownPrefix(bare, LEGACY_EN_PREFIX);
   }
   const frBare = stripLocalePrefix(pathname) || "/";
-  if (locale === "fr") {
+  const lang = normalizeAppLanguage(locale);
+  if (lang === "fr") {
     return frBare === "/" ? FR_PREFIX : `${FR_PREFIX}${frBare}`;
   }
-  if (EN_SLUG_BY_FR[frBare]) return EN_SLUG_BY_FR[frBare];
-  return frBare;
+  const enBare = EN_SLUG_BY_FR[frBare] || frBare;
+  const prefix = URL_PREFIX_BY_LANG[lang];
+  if (!prefix) return enBare;
+  return enBare === "/" ? prefix : `${prefix}${enBare}`;
 }

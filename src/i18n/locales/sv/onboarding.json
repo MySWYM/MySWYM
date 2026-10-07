@@ -261,7 +261,7 @@
     "loginTitle": "Logga in",
     "registerTitle": "Skapa ett konto",
     "resetTitle": "Glömt lösenord",
-    "loginLead": "Logga in med Apple, Google eller din e-post.",
+    "loginLead": "Logga in med Apple, Google, Facebook eller din e-post.",
     "registerLead": "7 dagars prov, inget kort. Sedan pausas dina pass.",
     "registerReferral": "Värvningskod {{code}} : 20% rabatt på din första Premium-faktura.",
     "resetLead": "Ange e-postadressen till ditt konto. Du får en säker länk för att välja ett nytt lösenord.",
@@ -279,6 +279,7 @@
     "newsletter": "Jag vill få nyheter från MySWYM på e-post.",
     "trial": "7 dagars prov när kontot skapas, inget kort. Sedan pausas dina pass tills du prenumererar.",
     "google": "Fortsätt med Google",
+    "facebook": "Fortsätt med Facebook",
     "apple": "Fortsätt med Apple",
     "comingSoon": "Kommer snart",
     "redirecting": "Omdirigerar…",
@@ -296,5 +297,14 @@
     "socialOff": "Den här inloggningen är inte aktiverad på servern ännu. Prova e-post / lösenord.",
     "socialAppleConfig": "Apple-inloggning är inte rätt konfigurerad (Supabase). Prova e-post / lösenord.",
     "socialFail": "Social inloggning är inte tillgänglig."
+  },
+  "saveAccount": {
+    "eyebrow": "Ditt pass",
+    "title": "Spara det här passet",
+    "lead": "Skapa ditt konto för att ha det på alla enheter. Din 7-dagarsprovperiod har redan börjat.",
+    "apple": "Fortsätt med Apple",
+    "email": "Fortsätt med e-post",
+    "later": "Senare",
+    "error": "Kunde inte skapa kontot. Försök igen."
   }
 }

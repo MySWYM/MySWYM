@@ -6,7 +6,7 @@ import {
 import { G } from "./theme/palette.js";
 import { playUiSound } from "./lib/ui-sounds.js";
 import { resolveAvatarUrl } from "./lib/avatar.js";
-import { resolveDisplayFirstName } from "./lib/identity-cache.js";
+import { resolveDisplayFirstName, avatarInitials } from "./lib/identity-cache.js";
 
 /** Menu hamburger : navigation modules (réglages → Profil). */
 export default function SettingsDrawer({
@@ -45,7 +45,7 @@ export default function SettingsDrawer({
   const avatarUrl = resolveAvatarUrl(user);
   const firstName = resolveDisplayFirstName(user);
   const displayName = String(firstName).toUpperCase();
-  const initials = firstName.slice(0, 2).toUpperCase();
+  const initials = avatarInitials(firstName);
 
   const go = (fn) => {
     playUiSound("soft");

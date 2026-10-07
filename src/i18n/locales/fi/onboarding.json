@@ -261,7 +261,7 @@
     "loginTitle": "Kirjaudu",
     "registerTitle": "Luo tili",
     "resetTitle": "Unohtunut salasana",
-    "loginLead": "Kirjaudu Applella, Googlella tai sun sähköpostilla.",
+    "loginLead": "Kirjaudu Applella, Googlella, Facebookilla tai sun sähköpostilla.",
     "registerLead": "7 päivän kokeilu, ei korttia. Sitten sun treenit menee pauselle.",
     "registerReferral": "Suosittelukoodi {{code}} : 20 % alennus sun ensimmäisestä Premium-laskusta.",
     "resetLead": "Kirjoita tilisi sähköposti. Saat turvallisen linkin uuden salasanan valintaan.",
@@ -279,6 +279,7 @@
     "newsletter": "Haluan saada MySWYM-uutisia sähköpostilla.",
     "trial": "7 päivän kokeilu tilin luonnin yhteydessä, ilman korttia. Sitten sun treenit menee pauselle, kunnes sä tilaat.",
     "google": "Jatka Googlella",
+    "facebook": "Jatka Facebookilla",
     "apple": "Jatka Applella",
     "comingSoon": "Tulossa pian",
     "redirecting": "Ohjataan…",
@@ -296,5 +297,14 @@
     "socialOff": "Tätä kirjautumistapaa ei ole vielä kytketty päälle palvelimella. Kokeile sähköpostia / salasanaa.",
     "socialAppleConfig": "Apple-kirjautuminen ei ole asetettu oikein (Supabase). Kokeile sähköpostia / salasanaa.",
     "socialFail": "Sosiaalinen kirjautuminen ei ole käytettävissä."
+  },
+  "saveAccount": {
+    "eyebrow": "Treenisi",
+    "title": "Säilytä tämä treeni",
+    "lead": "Luo tili, niin treeni on kaikilla laitteillasi. 7 päivän kokeilusi on jo alkanut.",
+    "apple": "Jatka Applella",
+    "email": "Jatka sähköpostilla",
+    "later": "Myöhemmin",
+    "error": "Tilin luonti epäonnistui. Yritä uudelleen."
   }
 }

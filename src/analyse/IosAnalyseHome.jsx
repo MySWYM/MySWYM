@@ -13,7 +13,7 @@ import { ScoreRing } from "./ScoreRing.jsx";
 import { CountUp } from "./CountUp.jsx";
 import IosBadgesPanel from "./IosBadgesPanel.jsx";
 import { resolveAvatarUrl } from "../lib/avatar.js";
-import { resolveDisplayFullName } from "../lib/identity-cache.js";
+import { resolveDisplayFullName, avatarInitials } from "../lib/identity-cache.js";
 import { intlLocaleFor, normalizeAppLanguage } from "../i18n/languages.js";
 import { iosShowPremiumBar } from "../lib/ios-simple-nav.js";
 import { fetchWeeklyRank } from "../lib/weekly-rank-api.js";
@@ -22,6 +22,7 @@ import { nextLadderBadge } from "../lib/badge-progress.js";
 import { getTabUi } from "../tab-ui-registry.js";
 import { playUiSound } from "../lib/ui-sounds.js";
 import "./analyse-motion.css";
+import { appLocale } from "../lib/app-locale.js";
 
 const EASE = [0.22, 1, 0.36, 1];
 
@@ -32,7 +33,7 @@ function displayFullName(user) {
 function formatMul(n) {
   const x = Number(n);
   if (!Number.isFinite(x) || x <= 0) return "×0";
-  return `×${x.toLocaleString("fr-FR", { maximumFractionDigits: 2 })}`;
+  return `×${x.toLocaleString(appLocale(), { maximumFractionDigits: 2 })}`;
 }
 
 function paceLabel(secs) {
@@ -145,7 +146,7 @@ export default function IosAnalyseHome({
   const currentStreak = stats.currentStreak || 0;
   const avatarUrl = resolveAvatarUrl(user);
   const name = displayFullName(user);
-  const initials = name.slice(0, 2).toUpperCase();
+  const initials = avatarInitials(name);
   const { t, i18n } = useTranslation("app");
   const memberDate = (() => {
     const d = new Date(user?.created_at || "");
@@ -380,6 +381,11 @@ export default function IosAnalyseHome({
                   sublabel=""
                   center={rankCenter}
                 />
+                {rank !== undefined && !rankHasScore ? (
+                  <div className="ms-type-caption" style={{ marginTop: 6, color: "var(--ms-ink-soft)" }}>
+                    {t("analyse.rankEmpty")}
+                  </div>
+                ) : null}
               </button>
             </FadeIn>
 

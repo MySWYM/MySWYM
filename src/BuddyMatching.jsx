@@ -904,7 +904,7 @@ function BuddyMatchingPaid({ user, profile, onOpenMenu, onTabChange, onUpgrade }
           }}>
             <AlertTriangle size={18} color={G.coral} style={{ flexShrink: 0, marginTop: 2 }} />
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: G.coral, marginBottom: 4 }}>E-mail non vérifié</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: G.coral, marginBottom: 4 }}>{t("buddy.emailUnverified")}</div>
               <div style={{ fontSize: 12, color: G.ink, lineHeight: 1.45, marginBottom: 10 }}>
                 La mise en relation nécessite un compte avec e-mail vérifié (anti faux comptes).
               </div>
@@ -1028,7 +1028,7 @@ function BuddyMatchingPaid({ user, profile, onOpenMenu, onTabChange, onUpgrade }
 
         {view === "matches" && (
           loadingConn ? (
-            <div style={{ textAlign: "center", padding: 40, color: G.grey }}>Chargement…</div>
+            <div style={{ textAlign: "center", padding: 40, color: G.grey }}>{t("buddy.loading")}</div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               {pendingIncoming.length > 0 && (
@@ -1100,7 +1100,7 @@ function BuddyMatchingPaid({ user, profile, onOpenMenu, onTabChange, onUpgrade }
                           <div>
                             <div style={{ fontWeight: 800, color: G.ink }}>{c.peer_display_name}</div>
                             <div style={{ fontSize: 12, color: G.grey, marginTop: 4 }}>
-                              {c.status === "pending" ? "En attente de réponse" : ready ? "Numéros partagés" : myShare ? "En attente du partage de l’autre" : "Ton numéro est masqué"}
+                              {c.status === "pending" ? t("buddy.waitingReply") : ready ? t("buddy.numbersShared") : myShare ? t("buddy.waitingOther") : t("buddy.numberHidden")}
                             </div>
                           </div>
                           <Link2 size={16} color={G.blue} />
@@ -1108,12 +1108,12 @@ function BuddyMatchingPaid({ user, profile, onOpenMenu, onTabChange, onUpgrade }
                         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
                           {c.status === "accepted" && (
                             <button type="button" onClick={() => setDetailConn(c)} style={{ padding: "8px 12px", borderRadius: 10, border: "none", background: G.blue, color: G.white, fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
-                              Voir / WhatsApp
+                              {t("buddy.seeWhatsapp")}
                             </button>
                           )}
                           {c.status === "accepted" && myShare && (
                             <button type="button" onClick={() => handleRevokePhone(c)} disabled={busyAction} style={{ padding: "8px 12px", borderRadius: 10, border: "none", background: G.greyXLight, color: G.ink, fontWeight: 700, fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
-                              <PhoneOff size={14} /> Masquer mon n°
+                              <PhoneOff size={14} /> {t("buddy.hideNumber")}
                             </button>
                           )}
                           {c.status === "accepted" && !myShare && (
@@ -1142,20 +1142,20 @@ function BuddyMatchingPaid({ user, profile, onOpenMenu, onTabChange, onUpgrade }
 
         {view === "form" && (
           loadingForm ? (
-            <div style={{ textAlign: "center", padding: 40, color: G.grey }}>Chargement…</div>
+            <div style={{ textAlign: "center", padding: 40, color: G.grey }}>{t("buddy.loading")}</div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               <div className="ms-glass-card" style={{ borderRadius: 20, padding: 16 }}>
-                <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>Prénom affiché</label>
+                <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>{t("buddy.displayName")}</label>
                 <input value={form.display_name} onChange={(e) => setForm((f) => ({ ...f, display_name: e.target.value }))} style={inp} maxLength={80} />
               </div>
 
               <div className="ms-glass-card" style={{ borderRadius: 20, padding: 16 }}>
-                <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>Ville / zone *</label>
+                <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>{t("buddy.cityZone")}</label>
                 <input value={form.city} onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))} placeholder="Ex. Annecy, Lyon, Arcachon…" style={inp} maxLength={120} />
                 <div style={{ marginTop: 14 }}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 8 }}>
-                    <label style={{ fontSize: 11, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.06em" }}>Périmètre de déplacement</label>
+                    <label style={{ fontSize: 11, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.06em" }}>{t("buddy.travelRadius")}</label>
                     <div style={{ padding: "6px 10px", borderRadius: 999, background: G.blueLight, color: G.blueDeep, fontSize: 12, fontWeight: 800 }}>
                       {formatRadiusLabel(form.radius_km)}
                     </div>
@@ -1303,7 +1303,7 @@ function BuddyMatchingPaid({ user, profile, onOpenMenu, onTabChange, onUpgrade }
               </div>
 
               <div className="ms-glass-card" style={{ borderRadius: 20, padding: 16 }}>
-                <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>Bio (optionnel)</label>
+                <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: G.grey, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>{t("buddy.bioOptional")}</label>
                 <textarea
                   value={form.bio}
                   onChange={(e) => setForm((f) => ({ ...f, bio: e.target.value }))}
@@ -1606,7 +1606,7 @@ function BuddyMatchingPaid({ user, profile, onOpenMenu, onTabChange, onUpgrade }
                     }}
                   >
                     <MessageCircle size={18} />
-                    Contacter sur WhatsApp
+                    {t("buddy.whatsapp")}
                   </a>
                 );
               })()}
@@ -1617,7 +1617,7 @@ function BuddyMatchingPaid({ user, profile, onOpenMenu, onTabChange, onUpgrade }
               Tu peux attendre qu’elle mette à jour son profil, ou masquer ton numéro en attendant.
             </p>
           ) : (
-            <p style={{ fontSize: 13, color: G.grey }}>Chargement du numéro…</p>
+            <p style={{ fontSize: 13, color: G.grey }}>{t("buddy.loadingNumber")}</p>
           )}
           <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 8 }}>
             {myPhoneShareFlag(detailConn, user.id) ? (

@@ -91,6 +91,8 @@
     "thanksAlt": "Loutre MySWYM joyeuse qui éclabousse l’eau",
     "legalUpdated": "Dernière mise à jour : {{date}}",
     "legalFrNotice": "Ces documents juridiques sont rédigés en français.",
+    "legalEnNotice": "Ce document est disponible en anglais et en français. Seule la version française fait foi.",
+    "legalFrLink": "Lire la version française",
     "blogMetaTitle": "Blog MySWYM | Conseils natation et entraînement",
     "blogMetaDesc": "Articles natation : technique, plans, eau libre et vocabulaire de bassin, sans jargon inutile.",
     "blogHeading": "Conseils natation",

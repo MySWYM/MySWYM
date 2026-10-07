@@ -4,7 +4,9 @@
  *
  * Voir docs/plan-methodology.md et docs/sports-engine-v1.md
  */
-import i18n from "../i18n/index.js";
+// Singleton i18next (initialisé par src/i18n/index.js dans l’app). Import direct :
+// le moteur reste exécutable sous Node (tests) sans import.meta.glob de Vite.
+import i18n from "i18next";
 import {
   genererSemaineSessions,
   volumeMultFromProfileLevel,
@@ -1250,13 +1252,13 @@ function buildDiplomaLoopSessionPayload(profile, cursor, easyPhase) {
  */
 export function formatLoopSessionTitle(ordinalIndex = 0) {
   const n = Math.max(0, Number(ordinalIndex) || 0) + 1;
-  return i18n.t("session.loopTitle", { ns: "app", n, defaultValue: `Séance n°${n}` });
+  return i18n.t("session.loopTitle", { ns: "app", n, defaultValue: `Séance n°${n}` }) || `Séance n°${n}`;
 }
 
 /** Titre dans la semaine courante (Séance 1, 2, 3…), pas le compteur global. */
 export function formatLoopWeekSessionTitle(indexInWeek = 0) {
   const n = Math.max(0, Number(indexInWeek) || 0) + 1;
-  return i18n.t("session.weekTitle", { ns: "app", n, defaultValue: `Séance ${n}` });
+  return i18n.t("session.weekTitle", { ns: "app", n, defaultValue: `Séance ${n}` }) || `Séance ${n}`;
 }
 
 /** Nb de séances validées (base 0 pour la séance courante non encore archivée). */

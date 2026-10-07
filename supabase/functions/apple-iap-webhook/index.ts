@@ -1,11 +1,16 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getAccessState, isLiveStripeEntitlement, type AuthUser } from "../_shared/access-state.ts";
 import {
+  assertAppleNotificationEnvironment,
+  expectedAppleIapEnvironment,
+} from "../_shared/apple-iap-catalog.ts";
+import {
   assertUsableAppleTransaction,
   cancelAtPeriodEndFromNotification,
   decodeAppleTransactionJws,
   findUserIdByOriginalTx,
   persistAppleTransaction,
+  userIdFromAppAccountToken,
 } from "../_shared/apple-iap.ts";
 import { decodeJwsPayload } from "../_shared/apple-jws.ts";
 
@@ -29,6 +34,11 @@ Deno.serve(async (req) => {
 
     const txPayload = await decodeAppleTransactionJws(signedTransactionInfo);
     const tx = assertUsableAppleTransaction(txPayload);
+    assertAppleNotificationEnvironment(
+      String(data.environment || ""),
+      tx.environment,
+      expectedAppleIapEnvironment(),
+    );
 
     let renewalInfo: Record<string, unknown> | null = null;
     const signedRenewalInfo = String(data.signedRenewalInfo || "");
@@ -44,7 +54,8 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
-    const userId = await findUserIdByOriginalTx(supabaseAdmin, tx.originalTransactionId!);
+    let userId = await findUserIdByOriginalTx(supabaseAdmin, tx.originalTransactionId!);
+    if (!userId) userId = userIdFromAppAccountToken(txPayload);
     if (!userId) {
       console.warn("[apple-iap-webhook] transaction non liée", tx.originalTransactionId);
       return new Response(JSON.stringify({ received: true, linked: false }), {
@@ -53,7 +64,13 @@ Deno.serve(async (req) => {
     }
 
     const { data: { user } } = await supabaseAdmin.auth.admin.getUserById(userId);
-    if (!user) throw new Error("Utilisateur introuvable");
+    if (!user) {
+      // Compte supprimé : répondre 200, sinon Apple renvoie la notification en boucle.
+      console.warn("[apple-iap-webhook] utilisateur introuvable", userId);
+      return new Response(JSON.stringify({ received: true, linked: false }), {
+        headers: { "Content-Type": "application/json" },
+      });
+    }
     const current = await getAccessState(supabaseAdmin, userId);
     if (isLiveStripeEntitlement(current)) {
       console.warn("[apple-iap-webhook] skip apple persist, stripe entitlement live", userId);

@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import { motion, AnimatePresence } from 'framer-motion'
 import { CalendarDays, Target, Waves } from 'lucide-react'
 import { fadeScale, fadeUp, stagger } from '../motion'
@@ -22,6 +23,7 @@ const BUILD_LINES = [
 ]
 
 export function PlanRevealScreen({ goal, level, frequency, totalWeeks, onContinue }: Props) {
+  const { t } = useTranslation('app')
   const [phase, setPhase] = useState<'building' | 'ready'>('building')
   const [lineIdx, setLineIdx] = useState(0)
 
@@ -100,7 +102,7 @@ export function PlanRevealScreen({ goal, level, frequency, totalWeeks, onContinu
                         background: '#006bfd',
                         opacity: 0.35 + (i / Math.min(12, totalWeeks)) * 0.65,
                       }}
-                      title={`Semaine ${i + 1}`}
+                      title={t('profile.weekN', { n: i + 1 })}
                     />
                   )
                 })}

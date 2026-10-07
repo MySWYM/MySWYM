@@ -173,13 +173,15 @@ export default function Dashboard({
           )}
         </div>
 
-        {trialBannerActive ? (
+        {/* iOS : la pastille compacte suffit ; la grande carte d’offre ne revient
+            qu’en fin d’essai (≤ 2 j). La séance reste la 1ʳᵉ chose visible. */}
+        {trialBannerActive && (!iosNav || Number(accessState?.trialDaysLeft ?? 99) <= 2) ? (
           <TrialCountdownBanner
             accessState={accessState}
             hasSessionAccess={hasSessionAccess}
             onUpgrade={onUpgrade}
           />
-        ) : !iosNav && hasSessionAccess && plan && next?.resolved ? (
+        ) : trialBannerActive ? null : !iosNav && hasSessionAccess && plan && next?.resolved ? (
           <div className="ms-habit-banner is-done" role="status">
             {t("home.validated")}
           </div>
@@ -266,6 +268,9 @@ export default function Dashboard({
         {iosNav ? (
           <>
             <IosHomeSessionDeck cards={weekCards} onOpen={setOpenCard} />
+            {plan && hasSessionAccess ? (
+              <CoachCard plan={plan} profile={profile} currentWeekIndex={coachWeek} spaced />
+            ) : null}
             {typeof onGoBuddies === "function" ? (
               <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 16 }}>
                 <button

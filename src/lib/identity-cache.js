@@ -3,6 +3,7 @@
  * Jamais de clé globale (évite de coller le profil d’Arthur sur un compte test).
  */
 import { clearCachedAvatar } from "./avatar-url.js";
+import i18next from "i18next";
 
 const FIRSTNAME_GLOBAL_KEY = "myswym_firstname";
 const AVATAR_GLOBAL_KEY = "myswym_avatar";
@@ -29,7 +30,17 @@ export function writeCachedFirstName(userId, name) {
   } catch { /* quota / private mode */ }
 }
 
-export function resolveDisplayFirstName(user, fallback = "Nageur") {
+/** Prénom par défaut dans la langue de l’app (« Bonsoir, Swimmer » et non « Nageur »). */
+const DEFAULT_SWIMMER = {
+  fr: "Nageur", en: "Swimmer", de: "Schwimmer", es: "Nadador", ja: "スイマー", nl: "Zwemmer",
+  it: "Nuotatore", pt: "Nadador", "pt-BR": "Nadador", sv: "Simmare", da: "Svømmer", nb: "Svømmer", fi: "Uimari",
+};
+function defaultSwimmerName() {
+  const lng = String(i18next.language || "fr");
+  return DEFAULT_SWIMMER[lng] || DEFAULT_SWIMMER[lng.split("-")[0]] || "Nageur";
+}
+
+export function resolveDisplayFirstName(user, fallback = defaultSwimmerName()) {
   const fromMeta = String(user?.user_metadata?.firstname || "").trim();
   if (fromMeta) return fromMeta;
   const cached = readCachedFirstName(user?.id);
@@ -69,4 +80,15 @@ export function clearIdentityLocalCache(userId) {
     localStorage.removeItem(AVATAR_GLOBAL_KEY);
   } catch { /* ignore */ }
   clearCachedAvatar(userId);
+}
+
+/**
+ * Initiales d’avatar : 1ʳᵉ lettre du prénom + 1ʳᵉ du nom (« Marie Dupont » → MD).
+ * Un seul mot → une seule lettre (« Nageur » → N, et non « NA » qui se lit N/A).
+ */
+export function avatarInitials(name, fallback = "N") {
+  const words = String(name || "").trim().split(/\s+/).filter(Boolean);
+  if (!words.length) return fallback;
+  const letters = words.length > 1 ? [words[0], words[words.length - 1]] : [words[0]];
+  return letters.map((w) => Array.from(w)[0] || "").join("").toUpperCase() || fallback;
 }

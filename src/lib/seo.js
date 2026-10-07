@@ -1,7 +1,8 @@
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { LEGAL_ENTITY } from "./legal-entity.js";
-import { localeFromPathname, stripLocalePrefix, withLocalePrefix } from "../i18n/locale-path.js";
+import { localeFromPathname, SITE_LANGS, stripLocalePrefix, withLocalePrefix } from "../i18n/locale-path.js";
+import { intlLocaleFor } from "../i18n/languages.js";
 
 export const SITE_ORIGIN = "https://www.myswym.app";
 export const DEFAULT_OG_IMAGE = `${SITE_ORIGIN}/og-share.png`;
@@ -90,7 +91,7 @@ export function usePageSeo({
     upsertMeta("property", "og:type", "website");
     upsertMeta("property", "og:url", canonical);
     upsertMeta("property", "og:image", image);
-    upsertMeta("property", "og:locale", locale === "en" ? "en_US" : "fr_FR");
+    upsertMeta("property", "og:locale", locale === "en" ? "en_US" : intlLocaleFor(locale).replace("-", "_"));
     upsertMeta("property", "og:locale:alternate", locale === "en" ? "fr_FR" : "en_US");
     upsertMeta("property", "og:site_name", "MySWYM");
     upsertMeta("name", "twitter:card", "summary_large_image");
@@ -102,11 +103,10 @@ export function usePageSeo({
 
     document.querySelectorAll('link[data-myswym-hreflang]').forEach((el) => el.remove());
     if (!noIndex) {
-      const frUrl = `${SITE_ORIGIN}${withLocalePrefix(bare, "fr")}`;
-      const enUrl = `${SITE_ORIGIN}${withLocalePrefix(bare, "en")}`;
-      upsertLink("alternate", frUrl, { hreflang: "fr" });
-      upsertLink("alternate", enUrl, { hreflang: "en" });
-      upsertLink("alternate", enUrl, { hreflang: "x-default" });
+      for (const lang of SITE_LANGS) {
+        upsertLink("alternate", `${SITE_ORIGIN}${withLocalePrefix(bare, lang)}`, { hreflang: lang });
+      }
+      upsertLink("alternate", `${SITE_ORIGIN}${withLocalePrefix(bare, "en")}`, { hreflang: "x-default" });
       document.head.querySelectorAll('link[rel="alternate"][hreflang]').forEach((el) => {
         el.setAttribute("data-myswym-hreflang", "1");
       });

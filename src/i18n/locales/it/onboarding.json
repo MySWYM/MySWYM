@@ -261,7 +261,7 @@
     "loginTitle": "Accedi",
     "registerTitle": "Crea un account",
     "resetTitle": "Password dimenticata",
-    "loginLead": "Entra con Apple, Google o la tua email.",
+    "loginLead": "Entra con Apple, Google, Facebook o la tua email.",
     "registerLead": "Prova di 7 giorni, senza carta. Poi le tue sessioni vanno in pausa.",
     "registerReferral": "Codice invito {{code}} : 20% di sconto sulla tua prima fattura Premium.",
     "resetLead": "Indica l’email del tuo account. Riceverai un link sicuro per scegliere una nuova password.",
@@ -279,6 +279,7 @@
     "newsletter": "Accetto di ricevere novità di MySWYM via email.",
     "trial": "Prova di 7 giorni alla creazione dell'account, senza carta. Poi le tue sessioni vanno in pausa finché non ti abboni.",
     "google": "Continua con Google",
+    "facebook": "Continua con Facebook",
     "apple": "Continua con Apple",
     "comingSoon": "In arrivo",
     "redirecting": "Reindirizzamento…",
@@ -296,5 +297,14 @@
     "socialOff": "Questo accesso non è ancora attivo sul server. Prova con email e password.",
     "socialAppleConfig": "L'accesso con Apple non è configurato bene (Supabase). Prova con email e password.",
     "socialFail": "L'accesso social non è disponibile."
+  },
+  "saveAccount": {
+    "eyebrow": "La tua sessione",
+    "title": "Tieni questa sessione",
+    "lead": "Crea l’account per ritrovarla su tutti i dispositivi. La prova di 7 giorni è già iniziata.",
+    "apple": "Continua con Apple",
+    "email": "Continua con un’e-mail",
+    "later": "Più tardi",
+    "error": "Impossibile creare l’account. Riprova."
   }
 }

@@ -653,7 +653,7 @@ export function composeArthurDraftSession(brief = {}) {
   };
 }
 
-export function isArthurDraftComposerEnabled(env = process.env) {
+export function isArthurDraftComposerEnabled(env = typeof process !== "undefined" ? process.env : {}) {
   return String(env?.ARTHUR_DRAFT_COMPOSER || "").trim() === "1";
 }
 

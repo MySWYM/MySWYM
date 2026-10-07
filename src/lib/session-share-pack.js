@@ -3,6 +3,8 @@
  * Pattern type Strava : preuve sociale + légende prête avec lien d’invitation.
  */
 
+import i18n from "../i18n/index.js";
+import { humanSessionType } from "./home-week-sessions.js";
 import { formatSessionPlainText as formatSessionBody } from "./session-export.js";
 
 function formatDurationLabel(duration) {
@@ -19,11 +21,11 @@ export function formatInviteBlock(invite = {}) {
   const code = invite?.code ? String(invite.code).toUpperCase() : "";
   const shareUrl = invite?.shareUrl ? String(invite.shareUrl).trim() : "";
   if (!code && !shareUrl) {
-    return "Rejoins MySWYM → https://www.myswym.app";
+    return i18n.t("share.join", { ns: "app" });
   }
-  const lines = ["Rejoins-moi sur MySWYM"];
+  const lines = [i18n.t("share.joinMe", { ns: "app" })];
   if (shareUrl) lines.push(shareUrl);
-  if (code) lines.push(`Code parrain : ${code} (−20 % sur la 1re facture)`);
+  if (code) lines.push(i18n.t("share.referral", { ns: "app", code }));
   return lines.join("\n");
 }
 
@@ -33,15 +35,15 @@ export function formatInviteBlock(invite = {}) {
 export function formatSessionShareCaption(session, invite = {}, { badgeLabel = null } = {}) {
   if (!session) return formatInviteBlock(invite);
   const head = [
-    session.title || "Séance",
+    session.title || i18n.t("share.sessionWord", { ns: "app" }),
     [session.distance, formatDurationLabel(session.duration)].filter(Boolean).join(" · "),
   ]
     .filter(Boolean)
     .join(", ");
   const lines = [head];
-  if (session.type) lines.push(String(session.type));
-  if (badgeLabel) lines.push(`Badge : ${badgeLabel}`);
-  lines.push("", "Coaché avec MySWYM", "", formatInviteBlock(invite));
+  if (session.type) lines.push(humanSessionType(session.type));
+  if (badgeLabel) lines.push(i18n.t("share.badge", { ns: "app", label: badgeLabel }));
+  lines.push("", i18n.t("share.coached", { ns: "app" }), "", formatInviteBlock(invite));
   return lines.join("\n");
 }
 

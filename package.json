@@ -42,7 +42,7 @@
     "test:swim-banks": "node src/lib/swim-banks/swim-banks.test.js && node src/lib/swim-banks/canonical-drills.test.js",
     "test:composer:all": "node src/lib/swim-banks/swim-banks.test.js && node src/lib/swim-banks/canonical-drills.test.js && node src/lib/sports-engine/session-composer.test.js && node src/lib/sports-engine/session-composer-regulier.test.js && node src/lib/sports-engine/session-composer-sportif.test.js && node src/lib/sports-engine/race-quality.test.js && node src/lib/sports-engine/performance-strategy.test.js && node src/lib/sports-engine/taper-load.test.js && node src/lib/sports-engine/feedback-loop.test.js && node src/lib/sports-engine/orchestration.test.js && node src/lib/sports-engine/composer-quality-gate.test.js && node src/lib/sports-engine/equipment-onboarding.test.js && node src/lib/sports-engine/readiness.test.js && node src/lib/sports-engine/technique-from-bank.test.js && node src/lib/sports-engine/corps-from-bank.test.js && node src/lib/sports-engine/session-labels.test.js && node src/lib/sports-engine/coach-restitution.test.js && node src/lib/sports-engine/four-nages-mix.test.js",
     "test:buddy-otp": "node src/lib/buddy-otp-humanize.test.js",
-    "test:native": "node src/lib/native-platform.test.js && node src/lib/apple-auth.test.js && node src/lib/native-oauth.test.js && node src/lib/native-strava.test.js && node src/lib/native-billing.test.js && node src/lib/native-links.test.js && node src/lib/native-welcome.test.js && node src/lib/apple-iap-catalog.test.js",
+    "test:native": "node src/i18n/locale-path.test.js && node src/lib/native-platform.test.js && node src/lib/apple-auth.test.js && node src/lib/native-oauth.test.js && node src/lib/recovery-token.test.js && node src/lib/native-strava.test.js && node src/lib/native-billing.test.js && node src/lib/native-links.test.js && node src/lib/native-welcome.test.js && node src/lib/apple-iap-catalog.test.js",
     "cap:sync": "node scripts/cap-web-build.mjs && node scripts/patch-capacitor-keyboard.mjs && npx cap sync ios",
     "cap:sync:ios-prod": "CAP_ENV_FILE=.env.ios-prod.local npm run cap:sync",
     "cap:ios": "npm run cap:sync && npx cap open ios",
@@ -52,7 +52,10 @@
     "email": "email dev --dir api/_lib/emails",
     "email:test": "node scripts/send-test-email.mjs",
     "email:setup-trial-drip": "node --env-file=.env.local scripts/setup-resend-automations-v3-trial-drip.mjs",
-    "email:republish": "node --env-file=.env.local scripts/republish-resend-templates.mjs"
+    "email:republish": "node --env-file=.env.local scripts/republish-resend-templates.mjs",
+    "i18n:check": "node scripts/i18n-check.mjs",
+    "i18n:scan": "node scripts/i18n-scan.mjs --files",
+    "i18n:hook": "cp scripts/git-hooks/pre-commit .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit"
   },
   "dependencies": {
     "@capacitor-community/apple-sign-in": "^7.1.0",
@@ -85,6 +88,8 @@
     "resend": "^6.18.1"
   },
   "devDependencies": {
+    "@babel/parser": "^7.29.2",
+    "@babel/traverse": "^7.29.0",
     "@capacitor/cli": "^8.5.2",
     "@eslint/js": "^9.39.4",
     "@playwright/test": "^1.62.1",
