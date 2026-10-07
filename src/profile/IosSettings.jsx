@@ -317,9 +317,6 @@ export function IosDataPanel({
   profile,
   onBack,
   onMsg,
-  newsletterOn,
-  newsletterBusy,
-  onToggleNewsletter,
   onDeleteAccount,
   deleteBusy,
   deleteErr,
@@ -388,30 +385,6 @@ export function IosDataPanel({
           </div>
         </>
       ) : null}
-
-      <div className="ms-profile-group-label">{t("settings.news")}</div>
-      <div className="ms-profile-account-stack">
-        <div className="ms-profile-account-row is-static">
-          <span className="ms-profile-settings-icon" style={{ background: "rgba(0,107,253,0.1)" }}>
-            <Mail size={18} color={G.blue} />
-          </span>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div className="ms-profile-settings-label">{t("settings.newsTitle")}</div>
-            <div className="ms-profile-settings-hint">{t("settings.newsHint")}</div>
-          </div>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={newsletterOn}
-            aria-busy={newsletterBusy}
-            className={`ms-menu-switch${newsletterOn ? " is-on" : ""}`}
-            onClick={onToggleNewsletter}
-            disabled={newsletterBusy}
-          >
-            <span />
-          </button>
-        </div>
-      </div>
 
       <p className="ios-settings-copy">
         {t("settings.dataDeleteLead")}
