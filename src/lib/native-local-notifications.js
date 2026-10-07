@@ -1,7 +1,7 @@
 /**
  * Bridge Capacitor Local Notifications (iOS). No-op sur le web.
  * L’autorisation système (Réglages → Notifications) est la source de vérité.
- * Chaque notif pose la pastille rouge (badge: 1) sur l’icône.
+ * Pas de pastille sur l’icône : réservée aux réponses support (push serveur).
  */
 import { isNativeIos } from "./native-platform.js";
 import { translateMultiline } from "../i18n/dom-translate.js";
@@ -186,7 +186,7 @@ export async function scheduleLocalNotifications(items = []) {
       schedule: { at: n.at, allowWhileIdle: true },
       extra: n.extra || { myswym: true },
       sound: "default",
-      badge: Number.isFinite(n.badge) ? Math.max(0, Math.floor(n.badge)) : 1,
+      ...(Number.isFinite(n.badge) ? { badge: Math.max(0, Math.floor(n.badge)) } : {}),
     }));
   if (!notifications.length) return { scheduled: 0 };
   try {
@@ -221,7 +221,6 @@ export async function notifyBadgeEarned({ title, body }) {
         schedule: { at, allowWhileIdle: true },
         extra: { kind: "badge" },
         sound: "default",
-        badge: 1,
       }],
     });
   } catch { /* ignore */ }

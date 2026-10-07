@@ -157,7 +157,6 @@ export async function handlePushNotifyHttp(
         const result = await pushToUser(conn.recipient_id, {
           title: "Demande de binôme",
           body: "Un nageur veut nager avec toi.",
-          badge: 1,
           data: { kind: "buddy", path: "/app" },
         }, { category: "buddy" });
         return res.status(200).json({ ok: true, ...result });
@@ -173,7 +172,6 @@ export async function handlePushNotifyHttp(
       const result = await pushToUser(targetId, {
         title: "Binôme accepté",
         body: "Ta mise en relation a été acceptée.",
-        badge: 1,
         data: { kind: "buddy", path: "/app" },
       }, { category: "buddy" });
       return res.status(200).json({ ok: true, ...result });

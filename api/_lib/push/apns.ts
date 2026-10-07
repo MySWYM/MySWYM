@@ -167,7 +167,7 @@ export async function sendApnsToDevice(
   }
 
   const badgeRaw = payload.badge;
-  const badge = Number.isFinite(badgeRaw) ? Math.max(0, Math.floor(Number(badgeRaw))) : 1;
+  const badge = Number.isFinite(badgeRaw) ? Math.max(0, Math.floor(Number(badgeRaw))) : null;
   const body = JSON.stringify({
     aps: {
       alert: {
@@ -175,7 +175,7 @@ export async function sendApnsToDevice(
         body: String(payload.body || "").slice(0, 180),
       },
       sound: "default",
-      badge,
+      ...(badge != null ? { badge } : {}),
     },
     ...(payload.data || {}),
   });
