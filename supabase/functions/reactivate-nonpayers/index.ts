@@ -15,6 +15,7 @@ import {
   isoFromUnixSeconds,
 } from "../_shared/access-state.ts";
 import { sendEmailViaHttp } from "../_shared/email-http.ts";
+import { hasNewsletterConsent } from "../_shared/resend-events.ts";
 
 export const RELAUNCH_CAMPAIGN_ID = "session-gen-2026-08";
 
@@ -177,6 +178,7 @@ Deno.serve(async (req) => {
 
     const candidates = withEmail.filter((u) => {
       if (u.app_metadata?.reactivation_campaign === RELAUNCH_CAMPAIGN_ID) return false;
+      if (!hasNewsletterConsent(u)) return false;
       return !userIsEntitled(u, accessByUser.get(u.id));
     });
 
