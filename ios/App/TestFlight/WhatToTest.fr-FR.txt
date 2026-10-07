@@ -1,4 +1,4 @@
-Build 38 : merci pour vos retours, ils nous aident a livrer plus vite sur la version store.
+Build 39 : merci pour vos retours, ils nous aident a livrer plus vite sur la version store.
 
 A tester en priorite
 
@@ -8,6 +8,7 @@ Pastille rouge sur l'icone : seulement quand Arthur te repond dans le chat
 Historique des seances : plus de seance en double, plus de seance validee sans toi
 App en espagnol (ou autre langue) : en-tete du plan, nombre de seances, ecran Notifications traduits
 Detail de seance : "Respiration 3 temps" et "jet d'eau" traduits dans ta langue
+Reglages : la newsletter se regle dans Notifications (plus de doublon dans Mes donnees)
 Liens CGU / CGV / confidentialite : s'ouvrent dans la langue de l'app
 
 Aussi dans ce build
