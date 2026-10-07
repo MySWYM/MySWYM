@@ -11,6 +11,58 @@ export function isSessionResolved(session) {
   return !!(session.completed || session.skipped);
 }
 
+/**
+ * Identité d'une séance boucle, stable entre la semaine (« Séance 1 ») et
+ * l'historique (« Séance n°9 ») : jamais le titre.
+ */
+export function loopSessionKey(s) {
+  if (!s) return "";
+  if (s.loopId) return `id:${s.loopId}`;
+  if (s.completedAt) return `done:${s.completedAt}`;
+  const m = s.sheetMeta || {};
+  return `sig:${m.familyId ?? ""}|${m.n ?? ""}|${s.distance || ""}|${s.skipped || ""}`;
+}
+
+/** Fenêtre de recherche pour les séances anciennes sans id ni date (signature seule). */
+const SIG_LOOKBACK = 6;
+
+export function isInLoopHistory(history, session) {
+  if (!session || !Array.isArray(history) || !history.length) return false;
+  const key = loopSessionKey(session);
+  const pool = key.startsWith("sig:") ? history.slice(-SIG_LOOKBACK) : history;
+  return pool.some((h) => loopSessionKey(h) === key);
+}
+
+/** Écart max entre deux archivages d'une même séance sans id ni date (doublon technique). */
+const SIG_DUP_WINDOW_MS = 15 * 60_000;
+
+/**
+ * Retire les doublons d'archivage (même séance ajoutée 2× à l'historique).
+ * Ne touche qu'à `history`, jamais aux semaines.
+ * @returns {object[]} historique dédoublonné (même référence si rien à retirer)
+ */
+export function dedupeLoopHistory(history) {
+  if (!Array.isArray(history) || history.length < 2) return history;
+  const seen = new Set();
+  const lastSigAt = new Map();
+  const out = [];
+  for (const h of history) {
+    const key = loopSessionKey(h);
+    if (!key.startsWith("sig:")) {
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push(h);
+      continue;
+    }
+    const at = Date.parse(h?.archivedAt || "");
+    const prevAt = lastSigAt.get(key);
+    if (Number.isFinite(at) && Number.isFinite(prevAt) && Math.abs(at - prevAt) < SIG_DUP_WINDOW_MS) continue;
+    if (Number.isFinite(at)) lastSigAt.set(key, at);
+    out.push(h);
+  }
+  return out.length === history.length ? history : out;
+}
+
 function countResolvedInWeeks(plan) {
   return (plan?.weeks || []).reduce(
     (n, w) => n + (w.sessions?.filter(isSessionResolved).length ?? 0),
@@ -30,7 +82,7 @@ export function planProgressScore(entry) {
   const weekResolved = countResolvedInWeeks(plan);
   if (plan.isSessionLoop) {
     const cursor = Number(plan.sessionCursor) || 0;
-    const hist = Array.isArray(plan.history) ? plan.history.length : 0;
+    const hist = Array.isArray(plan.history) ? dedupeLoopHistory(plan.history).length : 0;
     return cursor * 1000 + hist * 10 + weekResolved;
   }
   return weekResolved;

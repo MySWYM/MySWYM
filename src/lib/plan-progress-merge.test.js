@@ -8,10 +8,43 @@ import {
   mergePreservingProgress,
   planProgressScore,
   loopSessionNeedsAdvance,
+  loopSessionKey,
+  isInLoopHistory,
+  dedupeLoopHistory,
 } from "./plan-progress-merge.js";
 
 function assert(cond, msg) {
   if (!cond) throw new Error(msg);
+}
+
+{
+  // Celia : même séance en semaine (« Séance 1 ») et en historique (« Séance n°9 »)
+  const week = { title: "Séance 1", distance: "1500m", completed: true, completedAt: "2026-10-07T10:00:00.000Z", sheetMeta: { familyId: "01", n: 82 } };
+  const hist = [{ ...week, title: "Séance n°9", archivedAt: "2026-10-07T10:00:01.000Z" }];
+  assert(isInLoopHistory(hist, week), "séance validée reconnue malgré un titre différent");
+  assert(!isInLoopHistory(hist, { ...week, completedAt: "2026-10-09T10:00:00.000Z" }), "autre validation du même contenu = autre séance");
+  const withId = { ...week, loopId: "abc" };
+  assert(loopSessionKey(withId) === "id:abc", "loopId prioritaire");
+  assert(isInLoopHistory([{ ...withId, title: "Séance n°3" }], withId), "loopId reconnu");
+
+  const done = (n, at, ref) => ({ title: `Séance n°${n}`, distance: "1500m", completed: true, completedAt: at, sheetMeta: { familyId: "01", n: ref } });
+  const dirty = [
+    done(5, "2026-10-01T10:00:00.000Z", 42), { ...done(6, "2026-10-01T10:00:00.000Z", 42), title: "Séance 1" },
+    done(7, "2026-10-03T10:00:00.000Z", 91), done(8, "2026-10-03T10:00:00.000Z", 91),
+    done(9, "2026-10-05T10:00:00.000Z", 82), done(10, "2026-10-05T10:00:00.000Z", 82),
+  ];
+  const clean = dedupeLoopHistory(dirty);
+  assert(clean.length === 3, `doublons retirés (${clean.length})`);
+  assert(clean.map((s) => s.sheetMeta.n).join(",") === "42,91,82", "ordre gardé");
+  assert(dedupeLoopHistory(clean) === clean, "rien à retirer : même référence");
+
+  const skip = (at) => ({ title: "x", distance: "1500m", skipped: "missed", archivedAt: at, sheetMeta: { familyId: "01", n: 12 } });
+  assert(dedupeLoopHistory([skip("2026-10-01T10:00:00.000Z"), skip("2026-10-01T10:00:02.000Z")]).length === 1, "séance manquée archivée 2× à la suite");
+  assert(dedupeLoopHistory([skip("2026-10-01T10:00:00.000Z"), skip("2026-10-20T10:00:00.000Z")]).length === 2, "même ligne manquée 3 semaines plus tard = 2 séances");
+
+  const plan = { isSessionLoop: true, sessionCursor: 9, history: dirty, weeks: [{ sessions: [] }] };
+  assert(planProgressScore({ plan }) === 9 * 1000 + 3 * 10, "score sur l'historique dédoublonné");
+  console.log("loop history dedupe PASS");
 }
 
 {
