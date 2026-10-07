@@ -7,6 +7,8 @@ import {
   shouldShowSessionReminderBanner,
   sessionReminderCopy,
   buildLocalNotificationPlan,
+  spaceOutNotifications,
+  NOTIF_MIN_GAP_MS,
 } from "./session-reminder.js";
 import { ACCESS_STATUS } from "./access.js";
 import { NOTIF_IDS } from "./native-local-notifications.js";
@@ -118,6 +120,33 @@ export function runSessionReminderSmoke() {
 
   const off = buildLocalNotificationPlan({ enabled: false, hasPlan: true, nowMs: now });
   ok(off.length === 0, "disabled empty");
+
+  // Capture Arthur 07/10 : « On reprend ensemble ? » + « Rappel séance » à 18:00 pile
+  const lazy = buildLocalNotificationPlan({
+    enabled: true,
+    hasPremiumAccess: true,
+    accessStatus: ACCESS_STATUS.ACTIVE,
+    hasPlan: true,
+    nextResolved: false,
+    currentStreak: 5,
+    lastCompletedAt: new Date(now - 4 * 86400000).toISOString(),
+    reviewEligible: true,
+    nowMs: now,
+  });
+  const sameDay = (a, b) => new Date(a).toDateString() === new Date(b).toDateString();
+  const comeback = lazy.find((n) => n.id === NOTIF_IDS.COMEBACK);
+  ok(comeback, "comeback planned");
+  ok(!lazy.some((n) => (n.id === NOTIF_IDS.SESSION || n.id === NOTIF_IDS.STREAK) && sameDay(n.at, comeback.at)), "comeback replaces reminder + streak that day");
+  for (let i = 1; i < lazy.length; i++) {
+    ok(lazy[i].at - lazy[i - 1].at >= NOTIF_MIN_GAP_MS, `3 h gap ${lazy[i - 1].id} / ${lazy[i].id}`);
+  }
+  ok(lazy.every((n) => n.at.getHours() <= 21), "never after 21 h");
+
+  const clash = spaceOutNotifications([
+    { id: 1, at: new Date("2026-09-23T18:00:00"), extra: { kind: "session_reminder" } },
+    { id: 2, at: new Date("2026-09-23T18:00:00"), extra: { kind: "review_ask" } },
+  ]);
+  ok(clash.length === 2 && clash[1].at.getHours() === 21 && clash[1].id === 2, "lower priority shifted +3 h");
 
   console.log(`session-reminder.test.js OK (${asserts.length}+plan)`);
 }
