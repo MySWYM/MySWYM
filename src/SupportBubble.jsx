@@ -4,7 +4,7 @@ import { ArrowLeft, ChevronDown, ChevronRight, Home, MessageCircle, Send, X } fr
 import { PRICING_SUMMARY_FR } from "./lib/pricing.js";
 import { APPLE_IAP_SUMMARY_FR } from "./lib/apple-iap-catalog.js";
 import { isNativeIos } from "./lib/native-platform.js";
-import i18n, { getStoredLanguage } from "./i18n/index.js";
+import i18n, { siteLanguage } from "./i18n/index.js";
 import { closeSupportLive, fetchSupportThread, sendSupportLive } from "./lib/support-api.js";
 import { getSupportSessionRef } from "./lib/support-context.js";
 import "./theme/support-widget-opaque.css";
@@ -216,7 +216,7 @@ function matchFaq(text) {
     const translated = i18n.t(key, { ns: "app", defaultValue: "" });
     if (translated && translated !== key) return translated;
   }
-  const lang = String(getStoredLanguage() || "fr").toLowerCase();
+  const lang = String(siteLanguage() || "fr").toLowerCase();
   const en = lang.startsWith("en");
   if (isNativeIos()) {
     if (en && best.iosEnAnswer) return best.iosEnAnswer;

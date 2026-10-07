@@ -2,8 +2,8 @@ import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
 
 import { isNativeApp } from "../lib/native-platform.js";
-import { isAppPath, languageFromNavigator, localeFromPathname, LANG_COOKIE } from "./locale-path.js";
-import { SUPPORTED_LANGS } from "./languages.js";
+import { isAppPath, languageFromNavigator, localeFromPathname, LANG_COOKIE, withLocalePrefix } from "./locale-path.js";
+import { normalizeAppLanguage, SUPPORTED_LANGS } from "./languages.js";
 import { setSessionDisplayLang } from "./session-display-lang.js";
 import { APP_COPY } from "./app-copy.js";
 
@@ -71,6 +71,16 @@ export function readPersistedNativeLanguage() {
 
 export function getStoredLanguage() {
   return readPersistedLanguage() || "fr";
+}
+
+/** Langue affichée (app iOS comprise), pour ouvrir le site public dans la même langue. */
+export function siteLanguage() {
+  return normalizeAppLanguage(i18n.language || getStoredLanguage());
+}
+
+/** `/cgu` → `/es/terms` selon la langue affichée. */
+export function sitePath(pathname, lang = siteLanguage()) {
+  return withLocalePrefix(pathname, lang);
 }
 
 export function languageFromDevice() {

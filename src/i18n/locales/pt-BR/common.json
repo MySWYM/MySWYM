@@ -91,6 +91,8 @@
     "thanksAlt": "Lontra da MySWYM feliz espirrando água",
     "legalUpdated": "Última atualização: {{date}}",
     "legalFrNotice": "Estes documentos jurídicos saem em francês (empresa francesa).",
+    "legalEnNotice": "Este documento está disponível em inglês e em francês. Somente a versão em francês tem validade jurídica.",
+    "legalFrLink": "Ler a versão em francês",
     "blogMetaTitle": "Blog MySWYM | Dicas de treino de natação",
     "blogMetaDesc": "Artigos de natação: técnica, planos, águas abertas e vocabulário de piscina, sem jargão extra.",
     "blogHeading": "Dicas de natação",

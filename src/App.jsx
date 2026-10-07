@@ -202,7 +202,7 @@ import LanguageSwitcher from "./i18n/LanguageSwitcher.jsx";
 import { withLocalePrefix } from "./i18n/locale-path.js";
 import { intlLocaleFor } from "./i18n/languages.js";
 import { useSessionText } from "./i18n/useSessionText.js";
-import i18n, { getStoredLanguage } from "./i18n/index.js";
+import i18n, { siteLanguage } from "./i18n/index.js";
 import { humanSessionType } from "./lib/home-week-sessions.js";
 import HomeBlogCarousel from "./HomeBlogCarousel.jsx";
 import FeedbackModal from "./sheets/FeedbackModal.jsx";
@@ -12139,7 +12139,7 @@ export default function App() {
             onOpenContact={() => {
               completeLoveFunnel();
               setLoveReviewStep(null);
-              const path = withLocalePrefix("/contact", getStoredLanguage());
+              const path = withLocalePrefix("/contact", siteLanguage());
               const url = absoluteSiteUrl(path) || `https://www.myswym.app${path}`;
               openInSystemBrowser(url);
             }}

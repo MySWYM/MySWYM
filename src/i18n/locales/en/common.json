@@ -91,6 +91,8 @@
     "thanksAlt": "Happy MySWYM otter splashing in the water",
     "legalUpdated": "Last updated: {{date}}",
     "legalFrNotice": "These legal documents are issued in French (French company).",
+    "legalEnNotice": "This document is available in English and French. Only the French version is legally binding.",
+    "legalFrLink": "Read the French version",
     "blogMetaTitle": "MySWYM blog | Swim training tips",
     "blogMetaDesc": "Swim articles: technique, plans, open water, and pool vocabulary, without extra jargon.",
     "blogHeading": "Swim tips",

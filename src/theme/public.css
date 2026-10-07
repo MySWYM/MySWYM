@@ -396,6 +396,9 @@ body:has(.ms-root) {
   right: 0;
   z-index: 230;
   min-width: 11.5rem;
+  max-height: min(70vh, 30rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 0.35rem;
   border: 1px solid var(--ms-border, rgba(0, 107, 253, 0.22));
   border-radius: 0.75rem;

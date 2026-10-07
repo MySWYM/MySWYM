@@ -119,13 +119,20 @@ function skipElement(el) {
   return false;
 }
 
+/** `data-translate-lang="en"` : bloc affiché dans cette langue hors français (texte légal). */
+function langFor(el) {
+  if (activeLang === "fr") return "fr";
+  return el?.closest?.("[data-translate-lang]")?.getAttribute("data-translate-lang") || activeLang;
+}
+
 function applyText(node) {
   const current = node.nodeValue;
   let state = textState.get(node);
   if (!state || current !== state.out) {
     state = { src: current, out: current };
   }
-  const next = activeLang === "fr" ? state.src : translateDisplayText(state.src);
+  const lng = langFor(node.parentElement);
+  const next = lng === "fr" ? state.src : translateDisplayText(state.src, lng);
   state.out = next;
   textState.set(node, state);
   if (next !== current) node.nodeValue = next;
@@ -141,7 +148,8 @@ function applyAttr(el, name) {
   }
   let state = map[name];
   if (!state || current !== state.out) state = { src: current, out: current };
-  const next = activeLang === "fr" ? state.src : translateDisplayText(state.src);
+  const lng = langFor(el);
+  const next = lng === "fr" ? state.src : translateDisplayText(state.src, lng);
   state.out = next;
   map[name] = state;
   if (next !== current) el.setAttribute(name, next);

@@ -9,14 +9,11 @@ import FlagMark from "./FlagMark.jsx";
 import { isAppPath, stripLocalePrefix, withLocalePrefix } from "./locale-path.js";
 import { playUiSound } from "../lib/ui-sounds.js";
 
-const NAV_OPTIONS = [
-  { id: "fr", code: "FR", name: "Français", flag: "FR" },
-  { id: "en", code: "EN", name: "English", flag: "GB" },
-];
+const NAV_OPTIONS = APP_LANGUAGES.map((l) => ({ ...l, code: l.id.toUpperCase() }));
 
 /**
  * Sélecteur de langue.
- * `nav` : drapeau + code (FR/EN) + menu (header marketing).
+ * `nav` : drapeau + code (FR, EN, ES…) + menu des 13 langues (header marketing).
  * `settings` : ligne Profil + sheet Miracle (drapeaux, Confirm).
  */
 export default function LanguageSwitcher({ variant = "nav" }) {
@@ -25,9 +22,7 @@ export default function LanguageSwitcher({ variant = "nav" }) {
   const location = useLocation();
   const fullList = variant === "settings" || variant === "flag";
   const options = fullList ? APP_LANGUAGES : NAV_OPTIONS;
-  const lng = fullList
-    ? normalizeAppLanguage(i18n.language)
-    : (String(i18n.language || "").toLowerCase().startsWith("en") ? "en" : "fr");
+  const lng = normalizeAppLanguage(i18n.language);
   const current = options.find((o) => o.id === lng) || options[0];
   const marketing = !isAppPath(location.pathname);
   const bare = stripLocalePrefix(location.pathname);

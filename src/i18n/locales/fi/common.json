@@ -91,6 +91,8 @@
     "thanksAlt": "Iloinen MySWYM-saukko pärskii vedessä",
     "legalUpdated": "Viimeksi päivitetty: {{date}}",
     "legalFrNotice": "Nämä juridiset asiakirjat on laadittu ranskaksi (ranskalainen yritys).",
+    "legalEnNotice": "Tämä asiakirja on saatavilla englanniksi ja ranskaksi. Vain ranskankielinen versio on oikeudellisesti sitova.",
+    "legalFrLink": "Lue ranskankielinen versio",
     "blogMetaTitle": "MySWYM-blogi | Uintivinkkejä",
     "blogMetaDesc": "Uintijuttuja: tekniikka, suunnitelmat, avovesi ja allassanasto, ilman turhaa jargonia.",
     "blogHeading": "Uintivinkkejä",
