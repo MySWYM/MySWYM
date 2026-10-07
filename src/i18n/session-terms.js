@@ -12,8 +12,32 @@ function row(fr, t) {
   return out;
 }
 
+/** « Respiration 3 temps » = respirer tous les 3 coups de bras. */
+function breathingRows(n) {
+  const t = {
+    en: `breathe every ${n} strokes`,
+    de: `Atmung alle ${n} Züge`,
+    es: `respiración cada ${n} brazadas`,
+    ja: `${n}ストロークごとに呼吸`,
+    nl: `ademhaling om de ${n} slagen`,
+    it: `respirazione ogni ${n} bracciate`,
+    pt: `respiração a cada ${n} braçadas`,
+    "pt-BR": `respiração a cada ${n} braçadas`,
+    sv: `andning var ${n}:e armtag`,
+    da: `vejrtrækning hvert ${n}. tag`,
+    nb: `pust hvert ${n}. tak`,
+    fi: `hengitys joka ${n}. vedolla`,
+  };
+  return [row(`respiration ${n} temps`, t), row(`resp ${n} temps`, t), row(`resp. ${n} temps`, t)];
+}
+
+const JET_EAU = { en: "water jet", de: "Wasserstrahl", es: "chorro de agua", ja: "ウォータージェット", nl: "waterstraal", it: "getto d’acqua", pt: "jato de água", "pt-BR": "jato de água", sv: "vattenstråle", da: "vandstråle", nb: "vannstråle", fi: "vesisuihku" };
+
 /** Ordre : le plus long d'abord. */
 const PHRASES = [
+  ...[2, 3, 4, 5, 6, 7, 9].flatMap(breathingRows),
+  row("jet d’eau", JET_EAU),
+  row("jet d'eau", JET_EAU),
   row("plaquettes doigts", { en: "finger paddles", de: "Fingerpaddles", es: "palas de dedos", ja: "フィンガーパドル", nl: "vingerpaddles", it: "palette da dita", pt: "palas de dedos", "pt-BR": "palmares de dedo", sv: "fingerpaddlar", da: "fingerpadler", nb: "fingerpadler", fi: "sormilapiot" }),
   row("élastique chevilles", { en: "ankle band", de: "Fussgummi", es: "goma de tobillos", ja: "アンクルバンド", nl: "enkelband", it: "elastico alle caviglie", pt: "elástico nos tornozelos", "pt-BR": "elástico nos tornozelos", sv: "ankelband", da: "ankelbånd", nb: "ankelbånd", fi: "nilkkakuminauha" }),
   row("retour au calme", { en: "swim-down", de: "Ausschwimmen", es: "vuelta a la calma", ja: "クールダウン", nl: "uitzwemmen", it: "defaticamento", pt: "retorno à calma", "pt-BR": "volta à calma", sv: "nedvarvning", da: "nedsvømning", nb: "nedsvømming", fi: "loppuverryttely" }),

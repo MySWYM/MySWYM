@@ -719,13 +719,13 @@ const css = `
 // ── DATA ──────────────────────────────────────────────────────────────────
 // Catalogues onboarding → ./lib/onboarding-catalog.jsx
 const capitalizeLabel = (value = "") => value ? value.charAt(0).toUpperCase() + value.slice(1) : "";
-const pluralizeSessions = (count) => `${count} séance${count > 1 ? "s" : ""}`;
+const pluralizeSessions = (count) => i18n.t(count > 1 ? "profile.sessionsMany" : "profile.sessionsOne", { ns: "app", count });
 const getPlanPrimaryLabel = (entry) => {
   const goalLabel = findGoalById(entry?.profile?.goal)?.label;
   if (goalLabel) return goalLabel;
   return CATEGORIES.find((c) => c.id === entry?.profile?.category)?.label || "Plan";
 };
-const getPlanSecondaryLabel = (entry) => {
+const getPlanSecondaryParts = (entry) => {
   const profile = entry?.profile || {};
   const meta = [];
   if (isProgressionGoal(profile.goal) || usesSessionLoop(profile)) {
@@ -735,14 +735,14 @@ const getPlanSecondaryLabel = (entry) => {
       const days = Math.max(0, Math.ceil((new Date(profile.eventDate) - new Date()) / 86400000));
       meta.push(`J−${days}`);
     }
-    return meta.join(" · ");
+    return meta;
   }
   if (profile.sessionsPerWeek) meta.push(`${profile.sessionsPerWeek}×/sem`);
   if (profile.eventDate) {
     const days = Math.max(0, Math.ceil((new Date(profile.eventDate) - new Date()) / 86400000));
     meta.push(`J−${days}`);
   }
-  return meta.join(" · ");
+  return meta;
 };
 
 // ── UTILS ─────────────────────────────────────────────────────────────────
@@ -4769,12 +4769,12 @@ const WeekCard = ({ week, weekIndex, onComplete, onShare, onEditFeedback, isCurr
                 </span>
               )}
             </div>
-            {week.focus && !/^Séance(\s+n°)?\s*\d+/i.test(String(week.focus)) && (
+            {week.focus && !/^(Séance(\s+n°)?\s*\d+|Semaine\s+\d+\s*$)/i.test(String(week.focus)) && (
               <p style={{ fontSize: 13, color: G.grey, lineHeight: 1.4, margin: "0 0 10px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {week.focus}
               </p>
             )}
-            <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginTop: week.focus && !/^Séance(\s+n°)?\s*\d+/i.test(String(week.focus)) ? 0 : 4 }}>
+            <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginTop: week.focus && !/^(Séance(\s+n°)?\s*\d+|Semaine\s+\d+\s*$)/i.test(String(week.focus)) ? 0 : 4 }}>
               {totalDist > 0 && (
                 <span style={{
                   fontSize: 11, fontWeight: 700,
@@ -4789,7 +4789,7 @@ const WeekCard = ({ week, weekIndex, onComplete, onShare, onEditFeedback, isCurr
                 fontSize: 11, fontWeight: 600, color: G.grey,
                 background: G.greyXLight, padding: "3px 9px", borderRadius: 8,
               }}>
-                {total} séance{total > 1 ? "s" : ""}
+                {appT(total > 1 ? "profile.sessionsMany" : "profile.sessionsOne", { count: total })}
               </span>
             </div>
           </div>
@@ -5260,7 +5260,7 @@ const PlanSelector = ({
   const planList = plans || [];
   const activeEntry = planList.find((entry) => entry.id === activePlanId) || planList[0] || null;
   const primary = getPlanPrimaryLabel(activeEntry);
-  const secondary = getPlanSecondaryLabel(activeEntry);
+  const secondaryParts = getPlanSecondaryParts(activeEntry);
 
   if (!planList.length) return null;
 
@@ -5283,9 +5283,11 @@ const PlanSelector = ({
         <div style={{ fontSize: 15, fontWeight: 700, fontFamily: FONT_DISPLAY, color: G.ink, lineHeight: 1.15, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
           {primary}
         </div>
-        {secondary && (
+        {secondaryParts.length > 0 && (
           <div style={{ fontSize: 12, fontWeight: 600, color: G.grey, marginTop: 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-            {secondary}
+            {secondaryParts.map((part, i) => (
+              <span key={i}>{i > 0 ? " · " : ""}<span>{part}</span></span>
+            ))}
           </div>
         )}
       </div>
