@@ -232,5 +232,58 @@ export function buildLocalNotificationPlan({
     });
   }
 
-  return items;
+  return spaceOutNotifications(items);
+}
+
+/** Écart minimal entre deux notifs MySWYM. */
+export const NOTIF_MIN_GAP_MS = 3 * 3600_000;
+const NOTIF_LATEST_HOUR = 21;
+
+/** Plus petit = plus important (garde sa place quand deux notifs se chevauchent). */
+const NOTIF_PRIORITY = {
+  soft_premium: 0,
+  comeback: 1,
+  comeback_long: 1,
+  session_reminder: 2,
+  streak_protect: 3,
+  checkout_abandon: 4,
+  review_ask: 6,
+  newsletter_nudge: 7,
+};
+
+function dayKey(date) {
+  const d = new Date(date);
+  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+}
+
+/**
+ * Un jour de relance « On reprend ensemble ? », le rappel et la série n'ont plus de sens.
+ * Puis au moins 3 h entre deux notifs : la moins importante est décalée (avant 21 h) ou retirée.
+ */
+export function spaceOutNotifications(items) {
+  const comebackDays = new Set(
+    items.filter((it) => it.extra?.kind === "comeback" || it.extra?.kind === "comeback_long").map((it) => dayKey(it.at)),
+  );
+  const pool = items.filter((it) => {
+    const kind = it.extra?.kind;
+    if (kind !== "session_reminder" && kind !== "streak_protect") return true;
+    return !comebackDays.has(dayKey(it.at));
+  });
+
+  const rank = (it) => NOTIF_PRIORITY[it.extra?.kind] ?? 9;
+  const ordered = [...pool].sort((a, b) => rank(a) - rank(b) || a.at - b.at);
+  const kept = [];
+  for (const it of ordered) {
+    let at = new Date(it.at);
+    for (let guard = 0; guard < kept.length + 1; guard++) {
+      const clash = kept.find((k) => Math.abs(k.at - at) < NOTIF_MIN_GAP_MS);
+      if (!clash) break;
+      at = new Date(clash.at.getTime() + NOTIF_MIN_GAP_MS);
+    }
+    const clash = kept.find((k) => Math.abs(k.at - at) < NOTIF_MIN_GAP_MS);
+    const sameDay = dayKey(at) === dayKey(it.at);
+    if (clash || !sameDay || at.getHours() > NOTIF_LATEST_HOUR) continue;
+    kept.push(at.getTime() === it.at.getTime() ? it : { ...it, at });
+  }
+  return kept.sort((a, b) => a.at - b.at);
 }
