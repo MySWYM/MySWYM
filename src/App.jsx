@@ -8447,11 +8447,11 @@ export default function App() {
       const next = isIosSimpleNav() ? iosResolveTab(tab) : tab;
       setActiveTab(next);
       const panel = String(ev?.detail?.panel || "").trim();
-      if (panel === "data") {
+      if (panel === "data" || panel === "notifications") {
         try {
-          sessionStorage.setItem("myswym_profile_panel", "data");
+          sessionStorage.setItem("myswym_profile_panel", panel);
         } catch { /* ignore */ }
-        window.dispatchEvent(new CustomEvent("myswym:open-profile-panel", { detail: { panel: "data" } }));
+        window.dispatchEvent(new CustomEvent("myswym:open-profile-panel", { detail: { panel } }));
       }
     };
     window.addEventListener("myswym:open-tab", onOpenTab);
