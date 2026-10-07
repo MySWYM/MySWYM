@@ -217,7 +217,7 @@ export function buildLocalNotificationPlan({
     items.push({
       id: NOTIF_IDS.NEWSLETTER,
       title: "Actus MySWYM",
-      body: "Conseils et nouveautés par e-mail : tu peux activer ça dans Mes données personnelles.",
+      body: "Conseils et nouveautés par e-mail : tu peux activer ça dans Réglages, Notifications.",
       at: new Date(newsletterNudgeAtMs),
       extra: { kind: "newsletter_nudge" },
     });

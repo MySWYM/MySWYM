@@ -450,23 +450,25 @@ export default function ProfileTab({
     setNewsletterOn(isNewsletterOptedIn(user));
   }, [user?.id, user?.user_metadata?.newsletter_opt_in]);
 
-  // Notif « Actus MySWYM » / deep link → Mes données personnelles.
+  // Deep link (notif « Actus MySWYM », etc.) → panneau profil : Notifications ou Mes données.
   useEffect(() => {
-    const openData = () => {
+    const PANELS = ["data", "notifications"];
+    const openPanel = (panel) => {
       setSettingsOpen(true);
-      setHelpPanel("data");
+      setHelpPanel(panel);
       try {
         sessionStorage.removeItem("myswym_profile_panel");
       } catch { /* ignore */ }
     };
     const onPanel = (ev) => {
-      if (String(ev?.detail?.panel || "") === "data") openData();
+      const panel = String(ev?.detail?.panel || "");
+      if (PANELS.includes(panel)) openPanel(panel);
     };
     let pending = null;
     try {
       pending = sessionStorage.getItem("myswym_profile_panel");
     } catch { /* ignore */ }
-    if (pending === "data") openData();
+    if (PANELS.includes(pending)) openPanel(pending);
     window.addEventListener("myswym:open-profile-panel", onPanel);
     return () => window.removeEventListener("myswym:open-profile-panel", onPanel);
   }, []);
@@ -786,9 +788,6 @@ export default function ProfileTab({
           profile={profile}
           onBack={() => setHelpPanel(null)}
           onMsg={setMsg}
-          newsletterOn={newsletterOn}
-          newsletterBusy={newsletterBusy}
-          onToggleNewsletter={toggleNewsletter}
           onOpenDevices={() => setHelpPanel("devices")}
           onDeleteAccount={async () => {
             setDeleteErr(null);

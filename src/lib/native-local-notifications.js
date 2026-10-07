@@ -82,7 +82,7 @@ function dispatchFromLocalExtra(extra) {
   }
   if (kind === "newsletter_nudge") {
     window.dispatchEvent(new CustomEvent("myswym:open-tab", {
-      detail: { tab: "profile", panel: "data" },
+      detail: { tab: "profile", panel: "notifications" },
     }));
     return;
   }
