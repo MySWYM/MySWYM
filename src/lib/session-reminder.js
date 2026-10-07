@@ -61,7 +61,7 @@ export function nextCommercialAt(nowMs, { minMs = 2 * 3600_000, hour = 10 } = {}
 
 /**
  * Construit la liste des notifs locales a planifier (one-shot).
- * Chaque item pose la pastille (badge) cote plugin.
+ * Aucune pastille sur l’icône (réservée aux réponses support).
  */
 export function buildLocalNotificationPlan({
   enabled = true,
@@ -99,7 +99,6 @@ export function buildLocalNotificationPlan({
       title: copy.title,
       body: copy.body,
       at: sessionAt,
-      badge: 1,
       extra: { kind: "session_reminder" },
     });
 
@@ -113,7 +112,6 @@ export function buildLocalNotificationPlan({
         title: `Ta série de ${currentStreak} jours`,
         body: "Encore une séance aujourd’hui pour la garder. Tu es si près.",
         at: streakAt,
-        badge: 1,
         extra: { kind: "streak_protect" },
       });
     }
@@ -135,7 +133,6 @@ export function buildLocalNotificationPlan({
           title: "On reprend ensemble ?",
           body: "Quelques jours sans nage : ta semaine t’attend, sans jugement.",
           at: comebackAt,
-          badge: 1,
           extra: { kind: "comeback" },
         });
       }
@@ -150,7 +147,6 @@ export function buildLocalNotificationPlan({
           title: "Ton plan t’attend",
           body: "Ça fait une semaine : une séance courte suffit pour reprendre le rythme.",
           at: longAt,
-          badge: 1,
           extra: { kind: "comeback_long" },
         });
       }
@@ -168,7 +164,6 @@ export function buildLocalNotificationPlan({
           title: "Plus que 2 jours d’essai",
           body: "Sans abonnement, tes séances se mettent en pause. Garde ton plan sur l’App Store.",
           at: j2,
-          badge: 1,
           extra: { kind: "soft_premium" },
         });
       }
@@ -178,7 +173,6 @@ export function buildLocalNotificationPlan({
           title: "Dernier jour d’essai",
           body: "Demain tes séances passent en pause. Abonne-toi pour tout garder.",
           at: j1,
-          badge: 1,
           extra: { kind: "soft_premium" },
         });
       }
@@ -198,7 +192,6 @@ export function buildLocalNotificationPlan({
           title: "Ton essai t’attend",
           body: "Tu as quitté le paiement : réactive Premium quand tu veux, sans pression.",
           at,
-          badge: 1,
           extra: { kind: "checkout_abandon" },
         });
       }
@@ -215,7 +208,6 @@ export function buildLocalNotificationPlan({
         title: "Un avis aide MySWYM",
         body: "Si l’app te convient, un mot sur l’App Store aide d’autres nageurs à nous trouver.",
         at,
-        badge: 1,
         extra: { kind: "review_ask" },
       });
     }
@@ -227,7 +219,6 @@ export function buildLocalNotificationPlan({
       title: "Actus MySWYM",
       body: "Conseils et nouveautés par e-mail : tu peux activer ça dans Mes données personnelles.",
       at: new Date(newsletterNudgeAtMs),
-      badge: 1,
       extra: { kind: "newsletter_nudge" },
     });
   }

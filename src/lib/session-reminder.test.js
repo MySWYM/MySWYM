@@ -75,7 +75,7 @@ export function runSessionReminderSmoke() {
     nowMs: now,
   });
   ok(abandon.some((n) => n.id === NOTIF_IDS.CHECKOUT_ABANDON), "checkout abandon");
-  ok(abandon.every((n) => n.badge === 1), "badge on commercial");
+  ok(abandon.every((n) => n.badge == null), "no app icon badge on local notifs");
 
   const inactive = buildLocalNotificationPlan({
     enabled: true,
