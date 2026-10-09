@@ -18,6 +18,7 @@
 
 | Date | Contexte | Correction | Statut |
 | --- | --- | --- | --- |
+| 2026-10-09 | Savoir livre *Nager²* : papillon | 20 fiches (technique + dosage par bonnet, p. 199-223) validées par Arthur dans [`natation-savoir/nager2-papillon.md`](./natation-savoir/nager2-papillon.md). Points clés : pas une priorité au début ; d’abord en apnée ; pas de pull-buoy ni de plaquettes chez le jeune. Savoir de référence, pas branché à l’app. | ✅ active |
 | 2026-10-09 | Savoir livre *Nager²* : dos | 21 fiches (technique + dosage par bonnet, p. 173-198) validées par Arthur dans [`natation-savoir/nager2-dos.md`](./natation-savoir/nager2-dos.md). Point clé : respiration restreinte inutile en dos (contrairement au crawl). Savoir de référence, pas branché à l’app. | ✅ active |
 | 2026-10-09 | Savoir livre *Nager²* : crawl | 25 fiches (technique + dosage par bonnet ENF, p. 131-173) validées par Arthur dans [`natation-savoir/nager2-crawl.md`](./natation-savoir/nager2-crawl.md). Correspondance : jaune/orange = `decouverte`, rouge/vert = `regulier`, bleu/noir = `sportif`. Savoir de référence pour proposer des séances, pas branché à l’app. | ✅ active |
 | 2026-10-07 | Vocabulaire « respiration N temps » | « Respiration 3 temps » = respirer tous les 3 coups de bras. Traduction : es « respiración cada 3 brazadas », en « breathe every 3 strokes » (pas « 3 temps » mot à mot). `src/i18n/session-terms.js`. | ✅ active |
