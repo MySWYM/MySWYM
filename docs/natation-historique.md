@@ -18,6 +18,7 @@
 
 | Date | Contexte | Correction | Statut |
 | --- | --- | --- | --- |
+| 2026-10-09 | Savoir livre *Nager²* : virages | 17 fiches (technique + dosage par bonnet, p. 243-260) validées par Arthur dans [`natation-savoir/nager2-virages.md`](./natation-savoir/nager2-virages.md). Points clés : pendant la séance, pas en repos ; simple avant culbute ; déjà placé avant de pousser. Savoir de référence, pas branché à l’app. | ✅ active |
 | 2026-10-09 | Savoir livre *Nager²* : brasse | 19 fiches (technique + dosage par bonnet, p. 223-243) validées par Arthur dans [`natation-savoir/nager2-brasse.md`](./natation-savoir/nager2-brasse.md). Points clés : pas commencer par la brasse ; préalable = ciseau ; tout est lié ; pas de transfert vers les 3 autres nages. Savoir de référence, pas branché à l’app. Les 4 nages de *Nager²* sont au complet. | ✅ active |
 | 2026-10-09 | Savoir livre *Nager²* : papillon | 20 fiches (technique + dosage par bonnet, p. 199-223) validées par Arthur dans [`natation-savoir/nager2-papillon.md`](./natation-savoir/nager2-papillon.md). Points clés : pas une priorité au début ; d’abord en apnée ; pas de pull-buoy ni de plaquettes chez le jeune. Savoir de référence, pas branché à l’app. | ✅ active |
 | 2026-10-09 | Savoir livre *Nager²* : dos | 21 fiches (technique + dosage par bonnet, p. 173-198) validées par Arthur dans [`natation-savoir/nager2-dos.md`](./natation-savoir/nager2-dos.md). Point clé : respiration restreinte inutile en dos (contrairement au crawl). Savoir de référence, pas branché à l’app. | ✅ active |
