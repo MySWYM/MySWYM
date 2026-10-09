@@ -18,6 +18,7 @@
 
 | Date | Contexte | Correction | Statut |
 | --- | --- | --- | --- |
+| 2026-10-09 | Savoir livre *Nager²* : crawl | 25 fiches (technique + dosage par bonnet ENF, p. 131-173) validées par Arthur dans [`natation-savoir/nager2-crawl.md`](./natation-savoir/nager2-crawl.md). Correspondance : jaune/orange = `decouverte`, rouge/vert = `regulier`, bleu/noir = `sportif`. Savoir de référence pour proposer des séances, pas branché à l’app. | ✅ active |
 | 2026-10-07 | Vocabulaire « respiration N temps » | « Respiration 3 temps » = respirer tous les 3 coups de bras. Traduction : es « respiración cada 3 brazadas », en « breathe every 3 strokes » (pas « 3 temps » mot à mot). `src/i18n/session-terms.js`. | ✅ active |
 | 2026-10-03 | Snapshot Sheet dans Supabase | Le Google Sheet reste l'atelier. `node scripts/import-natation-sheet.mjs` publie une version `is_live` (`sheet_sessions` + `sheet_educatifs`, clé onglet + `n°`, ajouts en bas). Le serveur lit cette version. Sans version live, repli Google. Les séances déjà validées dans le plan ne sont pas réécrites. | ✅ active |
 | 2026-09-12 | Soft `4 × (3 × 50) · 3 éducatifs` | Ligne crawl (ou mono-nage) : nested = N×M×D m ; jeton `{25m éducatif + 25m nage}` ; `· 3 éducatifs` = `pickN(3)` distincts **strict nage** (pas fiche nage vide / `toutes`). UI sheet éducatifs : layout `same-stroke` (pas pap→crawl). | ✅ active |

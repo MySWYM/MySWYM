@@ -9,6 +9,7 @@
 | [`natation-source-de-verite.md`](./natation-source-de-verite.md) | Hiérarchie des données et architecture |
 | [`natation-validation-seances.md`](./natation-validation-seances.md) | Distance, volume, matériel, 4 nages, sécurité, rendu |
 | [`natation-historique.md`](./natation-historique.md) | Journal daté (`✅ active` / `↩ remplacée` / `🧪 à vérifier`) |
+| [`natation-savoir/`](./natation-savoir/) | Fiches savoir tirées de livres, validées Arthur (pas branchées à l’app) |
 
 **Après chaque correction d’Arthur** : mettre à jour règles actives et/ou validation si durable, ajouter une ligne datée dans l’historique, et aligner `.cursor/rules/natation-seances.mdc` si besoin.
 
