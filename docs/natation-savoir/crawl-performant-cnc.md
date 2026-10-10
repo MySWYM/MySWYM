@@ -5,7 +5,8 @@
 > Thème 2 : « Se propulser efficacement avec les bras », p. 161-172 (CNC0b + CNC7-CNC18).  
 > Thème 3 : « Réaliser un battement de jambes efficace », p. 173-177 (CNC0c + CNC19-CNC23).  
 > Thème 4 : « Bien coordonner ses mouvements de bras et de jambes », p. 178-183 (CNC0d + CNC24-CNC29).  
-> Thème 5 : « Bien respirer et adapter la respiration à sa nage », p. 184-190 (CNC0e + CNC30-CNC36). CNC37 pas encore.  
+> Thème 5 : « Bien respirer et adapter la respiration à sa nage », p. 184-190 (CNC0e + CNC30-CNC36).  
+> Thème 6 : « Réaliser un retour de bras efficace et économique », p. 191-199 (CNC0f + CNC37-CNC45).  
 > Fiches reformulées par l’agent, **validées par Arthur le 2026-10-10**.  
 > Statut : savoir de référence pour « ça bloque où » (école / feedback). **Pas branché à l’app**. D’autres thèmes CNC s’ajoutent dans ce fichier.
 
@@ -209,7 +210,7 @@
 - On voit : un bras ramène trop vite, l’autre pousse trop lent (ou l’inverse). Tu attends. Dur.
 - **Consigne :** un bras **lent**, l’autre **vite**, tu le sens. Puis les deux en opposition. Souffle jusqu’au bout de la poussée.
 - **Faire :** 1) 1 bras, tu ralentis le retour. 2) tu accélères la poussée (CNC17). 3) les deux en même temps, mini-glisse, tu regardes si ça colle.
-- Renvoie vers CNC17 / CNC18. Le livre cite aussi CNC39 (retour), pas encore photo.
+- Renvoie vers CNC17 / CNC18 / CNC39 (retour trop lent ou trop tenu).
 
 ### CNC27 · Les deux bras ne font pas la même chose · tag `bras_dominant`
 - On voit : un côté fort, un côté qui traîne (souvent le côté où tu inspires toujours).
@@ -277,4 +278,63 @@
 - On voit : apnées, ou tu vides trop tard (encore hors de l’eau). Dur.
 - **Consigne :** inspire court sur la poussée. Expire **avec** l’accélération de la main (CNC17). Jamais d’apnée.
 - **Faire :** 1) moins de cycles / 25 m. 2) bras derrière, inspire-expire. 3) chaque godille = un souffle plus fort.
-- Si le rythme de nage est faux, d’abord le corriger (fiche 47, pas encore).
+- Si le rythme de nage est faux, d’abord le corriger (fiche 47, pas encore photo).
+
+---
+
+## Thème 6 · Retour de bras
+
+### CNC0f · Le thème · tous
+- Le retour **n’est pas** une rame. Coude haut, main molle, dans l’axe. On pousse jusqu’au bout **sous** l’eau, on relâche **en l’air**.
+- 1 bras → rattrapé → opposition. Pouce à l’aisselle = repère « coude assez haut ».
+- Début du retour un peu lent, entrée de la main un peu plus vite (*Nager²* fiche 6). Bras tendu « balistique » = option sprint, pas le modèle jeune.
+
+### CNC37 · Le coude sort trop tôt / la main sort trop près de l’épaule · tag `poussee_coupee`
+- On voit : le coude perce **avant** la main. La poussée est coupée. Très fréquent, très grave.
+- **Consigne :** à la fin, **main après le coude**. Pouce à la cuisse. Puis tu relèves.
+- **Faire :** 1) pose figée, bras tendu, épaule tournée. 2) main **avant** le coude, **avec**, **après** : tu gardes « après ». 3) moins de cycles / 25 m.
+- Ça n’est **pas** le retour aérien (là, le coude est haut). C’est la **fin de poussée**.
+
+### CNC38 · Retour trop vite · tag `retour_vite`
+- On voit : le bras fuse, claque à l’eau, l’appui est déjà raté. Peu grave tout seul.
+- **Consigne :** **ralentis** le retour. Coude qui se dégage. Ongles qui **traînent** à la surface.
+- **Faire :** 1) 1 bras, retour au ralenti. 2) 1 pousse + 1 revient **à la même vitesse**, mini-glisse. 3) pouce qui frôle l’aisselle.
+
+### CNC39 · Retour trop lent / trop tenu / crispé · tag `retour_lent`
+- On voit : le bras est « conduit », dur. Ça coûte. Très pénalisant. (Celle que CNC26 citait.)
+- **Consigne :** **lance** le bras en avant. Avant-bras mou. Coude qui se dégage.
+- **Faire :** 1) 1 bras, retour **plus vite**. 2) lancer « balistique ». 3) même test d’opposition que CNC38.
+- Contracter sous l’eau, **lâcher** en l’air.
+
+### CNC40 · Retour trop tendu (sur le côté ou au ciel) · tag `retour_tendu`
+- On voit : bras planche, large ou vertical. Très visible, assez facile.
+- **Consigne :** plie le coude, avant-bras **vertical et mou**. Main dans l’axe. Ongles à la surface.
+- **Faire :** 1) coude plié, épaule qui sort. 2) ongles qui traînent. 3) pouce-aisselle.
+- Sprint court : le bras tendu peut rester utile. Pas chez le jeune.
+
+### CNC41 · Retour trop plié et trop bas · tag `retour_bas`
+- On voit : la main racle l’eau. Inverse de CNC40. Plus rare.
+- **Consigne :** la main fait un petit arc **plus haut**. Lance en avant. Ouvre un peu l’angle.
+- **Faire :** 1) dégager le coude pour monter la main. 2) lancer balistique. 3) opposition.
+
+### CNC42 · Épaule encore dans l’eau / retour couronné · tag `epaule_noyee`
+- On voit : l’épaule ne sort pas quand la main passe à son niveau. Ou la main fait un grand cercle au large.
+- **Consigne :** d’abord **exagère** l’épaule sous l’eau, puis tu la sors. Ensuite coude haut, main dans l’axe.
+- **Faire :** 1) épaules noyées vs épaules sorties. 2) tête un peu dans l’eau, épaule qui sort. 3) opposition, roulis max **au retour**.
+- Sous l’eau, l’épaule reste basse jusqu’à la fin de poussée (*Nager²* 12). En l’air, elle se dégage.
+
+### CNC43 · La main n’est pas dans l’axe de l’avant-bras · tag `main_decalee`
+- On voit : poignet cassé, la main rentre de travers. Plus rare.
+- **Consigne :** main **dans** l’alignement de l’avant-bras, surtout à l’entrée. Tu regardes une fois dessus, une fois dessous, puis plus.
+- **Faire :** 1) regarder le retour. 2) regarder l’entrée. 3) alignement exagéré + lancer.
+
+### CNC44 · Main qui rentre croisée ou trop large · tag `entree_croisee`
+- On voit : la main tombe vers le milieu, ou trop dehors. Très pénalisant.
+- **Consigne :** ligne de fond. Axe coude-main **parallèle** à la ligne. Main **devant**, pas au milieu du corps.
+- **Faire :** 1) angle 90° bras-épaule. 2) rattrapé avant, mains qui se touchent devant. 3) le long du mur / de la ligne, main le plus loin possible.
+- Croisé ↔ souvent CNC42 (couronne). Large ↔ souvent CNC40 (bras tendu).
+
+### CNC45 · Le coude rentre avant la main · tag `coude_avant_main`
+- On voit : le coude claque, la main suit. L’appui part vers le fond. Très facile.
+- **Consigne :** à l’entrée, coude **un peu plié et plus haut** que la main. Ongles d’abord (*Nager²* 4).
+- **Faire :** 1) retour coude plié, avant-bras vertical. 2) ongles qui traînent. 3) tête un peu haute, tu **regardes** coude vs main. 4) pouce vers le bas pour monter le coude (CNC8).
