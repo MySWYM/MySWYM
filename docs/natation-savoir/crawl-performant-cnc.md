@@ -5,6 +5,7 @@
 > Thème 2 : « Se propulser efficacement avec les bras », p. 161-172 (CNC0b + CNC7-CNC18).  
 > Thème 3 : « Réaliser un battement de jambes efficace », p. 173-177 (CNC0c + CNC19-CNC23).  
 > Thème 4 : « Bien coordonner ses mouvements de bras et de jambes », p. 178-183 (CNC0d + CNC24-CNC29).  
+> Thème 5 : « Bien respirer et adapter la respiration à sa nage », p. 184-190 (CNC0e + CNC30-CNC36). CNC37 pas encore.  
 > Fiches reformulées par l’agent, **validées par Arthur le 2026-10-10**.  
 > Statut : savoir de référence pour « ça bloque où » (école / feedback). **Pas branché à l’app**. D’autres thèmes CNC s’ajoutent dans ce fichier.
 
@@ -227,3 +228,53 @@
 - **Consigne :** moins de jambes. Pull-buoy. Ou 2 temps par cycle de bras, **si** le rattrapé est volontaire (fond).
 - **Faire :** 1) pull, bras seuls, rattrapé exagéré. 2) palmes, un pied monte pendant que l’autre descend. 3) 1 cycle de bras = 2 battements, tout lent.
 - Découverte MySWYM : on **garde** le 6 temps. Cette fiche = nageur déjà en fond / rattrapé.
+
+---
+
+## Thème 5 · Respirer
+
+### CNC0e · Le thème · tous
+- D’abord le **souffle dans l’eau**, ensuite le côté, ensuite le rythme.
+- Inspire **hors** de l’appui de l’autre bras. Des deux côtés, même si en course tu choisis.
+- Inspire court, expire long, zéro apnée. L’inspire se cale sur traction + poussée du **même** bras. La tête revient dans l’axe **avant** le retour. (*Nager²* 14-16.)
+
+### CNC30 · Tête trop sortie + la main sert d’appui · tag `inspire_tete`
+- On voit : la tête se lève, la main avant pousse vers le fond pour « s’asseoir ». Ça fait un rattrapé. Très fréquent, très grave.
+- **Consigne :** oreille contre le bras avant. L’autre oreille + demi-bonnet **dans** l’eau. La main avant **ne porte pas**.
+- **Faire :** 1) exagère la tête haute, puis tu redescends. 2) rotation de tête **sans** tordre la nuque. 3) inspire en rattrapé arrière (2 mains à la cuisse) : plus de main-béquille.
+- Recoupe CNC2 / CNC1.
+
+### CNC31 · Inspire trop long · tag `inspire_long`
+- On voit : la tête reste dehors pendant tout le cycle. La cage se bloque, les bras n’appuient plus.
+- **Fenêtre :** ça **commence** à la traction du bras du même côté, ça **finit** à la fin de sa poussée. Pas plus.
+- **Faire :** 1) ventre, bras derrière, jambes, inspire-expire en boucle. 2) 3 passages, stop, inspire, 3 de l’autre. 3) inspire **seulement** pendant traction + poussée, tête rentrée avant le retour.
+- Souvent lié à CNC33 (tu n’as pas fini d’expirer dans l’eau).
+
+### CNC32 · Inspire trop tôt ou trop tard · tag `inspire_decalage`
+- On voit : même fenêtre que CNC31, mais décalée. Peu visible, très pénalisant.
+- **Consigne :** exagère trop tôt, exagère trop tard, puis tu recales sur traction + poussée. Plus de stop.
+- **Faire :** 1) stop 2 bras en opposition, inspire, repars. 2) trop tôt / trop tard exprès. 3) sans temps mort, pile sur le bon bras.
+
+### CNC33 · Pas d’expire dans l’eau (ou apnée) · tag `expire_nul`
+- On voit : il bloque, puis il gaspille hors de l’eau. Tête qui sort pour vider **et** remplir.
+- **Consigne :** expire **tout le reste du temps**. Jamais d’apnée. Inspire court sur le bon bras.
+- **Faire :** 1) bras derrière, jambes, expire plus long que l’inspire. 2) expire pendant **tout** un trajet de bras, puis 1 cycle, puis 2, puis 3, sans trou.
+- *Nager²* : râle à l’inspire = glotte fermée. Expiration dès la prise, max en fin de poussée.
+
+### CNC34 · Un seul côté · tag `un_cote`
+- On voit : toujours le même. Assez facile.
+- **Consigne :** le « mauvais » côté aussi efficace que le bon. En course tu pourras choisir. En séance, les deux.
+- **Faire :** 1) 25 m mauvais côté. 2) 1 mauvais / 3 bons. 3) autant de D que de G (D-G-D-G, ou 25 D + 25 G).
+- Pull-buoy OK.
+
+### CNC35 · Trop souvent, ou trop rarement · tag `freq_inspire`
+- On voit : le souffle ne suit pas la nage (trop de têtes, ou jamais). Peu grave, mais ça coûte.
+- **Consigne :** d’abord les 2 côtés. Compte tes cycles / 25 m. Un signal (tap sur la ligne) : inspire **sur le tap**.
+- **Faire :** 1) équilibre D/G. 2) cycles à un tempo imposé (ex. 2 s, 1,5 s, 1 s). 3) inspire tous les 1 ou 2 cycles.
+- Le livre pointe les fiches 49-50 (pas encore). Jeunes : **3 temps mini** (*Nager²*).
+
+### CNC36 · Rythme pourri (trous, expire trop long, inspire trop fort) · tag `rythme_souffle`
+- On voit : apnées, ou tu vides trop tard (encore hors de l’eau). Dur.
+- **Consigne :** inspire court sur la poussée. Expire **avec** l’accélération de la main (CNC17). Jamais d’apnée.
+- **Faire :** 1) moins de cycles / 25 m. 2) bras derrière, inspire-expire. 3) chaque godille = un souffle plus fort.
+- Si le rythme de nage est faux, d’abord le corriger (fiche 47, pas encore).
