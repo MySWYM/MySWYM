@@ -7,8 +7,9 @@
 > Thème 4 : « Bien coordonner ses mouvements de bras et de jambes », p. 178-183 (CNC0d + CNC24-CNC29).  
 > Thème 5 : « Bien respirer et adapter la respiration à sa nage », p. 184-190 (CNC0e + CNC30-CNC36).  
 > Thème 6 : « Réaliser un retour de bras efficace et économique », p. 191-199 (CNC0f + CNC37-CNC45).  
+> Thème 7 : « Bien adapter l’amplitude et la fréquence de sa nage », p. 200-204 (CNC0g + CNC46-CNC50). Dernier thème du chap. 4.  
 > Fiches reformulées par l’agent, **validées par Arthur le 2026-10-10**.  
-> Statut : savoir de référence pour « ça bloque où » (école / feedback). **Pas branché à l’app**. D’autres thèmes CNC s’ajoutent dans ce fichier.
+> Statut : savoir de référence pour « ça bloque où » (école / feedback). **Pas branché à l’app**. Chap. 4 CNC au complet (CNC0-CNC50).
 
 **Règle :** un défaut à la fois. Lent, puis 25 m qui accélère. Tag → éducatif 1 de la fiche, pas une séance inventée.
 
@@ -272,13 +273,13 @@
 - On voit : le souffle ne suit pas la nage (trop de têtes, ou jamais). Peu grave, mais ça coûte.
 - **Consigne :** d’abord les 2 côtés. Compte tes cycles / 25 m. Un signal (tap sur la ligne) : inspire **sur le tap**.
 - **Faire :** 1) équilibre D/G. 2) cycles à un tempo imposé (ex. 2 s, 1,5 s, 1 s). 3) inspire tous les 1 ou 2 cycles.
-- Le livre pointe les fiches 49-50 (pas encore). Jeunes : **3 temps mini** (*Nager²*).
+- Renvoie vers CNC49 / CNC50 (fréquence trop haute ou trop basse). Jeunes : **3 temps mini** (*Nager²*).
 
 ### CNC36 · Rythme pourri (trous, expire trop long, inspire trop fort) · tag `rythme_souffle`
 - On voit : apnées, ou tu vides trop tard (encore hors de l’eau). Dur.
 - **Consigne :** inspire court sur la poussée. Expire **avec** l’accélération de la main (CNC17). Jamais d’apnée.
 - **Faire :** 1) moins de cycles / 25 m. 2) bras derrière, inspire-expire. 3) chaque godille = un souffle plus fort.
-- Si le rythme de nage est faux, d’abord le corriger (fiche 47, pas encore photo).
+- Si le rythme de nage est faux, d’abord le corriger (CNC47).
 
 ---
 
@@ -338,3 +339,42 @@
 - On voit : le coude claque, la main suit. L’appui part vers le fond. Très facile.
 - **Consigne :** à l’entrée, coude **un peu plié et plus haut** que la main. Ongles d’abord (*Nager²* 4).
 - **Faire :** 1) retour coude plié, avant-bras vertical. 2) ongles qui traînent. 3) tête un peu haute, tu **regardes** coude vs main. 4) pouce vers le bas pour monter le coude (CNC8).
+
+---
+
+## Thème 7 · Amplitude et fréquence
+
+### CNC0g · Le thème · tous
+- **Vitesse = amplitude × fréquence.** On compte les cycles / 25 m. D’abord **plus loin** (finir la poussée), ensuite **plus souvent**.
+- 13 cycles / 25 m ≈ 1,80-2 m / cycle = repère « assez long ». Moins de cycles = souvent mieux, **si** tu appuies encore.
+- 1 bras → rattrapé → opposition. Lent, puis 25 m qui accélère. Plaquettes petites OK pour sentir.
+
+### CNC46 · Amplitude trop courte : poussée pas finie · tag `amplitude_poussee`
+- On voit : le bras quitte l’eau trop tôt. 18 cycles / 25 m au lieu de ~12. Très fréquent, très grave.
+- **Consigne :** à chaque cycle, main **le plus loin derrière**. Pouce à la cuisse, voire mi-cuisse. Stop 3+1 en opposition.
+- **Faire :** 1) 18 cycles exprès, puis 12, tu compares. 2) main à la cuisse, temps mort. 3) moins de cycles / 25 m **en finissant** la poussée.
+- Recoupe CNC37 / CNC16.
+
+### CNC47 · Amplitude trop courte : rythme plat · tag `amplitude_rythme`
+- On voit : la main va tout à la même vitesse. Trop mou = pas d’eau. Trop vite = tu traverses. Très fréquent, **dur**.
+- **Consigne :** 3 godilles, **stop** entre chacune. Chaque morceau **accélère**. Souffle de plus en plus fort avec.
+- **Faire :** 1) plaquettes + pull, moins de cycles. 2) rattrapé, 3 godilles lent puis vite. 3) expire **avec** la main (CNC17 / CNC36).
+- Recoupe CNC17 / CNC18.
+
+### CNC48 · Amplitude trop courte : coordination pourrie · tag `amplitude_coord`
+- On voit : trou devant (rattrapé) ou jambes qui ne collent pas aux bras. Très fréquent, dur.
+- **Consigne :** 1 pousse + 1 revient **ensemble**, mini-glisse. Puis 2 / 4 / 6 temps **par cycle**, tu gardes celui qui allonge.
+- **Faire :** 1) plaquettes + pull, moins de cycles. 2) 1 bras, puis rattrapé **arrière**. 3) opposition 3+1. 4) palmes, 2 puis 4 puis 6.
+- Recoupe CNC24 / CNC26 / CNC28. Découverte : on **garde** le 6 temps.
+
+### CNC49 · Trop de cycles pour la vitesse (moulinet) · tag `freq_haute`
+- On voit : + de 45 cycles / min, ou + de 13 cycles / 25 m, et tu n’avances pas plus. Priorité au **retour**, l’appui est coupé. Très fréquent, très grave.
+- **Consigne :** **ralentis**. Main avant très loin, main arrière très loin. 3 godilles + stop. Souffle fort.
+- **Faire :** 1) opposition 3+1. 2) 3 godilles, retour lent. 3) le plus long cycle possible, tu comptes.
+- Recoupe CNC18 / CNC38. Jeunes : **3 temps mini** (*Nager²*).
+
+### CNC50 · Pas assez de cycles pour la vitesse (nage morte) · tag `freq_basse`
+- On voit : moins de 30 cycles / min, grande amplitude, mais ça ne part pas. Plus rare, moins grave.
+- **Consigne :** d’abord la **poussée plus vite**, ensuite le retour. Tempo imposé : 2 s → 1,5 s → 1 s / cycle.
+- **Faire :** 1) poussée rapide (même si l’appui raccourcit un peu). 2) retour plus vite (CNC39). 3) 25 m = **13 cycles**, tu accélères pour y rester.
+- Pas le premier défaut à chercher chez le jeune. D’abord CNC46-49.
