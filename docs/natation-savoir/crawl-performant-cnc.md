@@ -2,7 +2,8 @@
 
 > Source : livre *Nager un crawl performant*, chap. 4, corrections techniques de la nage en crawl.  
 > Thème 1 : « Bien s’équilibrer pour réduire les résistances à l’avancement », p. 155-160 (CNC0-CNC6).  
-> Thème 2 : « Se propulser efficacement avec les bras », p. 161-172 (CNC0b + CNC7-CNC18). CNC19 pas encore photo.  
+> Thème 2 : « Se propulser efficacement avec les bras », p. 161-172 (CNC0b + CNC7-CNC18).  
+> Thème 3 : « Réaliser un battement de jambes efficace », p. 173-177 (CNC0c + CNC19-CNC23).  
 > Fiches reformulées par l’agent, **validées par Arthur le 2026-10-10**.  
 > Statut : savoir de référence pour « ça bloque où » (école / feedback). **Pas branché à l’app**. D’autres thèmes CNC s’ajoutent dans ce fichier.
 
@@ -141,3 +142,42 @@
 - **Consigne :** **découpe**. 2 ou 3 godilles avec un mini-stop. Chaque morceau accélère. Souffle avec.
 - **Faire :** 1) plaquettes + pull, moins de cycles. 2) rattrapé, 3 godilles, temps mort entre chacune.
 - Même mal que CNC17 : rythme **plat**. Ici tu vas trop vite, là trop lent.
+
+---
+
+## Thème 3 · Battement de jambes
+
+### CNC0c · Le thème · tous
+- Un défaut de jambes à la fois. Dos, puis ventre, planche, palmes, puis nage.
+- Fin type : **moitié battements seuls / moitié nage**. Puis 1 cycle de bras avec un temps mort, le battement **continue**.
+- Hanches + pieds, pas les genoux. Continu. Petites palmes pour sentir, puis **sans**. (*Nager²* : pieds dans l’eau, 6 temps = base.)
+
+### CNC19 · Pédalage (genoux trop pliés) · tag `pedalage`
+- On voit : genoux près de 90°, pieds cassés, genoux qui sortent.
+- **Consigne :** compare pédale / dauphin / vrai battement. Planche : **ne pas** la toucher. Ligne tête-hanches-pieds.
+- **Faire :** 1) pédaler exprès (ventre et dos). 2) onduler. 3) planche à la surface, mesurer l’écart genou-planche.
+- Palmes courtes pour sentir le pied, pas le genou.
+
+### CNC20 · Jambes trop raides (genoux pas assez pliés) · tag `jambes_raides`
+- On voit : barre de fer. Peu d’amplitude. Moins fréquent, moins grave.
+- **Consigne :** inverse de CNC19. Tu **touches** la planche en pliant un peu les genoux. Pointes **toujours** tendues.
+- **Faire :** 1) dos, planche à la surface, chercher le contact. 2) ventre, planche à ~50 cm.
+- Ensuite : sans planche, tu « vois » encore le genou.
+
+### CNC21 · Trop grand / trop de travers · tag `battement_large`
+- On voit : grand ciseau, ou jambes en V. Ça freine.
+- **Consigne :** **ne pas** toucher la planche. Pieds **dans** l’eau. Corps à plat.
+- **Faire :** 1) dos, planche surface. 2) ventre, planche sous les genoux sans la toucher. 3) petites palmes, petit battement.
+- Souvent ça compense un corps de travers (voir CNC5).
+
+### CNC22 · Pieds raides, pas de fouetté · tag `pieds_raides`
+- On voit : la cheville ne lâche pas. En descendant, le pied reste bloqué au lieu de s’allonger. Très pénalisant.
+- **Consigne :** palmes = tu sens le fouetté. Chrono 25 m. Puis **même pied** sans palmes.
+- **Faire :** 1) ondulations / battements avec petites palmes. 2) sans palmes. 3) nage.
+- Plus dur : plus de planche, sentir l’extension du pied.
+
+### CNC23 · Trous dans le battement · tag `battement_coupe`
+- On voit : ça s’arrête, ça repart. Souvent les bras s’arrêtent aussi.
+- **Consigne :** **jamais** de trou, même tout doux. D’abord palmes, puis sans, puis tu ajoutes les bras **lents**.
+- **Faire :** 1) ventre, palmes, continu. 2) sans palmes, continu. 3) une longueur tout mou, une longueur serré et continu.
+- Sprint : le battement **tient** jusqu’au bout. 25 m lent → vite.
