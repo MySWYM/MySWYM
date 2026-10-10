@@ -4,6 +4,7 @@
 > Thème 1 : « Bien s’équilibrer pour réduire les résistances à l’avancement », p. 155-160 (CNC0-CNC6).  
 > Thème 2 : « Se propulser efficacement avec les bras », p. 161-172 (CNC0b + CNC7-CNC18).  
 > Thème 3 : « Réaliser un battement de jambes efficace », p. 173-177 (CNC0c + CNC19-CNC23).  
+> Thème 4 : « Bien coordonner ses mouvements de bras et de jambes », p. 178-183 (CNC0d + CNC24-CNC29).  
 > Fiches reformulées par l’agent, **validées par Arthur le 2026-10-10**.  
 > Statut : savoir de référence pour « ça bloque où » (école / feedback). **Pas branché à l’app**. D’autres thèmes CNC s’ajoutent dans ce fichier.
 
@@ -181,3 +182,48 @@
 - **Consigne :** **jamais** de trou, même tout doux. D’abord palmes, puis sans, puis tu ajoutes les bras **lents**.
 - **Faire :** 1) ventre, palmes, continu. 2) sans palmes, continu. 3) une longueur tout mou, une longueur serré et continu.
 - Sprint : le battement **tient** jusqu’au bout. 25 m lent → vite.
+
+---
+
+## Thème 4 · Coordonner bras et jambes
+
+### CNC0d · Le thème · tous
+- D’abord les bras entre eux, ensuite bras + jambes.
+- 1 bras → rattrapé → opposition. Inspire des **deux** côtés.
+- 6 temps = base de formation (*Nager²*). Le 2 temps, seulement en sprint, et pas trop tôt.
+
+### CNC24 · Trou devant (rattrapé avant) · tag `rattrape_avant`
+- On voit : les deux mains se retrouvent **devant**. Rien ne pousse. Très fréquent, très grave.
+- **Consigne :** quand une main passe sous l’épaule **dans** l’eau, l’autre passe à l’épaule **en l’air**. Pas de rendez-vous devant.
+- **Faire :** 1) 1 bras, l’autre à la cuisse. 2) rattrapé **arrière** (pour casser l’habitude). 3) opposition : 1 pousse + 1 revient **ensemble**.
+- Inspire un côté, puis l’autre.
+
+### CNC25 · Trou derrière (rattrapé arrière) · tag `rattrape_arriere`
+- On voit : les deux mains se retrouvent **derrière**. Plus rare, aussi un trou.
+- **Consigne :** même croisement à l’épaule. Pas de pause à la cuisse.
+- **Faire :** 1) 1 bras, stop **devant**. 2) rattrapé avant (juste pour décaler le trou). 3) opposition.
+- Planche OK sur le bras inactif.
+
+### CNC26 · Retour et poussée pas à la même vitesse · tag `bras_desync`
+- On voit : un bras ramène trop vite, l’autre pousse trop lent (ou l’inverse). Tu attends. Dur.
+- **Consigne :** un bras **lent**, l’autre **vite**, tu le sens. Puis les deux en opposition. Souffle jusqu’au bout de la poussée.
+- **Faire :** 1) 1 bras, tu ralentis le retour. 2) tu accélères la poussée (CNC17). 3) les deux en même temps, mini-glisse, tu regardes si ça colle.
+- Renvoie vers CNC17 / CNC18. Le livre cite aussi CNC39 (retour), pas encore photo.
+
+### CNC27 · Les deux bras ne font pas la même chose · tag `bras_dominant`
+- On voit : un côté fort, un côté qui traîne (souvent le côté où tu inspires toujours).
+- **Consigne :** 5 cycles D + 5 G / 25 m, **même** geste. Puis rattrapé, puis opposition. Inspire 2 côtés.
+- **Faire :** 1) 1 bras (le faible). 2) godilles / petit S **sur la main faible** (éducatif). 3) compte tes cycles, vise -3 / 25 m.
+- Long terme : le bras faible devient encore plus faible si on n’y touche pas.
+
+### CNC28 · Sprint : 2 temps mal calé · tag `2temps_sprint`
+- On voit : les bras sont déjà en opposition (bien), mais les jambes sont en 2 temps **troué** ou trop mou. Le corps roule, les bras ralentissent.
+- **Consigne :** battement **continu** d’abord (palmes). Ensuite tu rajoutes des bras **lents**. Cherche 2 / 4 / 6 / 8 temps **par cycle**, tu gardes celui qui tient.
+- **Faire :** 1) palmes, zéro trou (CNC23). 2) jambes fortes, bras très lents. 3) 3 godilles, 2 battements sur chaque (ça fait 6).
+- Chez le jeune : ne **pas** installer le 2 temps (*Nager²*).
+
+### CNC29 · Fond : 6 temps sur un rattrapé · tag `6temps_fond`
+- On voit : bras en rattrapé (lent), jambes en 6 temps **à fond**. Tu dépenses pour rien. Rare.
+- **Consigne :** moins de jambes. Pull-buoy. Ou 2 temps par cycle de bras, **si** le rattrapé est volontaire (fond).
+- **Faire :** 1) pull, bras seuls, rattrapé exagéré. 2) palmes, un pied monte pendant que l’autre descend. 3) 1 cycle de bras = 2 battements, tout lent.
+- Découverte MySWYM : on **garde** le 6 temps. Cette fiche = nageur déjà en fond / rattrapé.

@@ -18,6 +18,7 @@
 
 | Date | Contexte | Correction | Statut |
 | --- | --- | --- | --- |
+| 2026-10-10 | Savoir livre *Nager un crawl performant* : CNC thème 4 | 7 fiches (CNC0d + CNC24-CNC29, p. 178-183) validées par Arthur dans [`natation-savoir/crawl-performant-cnc.md`](./natation-savoir/crawl-performant-cnc.md). Coordination : trou rattrapé, bras désync, 2 temps sprint / 6 temps fond. Savoir pour « ça bloque où », pas branché à l’app. | ✅ active |
 | 2026-10-10 | Savoir livre *Nager un crawl performant* : CNC thème 3 | 6 fiches (CNC0c + CNC19-CNC23, p. 173-177) validées par Arthur dans [`natation-savoir/crawl-performant-cnc.md`](./natation-savoir/crawl-performant-cnc.md). Défauts de battement (pédalage, jambes raides, trop large, pieds raides, trous). Savoir pour « ça bloque où », pas branché à l’app. | ✅ active |
 | 2026-10-10 | Savoir livre *Nager un crawl performant* : CNC thème 2 | 13 fiches (CNC0b + CNC7-CNC18, p. 161-172) validées par Arthur dans [`natation-savoir/crawl-performant-cnc.md`](./natation-savoir/crawl-performant-cnc.md). Défauts de propulsion bras (épaule, appui, trajet, rythme). Savoir pour « ça bloque où », pas branché à l’app. | ✅ active |
 | 2026-10-10 | Savoir livre *Nager un crawl performant* : CNC thème 1 | 7 fiches (CNC0 + CNC1-CNC6, p. 155-160) validées par Arthur dans [`natation-savoir/crawl-performant-cnc.md`](./natation-savoir/crawl-performant-cnc.md). Défaut → consigne → éducatif (tête haute, tête molle, pas droit, roulis, lacets, main à plat). Savoir pour « ça bloque où », pas branché à l’app. | ✅ active |
