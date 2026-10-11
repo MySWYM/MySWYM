@@ -381,7 +381,7 @@ function Objectives() {
   );
 }
 
-function WhyMyswym() {
+function WhyForSwim() {
   const { t } = useTranslation("landing");
   const blocks = [1, 2, 3].map((n) => ({
     title: t(`why.b${n}Title`),
@@ -703,7 +703,7 @@ export default function Landing() {
           <main>
             <Hero />
             <Objectives />
-            <WhyMyswym />
+            <WhyForSwim />
             <SessionPreview />
             <CoachSection />
             <Includes />

@@ -31,3 +31,7 @@ Archive kit F / anciens PNG : `assets/legacy-myswym/`.
 ALT : `docs/forswim-assets-alt.md` (toujours **ForSwim**, jamais MySWYM dans `alt`).
 
 Régénérer l’AppIcon iOS : `npm run cap:icon`.
+
+## App Store
+
+Icône 1024×1024 RGB sans alpha : `app-store-icon-1024.png` (même composition que l’AppIcon iOS).

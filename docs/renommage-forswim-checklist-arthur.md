@@ -53,9 +53,20 @@ Redirect URLs à garder : forswim + myswym + `myswym://auth/callback`.
 
 ---
 
-## Plus tard (optionnel)
+## Suite optionnelle
 
-- [ ] Stripe Dashboard → custom email domain (TXT + CNAME Stripe ; DMARC = `v=DMARC1; p=none;` suffit)
-- [ ] TestFlight / icône App Store Connect 1024 (quand tu dis « push TestFlight »)
+### Stripe custom email (toi, Dashboard)
+
+Settings → Customer emails → custom domain `forswim.app` → ajouter chez OVH **exactement** les TXT/CNAME affichés (ownership + Mail From + DKIM).  
+DMARC déjà OK : `v=DMARC1; p=none;` (ne pas mettre Stripe dans le TXT `_dmarc`).
+
+### iOS Store
+
+- [x] Fichier prêt : `public/brand/app-store-icon-1024.png`
+- [ ] Upload App Store Connect + « push TestFlight » quand tu veux
+
+### Autre
+
 - [ ] Instagram `@myswym.app` → nouveau handle (hors code)
 - [ ] staging.myswym.app : **pas** de 301 (reste dual)
+- [ ] Articles blog en base encore « MySWYM » (à migrer si tu veux : dis « blog ForSwim »)
