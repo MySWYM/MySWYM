@@ -11,7 +11,7 @@ import {
 } from "../knowledge/myswym-product.js";
 
 const APP = () =>
-  (process.env.APP_URL || "https://myswym.app").replace(/\/$/, "");
+  (process.env.APP_URL || "https://forswim.app").replace(/\/$/, "");
 
 export const MYSWYM_PRICING = {
   monthlyLabel: MYSWYM_PRODUCT.monthly,
@@ -20,7 +20,7 @@ export const MYSWYM_PRICING = {
 } as const;
 
 export const HUMAN_HANDOFF_CLIENT_MESSAGE =
-  "Quelqu’un de l’équipe MySWYM te répondra dès que possible. En cas d’urgence : contact@myswym.app";
+  "Quelqu’un de l’équipe ForSwim te répondra dès que possible. En cas d’urgence : contact@myswym.app";
 
 const MYSWYM_LINK_RE =
   /https?:\/\/(?:www\.)?myswym\.app[^\s]*|myswym\.app\/[^\s]*/gi;
@@ -59,7 +59,7 @@ export function isRelevantConversationalDm(message: string): boolean {
   return intent !== "other";
 }
 
-/** Spam / absurde / hors sujet sans lien MySWYM-sport. */
+/** Spam / absurde / hors sujet sans lien ForSwim-sport. */
 export function isOffTopicDm(message: string): boolean {
   const text = String(message || "").trim();
   if (!text) return true;
@@ -145,10 +145,10 @@ export function isLegitimateHandoffDm(message: string): boolean {
 export function buildPricingReplyMessage(): string {
   const base = APP();
   return (
-    `Premium MySWYM : essai ${MYSWYM_PRICING.trialDays} jours sans carte à l’inscription, ` +
+    `Premium ForSwim : essai ${MYSWYM_PRICING.trialDays} jours avec carte, ` +
     `puis ${MYSWYM_PRICING.monthlyLabel}/mois sans engagement, ` +
     `ou ${MYSWYM_PRICING.annualLabel}/an. ` +
-    `Détails : ${base}${MYSWYM_PRODUCT.paths.tarifs}, tu vises plutôt le mensuel flexible ou l’annuel ?`
+    `Détails : ${base}${MYSWYM_PRODUCT.paths.tarifs}, tu vises plutôt le mensuel ou l’annuel ?`
   );
 }
 
@@ -191,7 +191,7 @@ export function buildConversationalReply(
   ) {
     return {
       message:
-        `MySWYM crée un plan de natation personnalisé selon ton objectif, ton niveau et ta fréquence : séances structurées (technique + volume) pour progresser sans improviser. ` +
+        `ForSwim crée un plan de natation personnalisé selon ton objectif, ton niveau et ta fréquence : séances structurées (technique + volume) pour progresser sans improviser. ` +
         (tip ? `${tip} ` : "") +
         `Tu peux démarrer ici : ${linkInscription}, c’est quoi ton objectif principal (technique, triathlon, régularité…) ?`,
       intent: "myswym_question",
@@ -207,7 +207,7 @@ export function buildConversationalReply(
         (tip ||
           "Pour progresser en crawl : respiration toutes les 3 coulées, oreille dans l’eau, et allonge chaque coulée.") +
         " Tu nages plutôt 1, 2 ou 3 fois par semaine en ce moment ? " +
-        `MySWYM peut ensuite te construire un plan adapté à ta fréquence : ${linkInscription}`,
+        `ForSwim peut ensuite te construire un plan adapté à ta fréquence : ${linkInscription}`,
       intent: "technique",
       lead_temperature: "warm",
       extracted_data: { shadow_policy: "crawl_advice" },
@@ -231,7 +231,7 @@ export function buildConversationalReply(
   if (intent === "plan_request") {
     return {
       message:
-        `Oui, MySWYM est fait pour ça : un plan suivi selon ton objectif et ta dispo. ` +
+        `Oui, ForSwim est fait pour ça : un plan suivi selon ton objectif et ta dispo. ` +
         `Dis-moi fréquence (séances/semaine) et échéance si tu en as une, ou commence ici : ${linkInscription}`,
       intent: "plan_request",
       lead_temperature: "hot",
@@ -267,7 +267,7 @@ export function buildConversationalReply(
   if (isRelevantConversationalDm(inbound)) {
     return {
       message:
-        "Je peux t’aider sur MySWYM, la natation ou un objectif (crawl, triathlon, plan). " +
+        "Je peux t’aider sur ForSwim, la natation ou un objectif (crawl, triathlon, plan). " +
         "Tu veux plutôt comprendre l’app, un conseil technique, ou préparer une échéance ?",
       intent: "myswym_question",
       lead_temperature: "warm",
@@ -334,7 +334,7 @@ export function applyShadowReplyPolicy(
     out.suggested_action = "continue";
     if (!out.message || INTERNAL_BOT_SPEAK_RE.test(out.message)) {
       out.message =
-        "Je t’écoute, tu veux un conseil natation, comprendre MySWYM, ou préparer un objectif ?";
+        "Je t’écoute, tu veux un conseil natation, comprendre ForSwim, ou préparer un objectif ?";
     }
   }
 

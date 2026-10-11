@@ -227,7 +227,7 @@ export default function Dashboard({
               >
                 {isNativeIos()
                   ? t("home.unlockCta")
-                  : t("home.unlockCtaPrice", { price: PRICING.monthlyCommit.label })}
+                  : t("home.unlockCtaPrice", { price: PRICING.monthlyFlex.label })}
               </button>
             </div>
             {weekCards.length ? (

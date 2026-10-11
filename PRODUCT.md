@@ -14,7 +14,7 @@ Secondary: Premium subscribers who may message Arthur via in-app chat for human 
 
 ## Product Purpose
 
-MySWYM delivers a personalized swim training plan from a short questionnaire (goal, level, frequency, and related preferences). Success: the swimmer opens a readable session (warm-up, main set, cool-down, coach tip), follows it in the lane, and can progress or adapt over weeks without guessing.
+ForSwim delivers a personalized swim training plan from a short questionnaire (goal, level, frequency, and related preferences). Success: the swimmer opens a readable session (warm-up, main set, cool-down, coach tip), follows it in the lane, and can progress or adapt over weeks without guessing.
 
 ## Positioning
 
@@ -24,8 +24,8 @@ Structured coaching from explicit training rules, catalogues, Soft Sheet plans (
 
 - Pool training (25 m / 50 m), optional equipment, French-first product copy.
 - Onboarding questionnaire → plan → week sessions → feedback / adaptation for future weeks.
-- Access: one-time 7-day Premium trial without card; then sessions pause until a paid subscription.
-- Pricing (product fact): ~€9.99/mo flex, ~€4.99/mo 12-month commit, ~€52.99/year prepaid (Stripe).
+- Access: 7-day Premium trial with card (Stripe / App Store); then billing starts unless cancelled; without a paid sub, sessions pause.
+- Pricing (product fact): €8.99/mo flex, €59.99/year prepaid (Stripe = App Store).
 - Support: Premium chat answered by Arthur in person when available; landing must not claim AI bot support for that channel.
 - Staging at staging.myswym.app; production merge is human-owned (`staging` → `main`).
 
@@ -46,7 +46,7 @@ Undecided / open:
 
 ## Brand Commitments
 
-- Name: **MySWYM**.
+- Name: **ForSwim**.
 - Voice: direct, coach-like French, second person “tu”, concrete pool language.
 - Personality assets: otter mascot (chat / empty states), coach Arthur Noël (photo, Instagram, human support).
 - Incumbent type pair used in product UI: Geist + Space Grotesk (do not treat as a redesign brief here).

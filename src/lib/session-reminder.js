@@ -205,7 +205,7 @@ export function buildLocalNotificationPlan({
     if (at.getTime() > nowMs + 60_000) {
       items.push({
         id: NOTIF_IDS.REVIEW_ASK,
-        title: "Un avis aide MySWYM",
+        title: "Un avis aide ForSwim",
         body: "Si l’app te convient, un mot sur l’App Store aide d’autres nageurs à nous trouver.",
         at,
         extra: { kind: "review_ask" },
@@ -216,7 +216,7 @@ export function buildLocalNotificationPlan({
   if (Number.isFinite(newsletterNudgeAtMs) && newsletterNudgeAtMs > nowMs + 60_000) {
     items.push({
       id: NOTIF_IDS.NEWSLETTER,
-      title: "Actus MySWYM",
+      title: "Actus ForSwim",
       body: "Conseils et nouveautés par e-mail : tu peux activer ça dans Réglages, Notifications.",
       at: new Date(newsletterNudgeAtMs),
       extra: { kind: "newsletter_nudge" },
@@ -226,7 +226,7 @@ export function buildLocalNotificationPlan({
   return spaceOutNotifications(items);
 }
 
-/** Écart minimal entre deux notifs MySWYM. */
+/** Écart minimal entre deux notifs ForSwim. */
 export const NOTIF_MIN_GAP_MS = 3 * 3600_000;
 const NOTIF_LATEST_HOUR = 21;
 

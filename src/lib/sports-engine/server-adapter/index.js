@@ -1,5 +1,5 @@
 /**
- * Point d’entrée façade serveur Arthur → moteur MySWYM.
+ * Point d’entrée façade serveur Arthur → moteur ForSwim.
  */
 export {
   generateArthurPlan,

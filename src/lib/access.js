@@ -172,19 +172,17 @@ export function isFreshSignup(user, nowMs = Date.now()) {
 }
 
 /**
- * Après onboarding / 1er plan : l’essai 7j sans carte doit encore s’écrire
- * (JWT vide ou compte tout neuf). Ne pas payer ni verrouiller les séances.
+ * Essai sans carte désactivé (2026-10) : plus d’attente de grant à l’inscription.
+ * Conservé pour compat import ; retourne toujours false.
  */
-export function shouldAwaitCardlessTrial(user, nowMs = Date.now()) {
-  if (!user) return false;
-  if (getAccessState(user).hasPremiumAccess) return false;
-  return isAccessMetadataPending(user) || isFreshSignup(user, nowMs);
+export function shouldAwaitCardlessTrial(_user, _nowMs = Date.now()) {
+  return false;
 }
 
-/** Accès produit : essai / abo live, ou attente du grant 7j post-inscription. */
-export function hasUnlockedPremiumAccess(user, nowMs = Date.now()) {
+/** Accès produit : essai Stripe/Apple ou abo live uniquement. */
+export function hasUnlockedPremiumAccess(user, _nowMs = Date.now()) {
   if (!user) return false;
-  return getAccessState(user).hasPremiumAccess || shouldAwaitCardlessTrial(user, nowMs);
+  return getAccessState(user).hasPremiumAccess;
 }
 
 /**

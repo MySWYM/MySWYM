@@ -2,8 +2,8 @@
  * Envoi Telegram Bot API.
  *
  * Support nageur : TELEGRAM_BOT_TOKEN + webhook
- *   `https://www.myswym.app/api/telegram/webhook`
- *   (l’apex myswym.app renvoie un 307 ; Telegram ne suit pas ce POST).
+ *   `https://www.forswim.app/api/telegram/webhook`
+ *   (l’apex forswim.app renvoie un 307 ; Telegram ne suit pas ce POST).
  *
  * Contact landing : TELEGRAM_CONTACT_BOT_TOKEN, envoi seul, pas de webhook.
  */

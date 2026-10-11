@@ -2903,7 +2903,7 @@ const ResetPasswordScreen = ({ onDone, showBrandHeader = true }) => {
     <div style={{ maxWidth: 440, margin: "0 auto", padding: "0 20px", paddingTop: showBrandHeader ? 64 : 96, paddingBottom: 40 }}>
       {showBrandHeader && (
         <div style={{ display: "flex", alignItems: "center", marginBottom: 44 }}>
-          <BrandLogo variant="wordmark" height={22} />
+          <BrandLogo variant="wordmark" height={28} />
         </div>
       )}
       <div className="fade-up">
@@ -3537,7 +3537,7 @@ const ShareModal = ({ session, goalLabel, badge = null, onClose }) => {
         const file = new File([blob], "myswym-seance.png", { type: "image/png" });
         const payload = {
           files: [file],
-          title: "Ma séance MySWYM",
+          title: "Ma séance ForSwim",
           text: pack.caption,
         };
         if (navigator.canShare && !navigator.canShare(payload)) {
@@ -3841,7 +3841,7 @@ const WeekProjectionCard = ({ plan, profile, onOpenPlan }) => {
 };
 
 // ── ACCÈS ──────────────────────────────────────────────────────────────────
-// Modèle live = essai 7j sans carte à l'inscription, puis pause (abonnement pour continuer).
+// Modèle live = essai 7j avec carte (Stripe / App Store), puis prélèvement ou pause.
 // FREE_* ci-dessous : remnants / helpers legacy, ne gate plus l’UX (voir access.js).
 const FREE_WEEKS_LIMIT = 4;
 const FREE_FREQ_LIMIT = 3;
@@ -3919,7 +3919,7 @@ function premiumPriceSummary() {
 }
 
 const PREMIUM_TIER_LINES = () => [
-  `Essai 7 jours sans carte, puis ${premiumPriceSummary()}`,
+  `Essai 7 jours avec carte, puis ${premiumPriceSummary()}`,
   "Séances complètes + allures à la seconde (T100)",
   "Adaptation coach après feedback séance / semaine",
   "Plan jusqu’à ton événement · jusqu’à 5× / semaine",
@@ -4961,7 +4961,7 @@ function LoopPaywallScreen({ reason = "cap", onUpgrade, onClose }) {
   const priceSummary = premiumPriceSummary();
   const ctaLabel = isNativeIos()
     ? t("loopPaywall.ctaNative")
-    : t("loopPaywall.ctaWeb", { price: PRICING.monthlyCommit.label });
+    : t("loopPaywall.ctaWeb", { price: PRICING.monthlyFlex.label });
   const bullets = [
     t("loopPaywall.b1"),
     t("loopPaywall.b2"),
@@ -7962,7 +7962,7 @@ export default function App() {
 
   const openShare = (session, badgeId = null) => {
     const target = session || lastCompletedSessionRef.current || {
-      title: badgeId ? "Badge MySWYM" : "Séance MySWYM",
+      title: badgeId ? "Badge ForSwim" : "Séance ForSwim",
       type: "Partage",
       distance: null,
       duration: null,
@@ -8100,17 +8100,17 @@ export default function App() {
   useEffect(() => {
     if (screen === "onboarding") {
       const prev = document.title;
-      document.title = "Créer mon plan | MySWYM";
+      document.title = "Créer mon plan | ForSwim";
       return () => { document.title = prev; };
     }
     if (screen === "auth") {
       const prev = document.title;
       const mode = AUTH_PATHS[location.pathname] || "password";
       document.title = mode === "register"
-        ? "Inscription | MySWYM"
+        ? "Inscription | ForSwim"
         : mode === "reset"
-          ? "Mot de passe | MySWYM"
-          : "Connexion | MySWYM";
+          ? "Mot de passe | ForSwim"
+          : "Connexion | ForSwim";
       return () => { document.title = prev; };
     }
     return undefined;
@@ -8566,7 +8566,7 @@ export default function App() {
       track("signup_completed", {}, { onceKey: `signup_completed:${u?.id || "anon"}` });
     }
     // Appliquer le choix newsletter stashé (Apple/Google) puis rafraîchir le user React
-    // pour que le switch « Actus MySWYM » reflète l’opt-in tout de suite.
+    // pour que le switch « Actus ForSwim » reflète l’opt-in tout de suite.
     void flushPendingNewsletterOptIn().then((res) => {
       setUser(res?.user || u);
     });
@@ -9957,7 +9957,7 @@ export default function App() {
     } else {
       userRef.current = liveUser;
     }
-    // Essai 7j sans carte avant génération (anonyme + compte neuf) : pas de cadenas avant.
+    // Avant abo / essai CB : pas de cadenas pendant l’onboarding anonyme.
     const applySyncedUser = (synced) => {
       if (!synced) return;
       liveUser = synced;
@@ -11847,7 +11847,7 @@ export default function App() {
             {!isNativeApp() && (
               <div style={{ display: "flex", alignItems: "center", marginBottom: 40 }}>
                 <div style={{ display: "flex", alignItems: "center" }}>
-                  <BrandLogo variant="wordmark" height={22} />
+                  <BrandLogo variant="wordmark" height={28} />
                 </div>
               </div>
             )}
@@ -12140,7 +12140,7 @@ export default function App() {
               completeLoveFunnel();
               setLoveReviewStep(null);
               const path = withLocalePrefix("/contact", siteLanguage());
-              const url = absoluteSiteUrl(path) || `https://www.myswym.app${path}`;
+              const url = absoluteSiteUrl(path) || `https://www.forswim.app${path}`;
               openInSystemBrowser(url);
             }}
             onRateStore={() => {

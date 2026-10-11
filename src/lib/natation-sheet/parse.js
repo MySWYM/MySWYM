@@ -749,7 +749,7 @@ export function isOpenWaterGoal(goal) {
   return g.startsWith("open_water") || g.startsWith("eau_libre");
 }
 
-/** Mappe profil MySWYM → id feuille Sheet.
+/** Mappe profil ForSwim → id feuille Sheet.
  * Soft : Nager 01-03 + triathlon 04-08 + eau libre 09-13.
  * Diplômes / autres = null → composeur.
  */

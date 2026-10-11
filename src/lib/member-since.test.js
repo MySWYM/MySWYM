@@ -7,9 +7,9 @@ function assert(cond, msg) {
 
 console.log("member-since");
 assert(
-  formatMemberSince(new Date(2025, 10, 15)) === "Membre MySWYM depuis novembre 2025",
+  formatMemberSince(new Date(2025, 10, 15)) === "Membre ForSwim depuis novembre 2025",
   "novembre 2025",
 );
-assert(formatMemberSince(null) === "Membre MySWYM", "date absente");
-assert(formatMemberSince("nope") === "Membre MySWYM", "date invalide");
+assert(formatMemberSince(null) === "Membre ForSwim", "date absente");
+assert(formatMemberSince("nope") === "Membre ForSwim", "date invalide");
 console.log("member-since ok");

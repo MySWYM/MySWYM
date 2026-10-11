@@ -22,22 +22,22 @@ export const SIGNUP_TERMS_LABEL_PREFIX =
   "J’accepte les";
 
 export const CARDLESS_TRIAL_NOTE =
-  "7 jours d’essai offerts à la création du compte, sans carte. Ensuite tes séances se mettent en pause jusqu’à l’abonnement.";
+  "7 jours d’essai avec carte enregistrée (Stripe ou App Store). Ensuite le prélèvement démarre, sauf résiliation avant la fin de l’essai.";
 
 export const CHECKOUT_RENEWAL_NOTICE =
   "Abonnement à reconduction tacite. Tu peux changer d’offre via « Modifier mon abonnement », ou résilier via « Résilier » (portail Stripe). L’accès reste actif jusqu’à la fin de la période déjà payée.";
 
 export const IOS_IAP_RENEWAL_NOTICE =
-  "Abonnement App Store à reconduction tacite. 6,99 €/mois sans engagement ou 59,99 €/an. Paiement via ton Apple ID (carte ou Apple Pay). Résiliation : Réglages → Apple ID → Abonnements. L’accès reste actif jusqu’à la fin de la période déjà payée. Remboursement ou rétractation : via Apple (reportaproblem.apple.com ou l’aide Apple ID).";
+  "Abonnement App Store à reconduction tacite. 8,99 €/mois sans engagement ou 59,99 €/an. Essai 7 jours avec carte Apple ID. Paiement via ton Apple ID (carte ou Apple Pay). Résiliation : Réglages → Apple ID → Abonnements. L’accès reste actif jusqu’à la fin de la période déjà payée. Remboursement ou rétractation : via Apple (reportaproblem.apple.com ou l’aide Apple ID).";
 
 export const IOS_IAP_MONTHLY_REASSURE =
   "Sans engagement. Annule à tout moment dans Réglages Apple. L’accès reste actif jusqu’à la fin du mois déjà payé.";
 
 export const IOS_IAP_ANNUAL_REASSURE =
-  "59,99 € pour 12 mois, reconduction tacite. Résilier dans Réglages Apple coupe le prochain cycle. La période déjà payée n’est pas remboursée au prorata par MySWYM.";
+  "59,99 € pour 12 mois, reconduction tacite. Résilier dans Réglages Apple coupe le prochain cycle. La période déjà payée n’est pas remboursée au prorata par ForSwim.";
 
 export const IOS_IAP_LEGAL_PREFIX =
-  "Abonnement App Store à reconduction tacite (6,99 €/mois ou 59,99 €/an). Paiement via ton Apple ID. Résiliation : Réglages → Apple ID → Abonnements. Remboursement ou rétractation : via Apple (reportaproblem.apple.com ou l’aide Apple ID). En continuant, tu acceptes les";
+  "Abonnement App Store à reconduction tacite (8,99 €/mois ou 59,99 €/an). Essai 7 jours avec carte. Paiement via ton Apple ID. Résiliation : Réglages → Apple ID → Abonnements. Remboursement ou rétractation : via Apple (reportaproblem.apple.com ou l’aide Apple ID). En continuant, tu acceptes les";
 
 export const CHECKOUT_WITHDRAWAL_LABEL =
   "Je demande l’accès immédiat à Premium et reconnais que, dès l’ouverture de l’accès, je perds mon droit de rétractation de 14 jours pour le service numérique pleinement exécuté (art. L221-28 du Code de la consommation), dans la mesure permise par la loi.";
@@ -65,8 +65,8 @@ export const ACCOUNT_DELETE_BLOCKED_MESSAGE =
 
 /** @deprecated use HEALTH_CONSENT_* from health-data.js */
 export const INJURY_HEALTH_NOTICE =
-  "Ces informations peuvent concerner ta santé. Elles servent uniquement à adapter l’intensité des séances proposées. MySWYM n’est pas un professionnel de santé et ne pose aucun diagnostic. En cas de doute, consulte un médecin.";
+  "Ces informations peuvent concerner ta santé. Elles servent uniquement à adapter l’intensité des séances proposées. ForSwim n’est pas un professionnel de santé et ne pose aucun diagnostic. En cas de doute, consulte un médecin.";
 
 /** @deprecated */
 export const INJURY_CONSENT_LABEL =
-  "J’accepte que MySWYM traite ces informations (blessure / gêne / douleur) pour adapter mon plan. Je peux laisser « Aucune blessure » ou ne pas préciser.";
+  "J’accepte que ForSwim traite ces informations (blessure / gêne / douleur) pour adapter mon plan. Je peux laisser « Aucune blessure » ou ne pas préciser.";

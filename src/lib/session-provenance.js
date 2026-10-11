@@ -84,7 +84,7 @@ export function buildSessionProvenance(session, ctx = {}) {
       : `C${volume != null ? `-${volume}` : ""}`;
 
   const supportLine = [
-    "MySWYM séance",
+    "ForSwim séance",
     uiOrdinal != null ? `séance n°${uiOrdinal}` : null,
     isSheet ? `réf. ${refCode}` : `réf. ${refCode} (pas de ligne Sheet)`,
     volume != null ? `${volume}m` : null,

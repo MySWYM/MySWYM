@@ -10,17 +10,18 @@ function assert(cond, msg) {
 
 console.log("native-links");
 assert(inAppPathFromHref("/cgu") === "/cgu", "relative");
-assert(inAppPathFromHref("https://www.myswym.app/mentions-legales") === "/mentions-legales", "absolute legal");
-assert(inAppPathFromHref("https://www.myswym.app/contact") === "/contact", "absolute contact");
+assert(inAppPathFromHref("https://www.forswim.app/mentions-legales") === "/mentions-legales", "forswim legal");
+assert(inAppPathFromHref("https://www.myswym.app/mentions-legales") === "/mentions-legales", "legacy legal");
+assert(inAppPathFromHref("https://www.forswim.app/contact") === "/contact", "absolute contact");
 assert(inAppPathFromHref("mailto:a@b.c") === null, "mailto skipped");
 assert(inAppPathFromHref("https://instagram.com/x") === null, "external skipped");
 assert(
-  absoluteSiteUrl("/faq") === "https://www.myswym.app/faq",
-  "relative faq → https site",
+  absoluteSiteUrl("/faq") === "https://www.forswim.app/faq",
+  "relative faq → native API origin",
 );
 assert(
-  absoluteSiteUrl("https://www.myswym.app/cgu") === "https://www.myswym.app/cgu",
-  "absolute cgu stays https",
+  absoluteSiteUrl("https://www.forswim.app/cgu") === "https://www.forswim.app/cgu",
+  "absolute path rewritten via native API origin",
 );
 assert(isNativeExternalSitePath("/cgu") === true, "cgu leaves app");
 assert(isNativeExternalSitePath("/faq") === true, "faq leaves app");

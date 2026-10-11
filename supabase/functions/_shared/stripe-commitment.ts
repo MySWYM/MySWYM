@@ -108,7 +108,7 @@ export async function resolveNoCancelPortalConfigId(stripe: StripeBilling): Prom
 
   const created = await stripe.billingPortal.configurations.create({
     business_profile: {
-      headline: "Gère ton abonnement MySWYM",
+      headline: "Gère ton abonnement ForSwim",
     },
     features: {
       customer_update: {

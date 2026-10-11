@@ -23,14 +23,14 @@ function makeClient() {
   try {
     if (!usableSupabaseEnv(rawUrl, rawKey)) {
       console.error(
-        "[MySWYM] VITE_SUPABASE_* absent, [SENSITIVE], ou URL invalide au build. " +
+        "[ForSwim] VITE_SUPABASE_* absent, [SENSITIVE], ou URL invalide au build. " +
           "Sur Vercel, les variables client ne doivent pas être Sensitive.",
       );
       return createClient(FALLBACK_URL, FALLBACK_KEY, nativeAuthOptions());
     }
     return createClient(rawUrl, rawKey, nativeAuthOptions());
   } catch (err) {
-    console.error("[MySWYM] createClient a échoué", err);
+    console.error("[ForSwim] createClient a échoué", err);
     return createClient(FALLBACK_URL, FALLBACK_KEY, nativeAuthOptions());
   }
 }

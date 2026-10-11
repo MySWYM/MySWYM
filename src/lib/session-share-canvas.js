@@ -1,5 +1,5 @@
 /**
- * Canvas fiche partage séance (1080×1080), design MySWYM.
+ * Canvas fiche partage séance (1080×1080), design ForSwim.
  * @param {object} session
  * @param {string} [goalLabel]
  * @param {{ label?: string, color?: string } | null} [badge]
@@ -54,7 +54,7 @@ export function createShareCanvas(session, goalLabel, badge = null, invite = nul
   // Brand
   ctx.fillStyle = "rgba(255,255,255,0.92)";
   ctx.font = "700 36px Geist, ui-sans-serif, system-ui, sans-serif";
-  ctx.fillText("MySWYM", 72, 110);
+  ctx.fillText("ForSwim", 72, 110);
 
   // Pill terminée
   roundRect(72, 150, 280, 56, 28);
@@ -141,7 +141,7 @@ export function createShareCanvas(session, goalLabel, badge = null, invite = nul
 
   // Invite footer
   const code = invite?.code ? String(invite.code).toUpperCase() : "";
-  let urlLabel = "myswym.app";
+  let urlLabel = "forswim.app";
   if (invite?.shareUrl) {
     try {
       const u = new URL(invite.shareUrl);
@@ -150,12 +150,12 @@ export function createShareCanvas(session, goalLabel, badge = null, invite = nul
       urlLabel = String(invite.shareUrl).replace(/^https?:\/\//, "");
     }
   } else if (code) {
-    urlLabel = `myswym.app/inscription?ref=${code}`;
+    urlLabel = `forswim.app/inscription?ref=${code}`;
   }
 
   ctx.fillStyle = "rgba(255,255,255,0.28)";
   ctx.font = "500 22px Geist, ui-sans-serif, system-ui, sans-serif";
-  ctx.fillText("Rejoins-moi sur MySWYM", 72, 920);
+  ctx.fillText("Rejoins-moi sur ForSwim", 72, 920);
   ctx.fillStyle = "rgba(255,255,255,0.85)";
   ctx.font = "600 24px Geist, ui-sans-serif, system-ui, sans-serif";
   const urlDraw = urlLabel.length > 42 ? `${urlLabel.slice(0, 41)}…` : urlLabel;

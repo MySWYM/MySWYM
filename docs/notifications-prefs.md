@@ -1,4 +1,4 @@
-# Préférences notifications MySWYM
+# Préférences notifications ForSwim
 
 Panneau **Profil → Réglages → Notifications** : onglets Push · E-mail.
 
@@ -15,7 +15,7 @@ Panneau **Profil → Réglages → Notifications** : onglets Push · E-mail.
 
 Activation : 1 CTA « Activer les notifications ». Si iOS a déjà autorisé, réactive sans popup.
 Si iOS a refusé : CTA « Ouvrir Réglages ». Catégories visibles seulement une fois activées.
-Opt-out MySWYM (switch « Notifications activées ») ≠ permission iOS.
+Opt-out ForSwim (switch « Notifications activées ») ≠ permission iOS.
 
 ## Technique
 

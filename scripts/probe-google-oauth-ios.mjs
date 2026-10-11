@@ -59,6 +59,6 @@ async function probe(redirectTo) {
 
 const results = [];
 results.push(await probe("myswym://auth/callback"));
-results.push(await probe("https://www.myswym.app/app"));
+results.push(await probe("https://www.forswim.app/app"));
 if (!results.every(Boolean)) process.exit(2);
 console.log("google-oauth-ios probe ok");

@@ -33,7 +33,7 @@ export const HEALTH_CONSENT_TITLE = "Données de santé (optionnel)";
 
 /** @deprecated Prefer INJURY_CONSENT_* / HEART_RATE_CONSENT_* */
 export const HEALTH_CONSENT_BODY =
-  "Pour adapter tes séances et limiter le risque de blessure, MySWYM peut traiter des données de santé au sens du RGPD : " +
+  "Pour adapter tes séances et limiter le risque de blessure, ForSwim peut traiter des données de santé au sens du RGPD : " +
   "fréquence cardiaque par séance (ex. via Strava) et historique de blessures / gênes que tu déclares. " +
   "Base légale : ton consentement explicite (art. 9.2.a RGPD). C’est facultatif : tu peux refuser et utiliser l’app sans ces données. " +
   "Tu peux retirer ton consentement à tout moment (Paramètres ou contact@myswym.app). " +
@@ -41,26 +41,26 @@ export const HEALTH_CONSENT_BODY =
 
 /** @deprecated Prefer INJURY_CONSENT_CHECKBOX / HEART_RATE_CONSENT_CHECKBOX */
 export const HEALTH_CONSENT_CHECKBOX =
-  "J’accepte explicitement que MySWYM traite ma fréquence cardiaque et mes déclarations de blessure / gêne pour adapter mes séances et prévenir le risque de blessure. Je peux refuser.";
+  "J’accepte explicitement que ForSwim traite ma fréquence cardiaque et mes déclarations de blessure / gêne pour adapter mes séances et prévenir le risque de blessure. Je peux refuser.";
 
 export const INJURY_CONSENT_TITLE = "Blessures / gênes (optionnel)";
 
 export const INJURY_CONSENT_BODY =
-  "Si tu déclares une blessure ou une gêne, MySWYM peut adapter l’intensité de tes prochaines séances. " +
+  "Si tu déclares une blessure ou une gêne, ForSwim peut adapter l’intensité de tes prochaines séances. " +
   "Base légale : consentement explicite (art. 9.2.a RGPD). Tu peux laisser « Aucune » et refuser.";
 
 export const INJURY_CONSENT_CHECKBOX =
-  "J’accepte que MySWYM traite mes déclarations de blessure / gêne pour adapter mes séances. Je peux refuser.";
+  "J’accepte que ForSwim traite mes déclarations de blessure / gêne pour adapter mes séances. Je peux refuser.";
 
 export const HEART_RATE_CONSENT_TITLE = "Fréquence cardiaque (optionnel)";
 
 export const HEART_RATE_CONSENT_BODY =
-  "Pour afficher la FC dans l’analyse MySWYM (import Strava), MySWYM doit stocker ta fréquence cardiaque par séance. " +
+  "Pour afficher la FC dans l’analyse ForSwim (import Strava), ForSwim doit stocker ta fréquence cardiaque par séance. " +
   "Sans ce consentement, Strava reste connecté (distance, allure) mais la cardio reste masquée. " +
   "Base légale : consentement explicite (art. 9.2.a RGPD). Tu peux refuser.";
 
 export const HEART_RATE_CONSENT_CHECKBOX =
-  "J’accepte que MySWYM stocke ma fréquence cardiaque (ex. via Strava) pour l’afficher dans mon analyse. Je peux refuser.";
+  "J’accepte que ForSwim stocke ma fréquence cardiaque (ex. via Strava) pour l’afficher dans mon analyse. Je peux refuser.";
 
 export const HEALTH_DECLARATION_LABEL =
   "Je certifie sur l’honneur l’exactitude des informations de santé que je fournis.";

@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 import { SITE_LANGS, withLocalePrefix } from "../src/i18n/locale-path.js";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const ORIGIN = "https://www.myswym.app";
+const ORIGIN = "https://www.forswim.app";
 
 const PAGES = [
   ["/", "weekly", "1.0"],

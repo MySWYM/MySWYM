@@ -188,7 +188,7 @@ export function ConversionFlow() {
                       void navigator.share({
                         title: 'mySWYM',
                         text: `Je progresse avec mySWYM, ${weekMeters} m cette semaine.`,
-                        url: 'https://myswym.app',
+                        url: 'https://forswim.app',
                       })
                     }
                   }}

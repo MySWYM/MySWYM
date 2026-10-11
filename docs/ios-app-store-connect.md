@@ -1,4 +1,4 @@
-# Fiche App Store Connect : MySWYM iPhone
+# Fiche App Store Connect : ForSwim iPhone
 
 Prêt à coller. Ne pas uploader ni soumettre la review tant qu’Arthur n’a pas dit **push TestFlight** puis **pousse sur iOS**.
 
@@ -8,18 +8,18 @@ Binary : iPhone only (`TARGETED_DEVICE_FAMILY = 1`). Pas de screenshots iPad.
 
 | Champ | Valeur |
 | --- | --- |
-| Nom | MySWYM |
+| Nom | ForSwim |
 | Sous-titre (30 car.) | Plan natation personnalisé |
 | Bundle ID | `app.myswym.ios` |
 | SKU | `myswym-ios` |
 | Catégorie principale | Santé et forme |
 | Catégorie secondaire | Sports |
 | Langue principale | Français |
-| URL support | https://www.myswym.app |
-| URL marketing | https://www.myswym.app |
-| Politique de confidentialité | https://www.myswym.app/politique-confidentialite |
-| CGU | https://www.myswym.app/cgu |
-| CGV | https://www.myswym.app/cgv |
+| URL support | https://www.forswim.app |
+| URL marketing | https://www.forswim.app |
+| Politique de confidentialité | https://www.forswim.app/politique-confidentialite |
+| CGU | https://www.forswim.app/cgu |
+| CGV | https://www.forswim.app/cgv |
 | Copyright | 2026 A.Natation |
 | Contact review | Arthur Noël · contact@myswym.app |
 
@@ -36,13 +36,13 @@ natation,nage,triathlon,entrainement,coach,piscine,seance,plan,eau libre,crawl,n
 Texte promotionnel (optionnel, 170 car. max, ~131 ici) :
 
 ```
-Objectif, niveau, fréquence : MySWYM compose tes séances. Essai 7 jours sans carte, puis 6,99 €/mois ou 59,99 €/an via l'App Store.
+Objectif, niveau, fréquence : ForSwim compose tes séances. Essai 7 jours avec carte, puis 8,99 €/mois ou 59,99 €/an via l'App Store.
 ```
 
 ## 2. Description (FR)
 
 ```
-MySWYM compose tes séances de natation. Objectif, niveau, fréquence : tu as un plan structuré, prêt pour le bassin.
+ForSwim compose tes séances de natation. Objectif, niveau, fréquence : tu as un plan structuré, prêt pour le bassin.
 
 Pour qui
 Nager en piscine, triathlon, eau libre, prépa diplôme. Du débutant au nageur confirmé.
@@ -56,22 +56,22 @@ Ce que tu trouves dans l'app
 • Une photo de profil, tes stats, et Buddy pour trouver un nageur près de toi (optionnel)
 
 Essai et abonnement
-7 jours d'essai offerts à la création du compte, sans carte. Ensuite les séances se mettent en pause jusqu'à un abonnement.
+7 jours d'essai avec carte (offre d'introduction App Store). Ensuite le prélèvement démarre, sauf résiliation avant la fin de l'essai.
 
-Sur l'iPhone : 6,99 €/mois sans engagement, ou 59,99 €/an. Paiement et résiliation via ton Apple ID (Réglages → Apple ID → Abonnements). L'accès reste actif jusqu'à la fin de la période déjà payée.
+Sur l'iPhone : 8,99 €/mois sans engagement, ou 59,99 €/an (aligné web). Paiement et résiliation via ton Apple ID (Réglages → Apple ID → Abonnements). L'accès reste actif jusqu'à la fin de la période déjà payée.
 
-MySWYM n'est pas un dispositif médical et ne pose aucun diagnostic. Entraîne-toi selon ta forme. Eau libre : ne nage jamais seul.
+ForSwim n'est pas un dispositif médical et ne pose aucun diagnostic. Entraîne-toi selon ta forme. Eau libre : ne nage jamais seul.
 
 Compte réservé aux personnes de 18 ans révolus.
 
-Conditions d'utilisation : https://www.myswym.app/cgu
-Politique de confidentialité : https://www.myswym.app/politique-confidentialite
+Conditions d'utilisation : https://www.forswim.app/cgu
+Politique de confidentialité : https://www.forswim.app/politique-confidentialite
 ```
 
 Nouveautés (v1.0.1) : coller dans « Nouveautés de cette version »
 
 ```
-MySWYM 1.0.1
+ForSwim 1.0.1
 
 • Notifications alignées avec Réglages iPhone : Activer, Ouvrir Réglages si bloqué, choix séance / série / badges / binômes / support / actus
 • Appareils connectés : liste iPhone et web, déconnexion d'un appareil ou de tous
@@ -85,7 +85,7 @@ Bonne nage.
 Nouveautés (v1.0, archive) :
 
 ```
-Première version iPhone : plan, séances, essai 7 jours sans carte, et abonnement App Store.
+Première version iPhone : plan, séances, essai 7 jours avec carte, et abonnement App Store.
 ```
 
 ## 3. Screenshots iPhone (6,9")
@@ -100,7 +100,7 @@ Ordre suggéré :
 2. Détail de séance (échauffement / corps / retour)
 3. Semaine / plan
 4. Analyse ou historique
-5. Paywall IAP (prix 6,99 EUR / 59,99 EUR visibles)
+5. Paywall IAP (prix 8,99 EUR / 59,99 EUR visibles)
 6. Profil (photo optionnelle)
 
 Pas d’iPad. Pas d’admin. Pas de simulateur si le rendu glass / safe area diffère.
@@ -178,14 +178,14 @@ Password: [À COLLER ICI]
 
 Sign in: open the app → Connexion (or /connexion). On iPhone, tick “18 or older” and the terms before Sign in with Apple or Google.
 
-Subscriptions: 6.99 EUR/month or 59.99 EUR/year via In-App Purchase only. The 7-day trial is MySWYM’s own trial (no Apple ID card). After trial, workouts pause until a subscription. There is no Stripe checkout in the iOS app.
+Subscriptions: 8.99 EUR/month or 59.99 EUR/year via In-App Purchase only (aligned with web). 7-day trial with Apple ID card (introductory offer). After trial, billing starts unless cancelled; without a subscription, workouts pause. There is no Stripe checkout in the iOS app.
 
-Account deletion: Profile → Settings → My data → Delete my account. Deleting the MySWYM account does not cancel an App Store subscription (Settings → Apple ID → Subscriptions).
+Account deletion: Profile → Settings → My data → Delete my account. Deleting the ForSwim account does not cancel an App Store subscription (Settings → Apple ID → Subscriptions).
 
 Password reset: the email link opens the iOS app via myswym://auth/callback?reset=1 (same scheme as Sign in with Apple / Google). If Safari opens instead, sign in again in the app and use Settings → password reset.
 
 Notifications are optional: Profile → Settings → Notifications.
-If iOS Settings shows Notifications = Off for MySWYM, the app shows Open Settings (no fake enabled state).
+If iOS Settings shows Notifications = Off for ForSwim, the app shows Open Settings (no fake enabled state).
 The system permission prompt is requested after the first completed session on this iPhone.
 
 Connected devices: Profile → Settings → My data → Connected devices (list / revoke).
@@ -212,7 +212,7 @@ This binary is iPhone only.
 
 ## 9. Upload TestFlight (CLI / Organizer)
 
-Archive locale typique : `/tmp/myswym-tf/MySWYM.xcarchive`.
+Archive locale typique : `/tmp/myswym-tf/ForSwim.xcarchive`.
 
 Si `xcodebuild -exportArchive` affiche `Failed to Use Accounts` / `No Accounts` / `No signing certificate "iOS Distribution"` :
 
@@ -252,9 +252,9 @@ Redirect URLs (ajouter, ne pas remplacer les existants) :
 ```
 myswym://auth/callback
 myswym://auth/callback?reset=1
-https://www.myswym.app/app
-https://www.myswym.app/app?reset=1
-https://staging.myswym.app/app
+https://www.forswim.app/app
+https://www.forswim.app/app?reset=1
+https://staging.forswim.app/app
 ```
 
 ### Provider Apple (Auth → Providers → Apple) — projet PROD

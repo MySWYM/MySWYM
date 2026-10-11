@@ -1,4 +1,4 @@
-# MySWYM — Analytics produit V1 (PostHog)
+# ForSwim — Analytics produit V1 (PostHog)
 
 > Abstraction unique : `src/lib/analytics.js` (`track` / `identify` / `reset`).  
 > Ne pas appeler `posthog-js` ailleurs. Ne pas envoyer de contenu de séance ni notes libres.
@@ -98,7 +98,7 @@ Pas de système custom. Dans PostHog Retention :
 
 ---
 
-## Dashboard « MySWYM — Product V1 » (checklist UI)
+## Dashboard « ForSwim — Product V1 » (checklist UI)
 
 ### Acquisition
 - signups (`signup_completed`)

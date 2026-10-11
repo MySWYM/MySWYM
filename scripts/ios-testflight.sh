@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Upload TestFlight MySWYM (archive → App Store Connect).
+# Upload TestFlight ForSwim (archive → App Store Connect). Bundle ID inchangé.
 # Prérequis Xcode → Settings → Accounts : Apple ID connecté, team F6DRCXLFT7.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"

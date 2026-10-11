@@ -502,7 +502,7 @@ function CoachSection() {
         <div className="lp-coach-media">
           <img
             src="/coach.webp"
-            alt="Arthur Noël, coach MySWYM"
+            alt="Arthur Noël, coach ForSwim"
             width={756}
             height={756}
             className="lp-coach-photo"

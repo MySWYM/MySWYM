@@ -1,5 +1,5 @@
 /**
- * MySWYM Product Analytics V1 (PostHog).
+ * ForSwim Product Analytics V1 (PostHog).
  * Abstraction unique, ne jamais appeler posthog-js hors de ce module.
  *
  * Conserve aussi `trackEvent` → table Supabase `conversion_events` (legacy funnel).

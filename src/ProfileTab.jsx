@@ -122,7 +122,7 @@ import {
 } from "./lib/profile-goal.js";
 import IosGoalPickerSheet from "./profile/IosGoalPickerSheet.jsx";
 
-/** Icônes produit MySWYM (WebP fond transparent). */
+/** Icônes produit ForSwim (WebP fond transparent). */
 const EQUIPMENT_IMAGES = {
   palmes: "/equip-palmes.webp",
   tuba: "/equip-tuba.webp",
@@ -450,7 +450,7 @@ export default function ProfileTab({
     setNewsletterOn(isNewsletterOptedIn(user));
   }, [user?.id, user?.user_metadata?.newsletter_opt_in]);
 
-  // Deep link (notif « Actus MySWYM », etc.) → panneau profil : Notifications ou Mes données.
+  // Deep link (notif « Actus ForSwim », etc.) → panneau profil : Notifications ou Mes données.
   useEffect(() => {
     const PANELS = ["data", "notifications"];
     const openPanel = (panel) => {
@@ -1102,7 +1102,7 @@ export default function ProfileTab({
                   className={isNativeIos() ? "ms-pill-cta ms-pill-cta-gold" : "ms-pill-cta"}
                   style={{ minHeight: 44 }}
                 >
-                  {isNativeIos() ? "Devenir Premium" : `S’abonner : dès ${PRICING.monthlyCommit.label}/mois`}
+                  {isNativeIos() ? "Devenir Premium" : `S’abonner : dès ${PRICING.monthlyFlex.label}/mois`}
                 </button>
               )}
               {canManageSubscription ? referralSlot : null}
@@ -1815,7 +1815,7 @@ export default function ProfileTab({
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div className="ms-profile-settings-label">Newsletters</div>
                   <div className="ms-profile-settings-hint">
-                    Actus et conseils MySWYM par e-mail
+                    Actus et conseils ForSwim par e-mail
                   </div>
                 </div>
                 <button

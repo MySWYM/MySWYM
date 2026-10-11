@@ -1,17 +1,17 @@
 {
-  "Finalité : lier des activités à votre historique MySWYM.": {
-    "en": "Purpose: linking activities to your MySWYM history.",
-    "de": "Zweck: Aktivitäten mit deinem MySWYM-Verlauf verknüpfen.",
-    "es": "Finalidad: vincular actividades a tu historial de MySWYM.",
-    "ja": "目的：アクティビティをMySWYMの履歴に紐づけるため。",
-    "nl": "Doel: activiteiten koppelen aan je MySWYM-geschiedenis.",
-    "it": "Finalità: collegare le attività al tuo storico MySWYM.",
-    "pt": "Finalidade: associar atividades ao teu histórico MySWYM.",
-    "pt-BR": "Finalidade: vincular atividades ao seu histórico no MySWYM.",
-    "sv": "Ändamål: koppla aktiviteter till din MySWYM-historik.",
-    "da": "Formål: at knytte aktiviteter til din MySWYM-historik.",
-    "nb": "Formål: knytte aktiviteter til MySWYM-historikken din.",
-    "fi": "Tarkoitus: aktiviteettien liittäminen MySWYM-historiaasi."
+  "Finalité : lier des activités à votre historique ForSwim.": {
+    "en": "Purpose: linking activities to your ForSwim history.",
+    "de": "Zweck: Aktivitäten mit deinem ForSwim-Verlauf verknüpfen.",
+    "es": "Finalidad: vincular actividades a tu historial de ForSwim.",
+    "ja": "目的：アクティビティをForSwimの履歴に紐づけるため。",
+    "nl": "Doel: activiteiten koppelen aan je ForSwim-geschiedenis.",
+    "it": "Finalità: collegare le attività al tuo storico ForSwim.",
+    "pt": "Finalidade: associar atividades ao teu histórico ForSwim.",
+    "pt-BR": "Finalidade: vincular atividades ao seu histórico no ForSwim.",
+    "sv": "Ändamål: koppla aktiviteter till din ForSwim-historik.",
+    "da": "Formål: at knytte aktiviteter til din ForSwim-historik.",
+    "nb": "Formål: knytte aktiviteter til ForSwim-historikken din.",
+    "fi": "Tarkoitus: aktiviteettien liittäminen ForSwim-historiaasi."
   },
   "Base légale : exécution du contrat pour les données d’activité non sensibles ; consentement art. 9 pour la FC.": {
     "en": "Legal basis: performance of the contract for non-sensitive activity data; consent under Art. 9 for heart rate.",

@@ -20,7 +20,7 @@ export function getResend(): Resend {
 }
 
 export function getEmailFrom(): string {
-  return process.env.EMAIL_FROM || "MySWYM <noreply@myswym.app>";
+  return process.env.EMAIL_FROM || "ForSwim <noreply@myswym.app>";
 }
 
 export function getEmailReplyTo(): string {

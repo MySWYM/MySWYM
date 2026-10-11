@@ -42,7 +42,7 @@ assert(
 );
 
 {
-  const win = fakeWindow("https://www.myswym.app/app?reset=1&token_hash=abc&type=recovery&native=1");
+  const win = fakeWindow("https://www.forswim.app/app?reset=1&token_hash=abc&type=recovery&native=1");
   assert(bounceRecoveryToNativeApp(win) === true, "bounces native link");
   assert(win.replaced === "myswym://auth/callback?reset=1&token_hash=abc&type=recovery", "bounce target");
   let called = false;
@@ -51,7 +51,7 @@ assert(
 }
 
 {
-  const win = fakeWindow("https://www.myswym.app/app?reset=1&token_hash=abc&type=recovery");
+  const win = fakeWindow("https://www.forswim.app/app?reset=1&token_hash=abc&type=recovery");
   assert(bounceRecoveryToNativeApp(win) === false, "web link not bounced");
   let payload = null;
   const res = await consumeRecoveryTokenHash(

@@ -390,11 +390,11 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, initialMode = "password", 
   const authPath = mode === "register" ? "/inscription" : mode === "reset" ? "/connexion" : "/connexion";
   usePageSeo({
     title: locale === "en"
-      ? (mode === "register" ? "Sign up | MySWYM" : mode === "reset" ? "Reset password | MySWYM" : "Log in | MySWYM")
-      : (mode === "register" ? "Inscription | MySWYM" : mode === "reset" ? "Mot de passe oublié | MySWYM" : "Connexion | MySWYM"),
+      ? (mode === "register" ? "Sign up | ForSwim" : mode === "reset" ? "Reset password | ForSwim" : "Log in | ForSwim")
+      : (mode === "register" ? "Inscription | ForSwim" : mode === "reset" ? "Mot de passe oublié | ForSwim" : "Connexion | ForSwim"),
     description: locale === "en"
-      ? "Log in or create your MySWYM account. 7-day Premium trial, no card."
-      : "Connecte-toi ou crée ton compte MySWYM. Essai Premium 7 jours, sans carte.",
+      ? "Log in or create your ForSwim account. 7-day Premium trial with card, then €8.99/month or €59.99/year."
+      : "Connecte-toi ou crée ton compte ForSwim. Essai Premium 7 jours avec carte.",
     path: authPath,
     noIndex: true,
   });
@@ -626,7 +626,7 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, initialMode = "password", 
               </button>
             ) : showBrandHeader && !native ? (
               <div style={{ display: "flex", alignItems: "center" }}>
-                <BrandLogo variant="wordmark" height={24} />
+                <BrandLogo variant="wordmark" height={28} />
               </div>
             ) : showWebBack ? (
               <button

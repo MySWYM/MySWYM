@@ -65,8 +65,8 @@ function paceFromExercise(ex) {
 }
 
 function workoutName(view, session) {
-  const title = view?.header?.title || session?.title || "Séance MySWYM";
-  return String(title).replace(/\s+/g, " ").trim().slice(0, WKT_NAME_SIZE - 1) || "Séance MySWYM";
+  const title = view?.header?.title || session?.title || "Séance ForSwim";
+  return String(title).replace(/\s+/g, " ").trim().slice(0, WKT_NAME_SIZE - 1) || "Séance ForSwim";
 }
 
 function logSkipped(skipped) {
@@ -247,7 +247,7 @@ export function encodeGarminFitWorkout(payload = {}) {
   body.data(1);
   body.u8(5);
   body.u16(steps.length);
-  body.paddedString(payload.name || "Séance MySWYM", WKT_NAME_SIZE);
+  body.paddedString(payload.name || "Séance ForSwim", WKT_NAME_SIZE);
   body.u8(17);
   body.u16(pool * 100);
   body.u8(0);
@@ -402,7 +402,7 @@ export async function downloadWatchExport(session, opts = {}) {
     if (mobile && navigator.canShare?.({ files: [nativeFile] })) {
       await navigator.share({
         files: [nativeFile],
-        title: "Séance MySWYM",
+        title: "Séance ForSwim",
         text: "Fichier prêt. Garmin Connect → Entraînements → Importer.",
       });
       shared = true;

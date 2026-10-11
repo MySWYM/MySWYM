@@ -192,8 +192,8 @@
     }
   },
   "health": {
-    "checkbox": "Ik ga er uitdrukkelijk mee akkoord dat MySWYM mijn hartslag en mijn opgaven van blessure / klacht mag verwerken om mijn trainingen aan te passen en blessures te helpen voorkomen. Ik kan weigeren.",
-    "body": "Om je trainingen aan te passen en het blessurerisico te verlagen, mag MySWYM gezondheidsgegevens verwerken onder de AVG: hartslag per training (bijv. via Strava) en de geschiedenis van blessures / klachten die je opgeeft. Rechtsgrond: je uitdrukkelijke toestemming (AVG art. 9.2.a). Het is optioneel: je kunt weigeren en de app toch gebruiken. Je kunt je toestemming op elk moment intrekken (Instellingen of contact@myswym.app). Deze gegevens gaan niet naar analysetools van derden.",
+    "checkbox": "Ik ga er uitdrukkelijk mee akkoord dat ForSwim mijn hartslag en mijn opgaven van blessure / klacht mag verwerken om mijn trainingen aan te passen en blessures te helpen voorkomen. Ik kan weigeren.",
+    "body": "Om je trainingen aan te passen en het blessurerisico te verlagen, mag ForSwim gezondheidsgegevens verwerken onder de AVG: hartslag per training (bijv. via Strava) en de geschiedenis van blessures / klachten die je opgeeft. Rechtsgrond: je uitdrukkelijke toestemming (AVG art. 9.2.a). Het is optioneel: je kunt weigeren en de app toch gebruiken. Je kunt je toestemming op elk moment intrekken (Instellingen of contact@myswym.app). Deze gegevens gaan niet naar analysetools van derden.",
     "medical": "Gegenereerde plannen zijn indicatief en vervangen geen professioneel medisch advies. Check je geschiktheid (medische verklaring als dat nodig is) voordat je het programma volgt.",
     "declaration": "Ik verklaar dat de gezondheidsinformatie die ik geef klopt.",
     "safety": "Train naar hoe je je voelt. Stop bij verontrustende symptomen en ga zo nodig naar een zorgprofessional. Open water: zwem nooit alleen."
@@ -262,7 +262,7 @@
     "registerTitle": "Account aanmaken",
     "resetTitle": "Wachtwoord vergeten",
     "loginLead": "Log in met Apple, Google, Facebook of je e-mail.",
-    "registerLead": "7 dagen proberen, geen kaart. Daarna gaan je trainingen op pauze.",
+    "registerLead": "7 dagen proberen met kaart. Daarna start de afschrijving tenzij je opzegt.",
     "registerReferral": "Verwijzingscode {{code}} : 20% korting op je eerste Premium-factuur.",
     "resetLead": "Vul het e-mailadres van je account in. Je ontvangt een veilige link om een nieuw wachtwoord te kiezen.",
     "loginCta": "Inloggen",
@@ -276,8 +276,8 @@
     "backLogin": "← Terug naar inloggen",
     "age": "Ik bevestig dat ik 18 jaar of ouder ben.",
     "terms": "Ik accepteer de <cgu>gebruiksvoorwaarden</cgu> en het <privacy>privacybeleid</privacy>.",
-    "newsletter": "Ik wil nieuws van MySWYM per e-mail ontvangen.",
-    "trial": "7 dagen proberen bij het aanmaken van je account, geen kaart. Daarna gaan je trainingen op pauze tot je een abonnement neemt.",
+    "newsletter": "Ik wil nieuws van ForSwim per e-mail ontvangen.",
+    "trial": "7 dagen proberen met kaart (Stripe of App Store). Daarna start de afschrijving tenzij je eerder opzegt.",
     "google": "Verder met Google",
     "facebook": "Verder met Facebook",
     "apple": "Verder met Apple",

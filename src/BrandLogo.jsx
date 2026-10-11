@@ -1,32 +1,38 @@
+import {
+  LOGO_FULL_DARK,
+  LOGO_FULL_LIGHT,
+  LOGO_ICON_APP,
+  LOGO_MARK_DARK,
+  LOGO_MARK_LIGHT,
+  LOGO_MARK_RATIO,
+  LOGO_WORDMARK_DARK,
+  LOGO_WORDMARK_LIGHT,
+  LOGO_WORDMARK_RATIO,
+} from "./lib/brand.js";
+
 /**
- * Logos MySWYM (kit A–F).
- * A icon-app · B picto bleu · C picto blanc · D wordmark bleu ·
- * E horizontal noir · F stack blanc.
+ * Logos ForSwim (kit S ondulé).
+ * wordmark · full · mark (carré) · icon (fond #006BFD).
  */
 const ASSETS = {
-  /** E horizontal noir (clair) / F stack blanc (sombre). */
   full: {
-    dark: "/logo-full.png",
-    light: "/logo-full-on-light.png",
-    ratioDark: 1200 / 1012,
-    ratioLight: 1400 / 327,
+    dark: LOGO_FULL_DARK,
+    light: LOGO_FULL_LIGHT,
+    ratio: LOGO_WORDMARK_RATIO,
   },
-  /** D wordmark bleu (clair) / wordmark blanc (sombre). */
   wordmark: {
-    dark: "/logo-myswym-banner-blanc.png",
-    light: "/logo-myswym-on-light.png",
-    ratio: 1200 / 279,
+    dark: LOGO_WORDMARK_DARK,
+    light: LOGO_WORDMARK_LIGHT,
+    ratio: LOGO_WORDMARK_RATIO,
   },
-  /** B picto bleu (clair) / C picto blanc (sombre). */
   mark: {
-    dark: "/logo-mark-on-dark.png",
-    light: "/logo-mark.png",
-    ratio: 512 / 487,
+    dark: LOGO_MARK_DARK,
+    light: LOGO_MARK_LIGHT,
+    ratio: LOGO_MARK_RATIO,
   },
-  /** A icône app bleue (profil / raccourci). */
   icon: {
-    dark: "/logo-icon-app.png",
-    light: "/logo-icon-app.png",
+    dark: LOGO_ICON_APP,
+    light: LOGO_ICON_APP,
     ratio: 1,
   },
 };
@@ -36,15 +42,11 @@ export default function BrandLogo({
   onDark = false,
   variant = "full",
   style,
-  alt = "MySWYM",
+  alt = "ForSwim",
 }) {
   const asset = ASSETS[variant] || ASSETS.full;
   const src = onDark ? asset.dark : asset.light;
-  const ratio =
-    asset.ratio ??
-    (onDark ? asset.ratioDark : asset.ratioLight) ??
-    asset.ratioLight ??
-    1;
+  const ratio = asset.ratio ?? 1;
   return (
     <img
       src={src}

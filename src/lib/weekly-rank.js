@@ -1,5 +1,5 @@
 /**
- * Rang all-time MySWYM : km × coef séances × bonus allure.
+ * Rang all-time ForSwim : km × coef séances × bonus allure.
  * Source de vérité runtime : RPC `weekly_rank_me` (même constantes).
  */
 

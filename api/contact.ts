@@ -64,7 +64,7 @@ function contactInbox(): string {
 }
 
 function fromAddress(): string {
-  return process.env.EMAIL_FROM || "MySWYM <noreply@myswym.app>";
+  return process.env.EMAIL_FROM || "ForSwim <noreply@myswym.app>";
 }
 
 function isLandingReview(body: Record<string, unknown>): boolean {
@@ -78,7 +78,7 @@ function isPasswordResetRequest(req: VercelRequest, body: Record<string, unknown
   return q === "reset-password" || kind === "reset-password" || kind === "reset_password";
 }
 
-const PROD_SITE = "https://www.myswym.app";
+const PROD_SITE = "https://www.forswim.app";
 /** ?reset=1 : l’app affiche le formulaire même si PASSWORD_RECOVERY ne part pas. */
 const RESET_REDIRECT_WEB = `${PROD_SITE}/app?reset=1`;
 /** Scheme iOS déjà allowlisté pour OAuth (`myswym://auth/callback`). */
@@ -92,7 +92,7 @@ function resolveResetRedirect(body: Record<string, unknown>): string {
 }
 
 /**
- * Lien du mail sur myswym.app (jamais *.supabase.co) : l’app vérifie `token_hash` via verifyOtp.
+ * Lien du mail sur forswim.app (jamais *.supabase.co) : l’app vérifie `token_hash` via verifyOtp.
  * iOS : `native=1`, la page web renvoie vers myswym://auth/callback (les clients mail
  * bloquent souvent les liens vers un scheme custom).
  */
@@ -108,17 +108,17 @@ function buildRecoveryLink(hashedToken: string, redirectTo: string): string {
 function resetPasswordHtml(resetUrl: string): string {
   const safeUrl = escapeHtml(resetUrl);
   return `<!doctype html><html lang="fr"><body style="margin:0;padding:0;background:#f4f8fa;font-family:Geist,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">
-  <div style="display:none;max-height:0;overflow:hidden;opacity:0">Choisis un nouveau mot de passe MySWYM.</div>
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0">Choisis un nouveau mot de passe ForSwim.</div>
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f8fa;padding:28px 12px">
     <tr><td align="center">
       <table role="presentation" width="100%" style="max-width:560px;border-collapse:collapse">
         <tr><td style="background:linear-gradient(180deg,#000514 0%,#06101f 100%);border-radius:16px 16px 0 0;padding:22px 28px">
-          <img src="${PROD_SITE}/logo-myswym-banner-blanc.png" alt="MySWYM" height="28" style="display:block;height:28px;width:auto" />
+          <img src="${PROD_SITE}/logo-myswym-banner-blanc.png" alt="ForSwim" height="28" style="display:block;height:28px;width:auto" />
         </td></tr>
         <tr><td style="background:#ffffff;border:1px solid rgba(0,107,253,0.18);border-top:0;border-radius:0 0 16px 16px;padding:28px 28px 32px">
           <p style="color:#006bfd;font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;margin:0 0 10px">Sécurité</p>
           <h1 style="color:#0a162c;font-size:24px;font-weight:700;letter-spacing:-0.03em;line-height:30px;margin:0 0 14px">Nouveau mot de passe</h1>
-          <p style="color:#3d4f63;font-size:15px;line-height:24px;margin:0 0 12px">Tu as demandé à réinitialiser ton mot de passe MySWYM. Utilise le bouton ci-dessous pour en choisir un nouveau.</p>
+          <p style="color:#3d4f63;font-size:15px;line-height:24px;margin:0 0 12px">Tu as demandé à réinitialiser ton mot de passe ForSwim. Utilise le bouton ci-dessous pour en choisir un nouveau.</p>
           <p style="color:#3d4f63;font-size:15px;line-height:24px;margin:0 0 22px">Si tu n’es pas à l’origine de cette demande, ignore cet email : ton compte reste inchangé.</p>
           <a href="${safeUrl}" style="display:inline-block;background:#006bfd;color:#ffffff;font-size:15px;font-weight:700;text-decoration:none;padding:14px 22px;border-radius:999px">Choisir un nouveau mot de passe</a>
           <p style="color:#5a6b7d;font-size:13px;line-height:20px;margin:22px 0 0">Pour ta sécurité, ce lien expire rapidement. Besoin d’aide ? support@myswym.app</p>
@@ -185,7 +185,7 @@ async function handlePasswordReset(
       from: fromAddress(),
       to: [email],
       replyTo: replyToDefault(),
-      subject: "Réinitialise ton mot de passe MySWYM",
+      subject: "Réinitialise ton mot de passe ForSwim",
       html: resetPasswordHtml(resetUrl),
       tags: [{ name: "category", value: "reset_password" }],
     });
@@ -355,7 +355,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const html = `<!doctype html><html lang="fr"><body style="margin:0;padding:24px 12px;background:#f8f9fc;font-family:Lexend,-apple-system,sans-serif">
   <div style="max-width:560px;margin:0 auto">
-    <p style="color:#355da3;font-size:22px;font-weight:800;margin:0 0 20px">MySWYM</p>
+    <p style="color:#355da3;font-size:22px;font-weight:800;margin:0 0 20px">ForSwim</p>
     <div style="background:#fff;border:1px solid rgba(53,93,163,0.12);border-radius:12px;padding:28px 24px">
       <h1 style="color:#191c1e;font-size:22px;margin:0 0 12px">Nouveau message contact</h1>
       <p style="color:#434751;font-size:15px;line-height:24px">De : <strong>${escapeHtml(name)}</strong> (${escapeHtml(email)})</p>

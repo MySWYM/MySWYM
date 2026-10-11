@@ -83,7 +83,7 @@ export async function handlePushNotifyHttp(
       const userId = String(body.userId || "");
       const preview = String(body.body || "").trim().slice(0, 120);
       const result = await pushToUser(userId, {
-        title: "Nouvelle réponse MySWYM",
+        title: "Nouvelle réponse ForSwim",
         body: preview || "Arthur t’a répondu dans le chat.",
         badge: 1,
         data: { kind: "support", path: "/app" },

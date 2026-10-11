@@ -8,7 +8,7 @@ export const POSTS = [
     date: "27 avril 2025",
     readingTime: "7 min",
     coverColor: "#0A84FF",
-    intro: "La plupart des applications de natation te donnent un programme. MySWYM t'en donne un qui te ressemble. La différence tient à un seul chiffre : ton meilleur 100m. Voici pourquoi ce temps change absolument tout à la qualité de ton entraînement.",
+    intro: "La plupart des applications de natation te donnent un programme. ForSwim t'en donne un qui te ressemble. La différence tient à un seul chiffre : ton meilleur 100m. Voici pourquoi ce temps change absolument tout à la qualité de ton entraînement.",
     sections: [
       {
         h2: "Le problème des programmes génériques",
@@ -69,7 +69,7 @@ Départ du bord (pas plongé, ça fausse le résultat). Nage à effort maximal m
 **4. Note le temps**
 Arrête le chrono au toucher du mur. C'est ton 100m de référence.
 
-**Astuce :** refais ce test toutes les 6 semaines. Si tu as progressé, mets à jour ton temps dans MySWYM : tes départs seront automatiquement recalculés et ton plan s'adaptera à ta nouvelle forme.`,
+**Astuce :** refais ce test toutes les 6 semaines. Si tu as progressé, mets à jour ton temps dans ForSwim : tes départs seront automatiquement recalculés et ton plan s'adaptera à ta nouvelle forme.`,
       },
       {
         h2: "Pourquoi ça change aussi ton endurance (pas juste les sprints)",
@@ -83,7 +83,7 @@ C'est le principe de la **polarisation de l'entraînement** : 80% des séances t
       },
       {
         h2: "Et si je ne connais pas mon 100m ?",
-        content: `Pas de panique. MySWYM fonctionne aussi sans, les allures sont estimées par niveau (débutant, intermédiaire, avancé). Tu auras un bon programme.
+        content: `Pas de panique. ForSwim fonctionne aussi sans, les allures sont estimées par niveau (débutant, intermédiaire, avancé). Tu auras un bon programme.
 
 Mais si tu veux aller plus loin, voici comment faire ton premier test rapidement :
 
@@ -91,7 +91,7 @@ Mais si tu veux aller plus loin, voici comment faire ton premier test rapidement
 
 **Option 2, Estimation depuis un test récent** : Tu as nagé une compétition ou un chrono récemment ? Sur 50m, multiplie ton temps par 2,1 pour estimer ton 100m. Sur 200m, divise par 2,3.
 
-Renseigne ce temps dans ton profil MySWYM et tes séances s'ajustent immédiatement. Pas besoin de régénérer ton plan, le calcul est automatique.`,
+Renseigne ce temps dans ton profil ForSwim et tes séances s'ajustent immédiatement. Pas besoin de régénérer ton plan, le calcul est automatique.`,
       },
     ],
     cta: {
@@ -149,7 +149,7 @@ Cette répartition crée de la variété, évite la monotonie, et couvre les 3 f
 
 **CSS = (temps 400m − temps 200m) / 200** = (400 − 180) / 200 = **1.1 s/m** = **1'50"/100m**
 
-Avec MySWYM, tu renseignes ton meilleur 100m NL et l'app calcule automatiquement tes zones d'entraînement. Chaque séance t'affiche l'allure exacte à viser.`,
+Avec ForSwim, tu renseignes ton meilleur 100m NL et l'app calcule automatiquement tes zones d'entraînement. Chaque séance t'affiche l'allure exacte à viser.`,
       },
       {
         h2: "Les phases d'un plan triathlon complet",
@@ -178,7 +178,7 @@ Avec MySWYM, tu renseignes ton meilleur 100m NL et l'app calcule automatiquement
     ],
     cta: {
       title: "Lance ton plan triathlon maintenant",
-      text: "MySWYM génère ton programme natation complet, Sprint, Olympique, Half ou Ironman. Séances structurées, allures personnalisées, progression semaine par semaine.",
+      text: "ForSwim génère ton programme natation complet, Sprint, Olympique, Half ou Ironman. Séances structurées, allures personnalisées, progression semaine par semaine.",
       button: "Créer mon plan triathlon",
     },
   },
@@ -263,7 +263,7 @@ Dans un programme sérieux, prévois 3 à 6 longueurs de remorquage par séance 
 **Semaines 7-8 : Affûtage**
 Simulations chronométrées. Réduction du volume. Confiance mentale.
 
-Dans MySWYM, le plan BNSSA intègre automatiquement ces phases avec les séances détaillées (apnée, remorquage, simulation de parcours) à ton niveau et ta fréquence.`,
+Dans ForSwim, le plan BNSSA intègre automatiquement ces phases avec les séances détaillées (apnée, remorquage, simulation de parcours) à ton niveau et ta fréquence.`,
       },
       {
         h2: "Les erreurs les plus fréquentes des candidats BNSSA",
@@ -278,7 +278,7 @@ Dans MySWYM, le plan BNSSA intègre automatiquement ces phases avec les séances
     ],
     cta: {
       title: "Prépare ton BNSSA avec un plan structuré",
-      text: "MySWYM génère un plan de préparation BNSSA complet, apnée dynamique, remorquage, simulation de parcours 100m et 250m palmes. Séances progressives adaptées à ta date d'examen.",
+      text: "ForSwim génère un plan de préparation BNSSA complet, apnée dynamique, remorquage, simulation de parcours 100m et 250m palmes. Séances progressives adaptées à ta date d'examen.",
       button: "Créer mon plan BNSSA",
     },
   },
@@ -364,7 +364,7 @@ La régularité prime sur le volume. 2 séances bien construites de 45 minutes v
     ],
     cta: {
       title: "Génère ton plan débutant personnalisé",
-      text: "MySWYM crée un programme natation adapté à ton niveau, ton bassin et ta disponibilité. Chaque séance est détaillée, tu sais exactement quoi faire dans l'eau.",
+      text: "ForSwim crée un programme natation adapté à ton niveau, ton bassin et ta disponibilité. Chaque séance est détaillée, tu sais exactement quoi faire dans l'eau.",
       button: "Créer mon plan débutant",
     },
   },
@@ -455,7 +455,7 @@ Arrête ta montre. Note le temps total si tu veux. Récupère entre les séries 
     ],
     cta: {
       title: "Ton programme avec intervalles calculés pour toi",
-      text: "MySWYM calcule automatiquement tes intervalles de départ selon ton niveau et ton meilleur 100m. Tu n'as plus qu'à regarder l'horloge et nager.",
+      text: "ForSwim calcule automatiquement tes intervalles de départ selon ton niveau et ton meilleur 100m. Tu n'as plus qu'à regarder l'horloge et nager.",
       button: "Créer mon programme",
     },
   },
@@ -468,12 +468,12 @@ Arrête ta montre. Note le temps total si tu veux. Récupère entre les séries 
     date: "8 août 2026",
     readingTime: "8 min",
     coverColor: "#00C48C",
-    intro: "Tu ouvres ton plan et tu lis : \"400m Cr/Dos (Z1), 8×50 : 25m grand chien · 25m normal, 6×100m D1'45\" (Z3), 200m RAC\". C'est du chinois ? Normal. La natation a son propre vocabulaire. Ce glossaire regroupe les termes que tu croises dans MySWYM, expliqués clairement.",
+    intro: "Tu ouvres ton plan et tu lis : \"400m Cr/Dos (Z1), 8×50 : 25m grand chien · 25m normal, 6×100m D1'45\" (Z3), 200m RAC\". C'est du chinois ? Normal. La natation a son propre vocabulaire. Ce glossaire regroupe les termes que tu croises dans ForSwim, expliqués clairement.",
     sections: [
       {
         h2: "Les nages et les abréviations",
         content: `**Cr / NL, Crawl / Nage libre**
-Dans MySWYM tu verras surtout **Cr** (crawl). NL = nage libre : techniquement n'importe quel style, mais en pratique c'est du crawl, la nage la plus rapide.
+Dans ForSwim tu verras surtout **Cr** (crawl). NL = nage libre : techniquement n'importe quel style, mais en pratique c'est du crawl, la nage la plus rapide.
 
 **Dos**
 Dos crawlé : sur le dos, bras alternés. Souvent en départ, récup ou retour au calme.
@@ -508,7 +508,7 @@ Pour les séries jambes.
       },
       {
         h2: "Les zones d'intensité (Z1 à Z4)",
-        content: `Les zones disent à quelle vitesse nager. Dans MySWYM elles sont calculées à partir de ton **T100** (meilleur temps sur 100 m crawl), pas d'un test 400/200.
+        content: `Les zones disent à quelle vitesse nager. Dans ForSwim elles sont calculées à partir de ton **T100** (meilleur temps sur 100 m crawl), pas d'un test 400/200.
 
 **Z1, Très facile** · Récup / départ / fin. Tu pourrais parler. Souvent écrit « facile » au niveau découverte.
 
@@ -523,13 +523,13 @@ Les tags du type **(Z2 @01:45-01:55)** (Premium) = plage d'allure cible pour 100
       {
         h2: "T100 et allures",
         content: `**T100**
-Ton temps de référence sur 100 m crawl (départ dans l'eau). C'est la seule donnée d'allure demandée par MySWYM : l'app en déduit Z1–Z4 et les plages \`@mm:ss\`.
+Ton temps de référence sur 100 m crawl (départ dans l'eau). C'est la seule donnée d'allure demandée par ForSwim : l'app en déduit Z1–Z4 et les plages \`@mm:ss\`.
 
 **CSS (Critical Swim Speed)**
 Concept classique d'allure-seuil (équivalent VMA en course). Tu peux la mesurer avec un 400 m + 200 m à fond, mais **dans l'app on ne te demande pas ce test** : on s'appuie sur le T100 pour rester simple et cohérent avec tes séances.`,
       },
       {
-        h2: "La structure d'une séance MySWYM",
+        h2: "La structure d'une séance ForSwim",
         content: `Chaque séance suit le même ordre coach :
 
 **1. Départ** (~Z1)
@@ -618,7 +618,7 @@ Maximiser la distance par coup de bras : allongement et efficacité plutôt que 
     ],
     cta: {
       title: "Maintenant que tu parles nageur…",
-      text: "MySWYM génère un programme complet avec tous ces termes en contexte. Chaque séance est détaillée, tu sais exactement quoi faire, pourquoi, et à quelle intensité.",
+      text: "ForSwim génère un programme complet avec tous ces termes en contexte. Chaque séance est détaillée, tu sais exactement quoi faire, pourquoi, et à quelle intensité.",
       button: "Créer mon programme",
     },
   },

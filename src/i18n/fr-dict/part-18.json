@@ -153,19 +153,19 @@
     "nb": "Status: ytelsesmåling som krever samtykke.",
     "fi": "Tila: suostumusta edellyttävä suorituskyvyn mittaus."
   },
-  "4. Ce que MySWYM n’utilise pas (à date d’audit)": {
-    "en": "4. What MySWYM does not use (as of the audit date)",
-    "de": "4. Was MySWYM nicht verwendet (zum Zeitpunkt der Prüfung)",
-    "es": "4. Lo que MySWYM no utiliza (a fecha de la auditoría)",
-    "ja": "4. MySWYMが使用していないもの（監査時点）",
-    "nl": "4. Wat MySWYM niet gebruikt (op de auditdatum)",
-    "it": "4. Cosa MySWYM non utilizza (alla data dell’audit)",
-    "pt": "4. O que a MySWYM não utiliza (à data da auditoria)",
-    "pt-BR": "4. O que o MySWYM não utiliza (na data da auditoria)",
-    "sv": "4. Vad MySWYM inte använder (per granskningsdatum)",
-    "da": "4. Hvad MySWYM ikke bruger (på revisionsdatoen)",
-    "nb": "4. Hva MySWYM ikke bruker (per revisjonsdato)",
-    "fi": "4. Mitä MySWYM ei käytä (tarkastuspäivänä)"
+  "4. Ce que ForSwim n’utilise pas (à date d’audit)": {
+    "en": "4. What ForSwim does not use (as of the audit date)",
+    "de": "4. Was ForSwim nicht verwendet (zum Zeitpunkt der Prüfung)",
+    "es": "4. Lo que ForSwim no utiliza (a fecha de la auditoría)",
+    "ja": "4. ForSwimが使用していないもの（監査時点）",
+    "nl": "4. Wat ForSwim niet gebruikt (op de auditdatum)",
+    "it": "4. Cosa ForSwim non utilizza (alla data dell’audit)",
+    "pt": "4. O que a ForSwim não utiliza (à data da auditoria)",
+    "pt-BR": "4. O que o ForSwim não utiliza (na data da auditoria)",
+    "sv": "4. Vad ForSwim inte använder (per granskningsdatum)",
+    "da": "4. Hvad ForSwim ikke bruger (på revisionsdatoen)",
+    "nb": "4. Hva ForSwim ikke bruker (per revisjonsdato)",
+    "fi": "4. Mitä ForSwim ei käytä (tarkastuspäivänä)"
   },
   "Pas de Meta Pixel / Facebook Pixel détecté dans le front grand public.": {
     "en": "No Meta Pixel / Facebook Pixel detected in the public-facing front end.",
@@ -391,19 +391,19 @@
     "nb": "Premium avsluttet",
     "fi": "Premium peruttu"
   },
-  "Données MySWYM": {
-    "en": "MySWYM data",
-    "de": "MySWYM-Daten",
-    "es": "Datos de MySWYM",
-    "ja": "MySWYMデータ",
-    "nl": "MySWYM-gegevens",
-    "it": "Dati MySWYM",
-    "pt": "Dados MySWYM",
-    "pt-BR": "Dados do MySWYM",
-    "sv": "MySWYM-data",
-    "da": "MySWYM-data",
-    "nb": "MySWYM-data",
-    "fi": "MySWYM-tiedot"
+  "Données ForSwim": {
+    "en": "ForSwim data",
+    "de": "ForSwim-Daten",
+    "es": "Datos de ForSwim",
+    "ja": "ForSwimデータ",
+    "nl": "ForSwim-gegevens",
+    "it": "Dati ForSwim",
+    "pt": "Dados ForSwim",
+    "pt-BR": "Dados do ForSwim",
+    "sv": "ForSwim-data",
+    "da": "ForSwim-data",
+    "nb": "ForSwim-data",
+    "fi": "ForSwim-tiedot"
   },
   "Semaine prochaine : volume allégé (−{{1}} %).": {
     "en": "Next week: lighter volume (−{{1}}%).",

@@ -30,7 +30,7 @@ const sample = {
 
 const text = formatSessionPlainText(sample);
 assert(text.includes("Seuil progressif"), "titre");
-assert(text.includes("MySWYM"), "brand");
+assert(text.includes("ForSwim"), "brand");
 assert(/Échauffement|Corps|Retour/i.test(text), `phases dans texte: ${text.slice(0, 200)}`);
 assert(!/\bZ3\b/.test(text), "pas de Z3 dans le texte");
 assert(!text.includes("SEUIL"), "pas le type brut SEUIL");
@@ -38,7 +38,7 @@ assert(!text.includes("SEUIL"), "pas le type brut SEUIL");
 const html = buildSessionPrintHtml(sample);
 assert(html.includes("<!DOCTYPE html>"), "html doc");
 assert(html.includes("Seuil progressif"), "html title");
-assert(html.includes("MySWYM"), "html brand");
+assert(html.includes("ForSwim"), "html brand");
 assert(html.includes("Matériel"), "html matériel");
 assert(html.includes("Palmes"), "html palmes");
 assert(html.includes("Planche"), "html planche");

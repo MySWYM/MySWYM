@@ -1,11 +1,18 @@
 /**
- * Liens iOS : le site myswym.app s’ouvre dans Safari (ou le navigateur
+ * Liens iOS : le site forswim.app s’ouvre dans Safari (ou le navigateur
  * par défaut). Le WebView ne montre que le produit nageur.
  */
 import { isAppPath } from "../i18n/locale-path.js";
 import { isNativeApp, nativeApiOrigin } from "./native-platform.js";
 
-const SITE_HOSTS = new Set(["www.myswym.app", "myswym.app", "staging.myswym.app"]);
+const SITE_HOSTS = new Set([
+  "www.forswim.app",
+  "forswim.app",
+  "staging.forswim.app",
+  "www.myswym.app",
+  "myswym.app",
+  "staging.myswym.app",
+]);
 
 export function inAppPathFromHref(href) {
   const raw = String(href || "").trim();

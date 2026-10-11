@@ -212,7 +212,7 @@ export default function AnalyseTab({
             >
               {isNativeIos()
                 ? t("loopPaywall.ctaNative")
-                : t("loopPaywall.ctaWeb", { price: PRICING.monthlyCommit.label })}
+                : t("loopPaywall.ctaWeb", { price: PRICING.monthlyFlex.label })}
             </button>
             )}
           </div>

@@ -11,6 +11,7 @@ import { supabase } from "./supabase.js";
 import { reset as resetAnalytics } from "./lib/analytics.js";
 import { Dialog, DialogContent, DialogOverlay, DialogPortal, DialogTitle, DialogTrigger } from "./ui/lp-dialog.jsx";
 import BrandLogo from "./BrandLogo.jsx";
+import { LOGO_HEADER_HEIGHT } from "./lib/brand.js";
 import { isNativeApp } from "./lib/native-platform.js";
 import "./theme/public.css";
 
@@ -85,7 +86,7 @@ export default function PublicNav() {
       <nav className={`ms-header${scrolled || menuOpen ? " is-solid" : ""}`}>
         <div className="ms-header-inner">
           <LocalizedLink to="/" className="ms-brand" aria-label={t("nav.homeAria")}>
-            <BrandLogo variant="wordmark" height={26} alt="MySWYM" />
+            <BrandLogo variant="wordmark" height={LOGO_HEADER_HEIGHT} alt="ForSwim" />
           </LocalizedLink>
 
           {!isMobile && (

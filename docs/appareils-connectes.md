@@ -1,4 +1,4 @@
-# Appareils connectés MySWYM
+# Appareils connectés ForSwim
 
 Modèle fini : voir et révoquer les sessions web / iPhone depuis **Profil → Paramètres → Mes données → Appareils connectés**.
 
@@ -34,4 +34,4 @@ Sans la function déployée, l’UI affiche une erreur claire (pas de crash).
 
 - Révocation d’un appareil **distant** : effective au prochain heartbeat (ou dès `signOut others/global` si GoTrue le supporte).
 - Pas d’ATT / pas de tracking : IP + pays uniquement pour l’écran sécurité du titulaire du compte.
-- Pas de liste GoTrue native : registre MySWYM = source de vérité UI.
+- Pas de liste GoTrue native : registre ForSwim = source de vérité UI.

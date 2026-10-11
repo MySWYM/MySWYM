@@ -143,7 +143,7 @@ export function createStoryStickerCanvas(session, activity = null) {
 
   ctx.fillStyle = "#FFFFFF";
   ctx.font = `700 32px ${FONT}`;
-  ctx.fillText("MySWYM", W / 2, top);
+  ctx.fillText("ForSwim", W / 2, top);
 
   let y = top + brandH + 16;
   for (const line of lines) {

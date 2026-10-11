@@ -94,7 +94,7 @@ test("sécurité, Instagram ID ≠ userId", () => {
   );
 });
 
-test("web exige userId MySWYM", () => {
+test("web exige userId ForSwim", () => {
   assert.equal(
     assertProcessInput({ channel: "web", message: "Hello", externalUserId: "ig_only" }).ok,
     false,

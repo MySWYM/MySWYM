@@ -42,8 +42,8 @@ assert(
   "capacitor scheme /api",
 );
 assert(
-  rewriteNativeApiUrl("https://www.myswym.app/api/app-version", ORIGIN) ===
-    "https://www.myswym.app/api/app-version",
+  rewriteNativeApiUrl("https://www.forswim.app/api/app-version", ORIGIN) ===
+    "https://www.forswim.app/api/app-version",
   "already-absolute production /api untouched",
 );
 

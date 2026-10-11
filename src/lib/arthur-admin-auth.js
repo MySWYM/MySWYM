@@ -126,7 +126,7 @@ export function isStagingHost() {
   return host.startsWith("staging.") || host === "localhost" || host === "127.0.0.1";
 }
 
-/** En local, n’importe quelle session MySWYM ouvre l’admin (Vite ne sert pas /api). */
+/** En local, n’importe quelle session ForSwim ouvre l’admin (Vite ne sert pas /api). */
 export function canBypassAdminProbe(sessionEmail) {
   return isLocalDev() && Boolean(sessionEmail);
 }

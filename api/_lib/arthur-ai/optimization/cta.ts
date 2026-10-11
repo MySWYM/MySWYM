@@ -1,5 +1,5 @@
 /**
- * Tracking CTA Instagram / MySWYM (F3).
+ * Tracking CTA Instagram / ForSwim (F3).
  * Pas d’envoi automatique, observation + attribution.
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -8,7 +8,7 @@ import { trackAiEvent } from "../tracking.js";
 import { detectCtaInMessage } from "./quality.js";
 
 const APP_URL = () =>
-  (process.env.APP_URL || "https://myswym.app").replace(/\/$/, "");
+  (process.env.APP_URL || "https://forswim.app").replace(/\/$/, "");
 
 /** Lien CTA trackable (ref arthur). */
 export function buildTrackedCtaUrl(

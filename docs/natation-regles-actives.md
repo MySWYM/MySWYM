@@ -1,4 +1,4 @@
-# Règles actives natation MySWYM
+# Règles actives natation ForSwim
 
 > **Maximum 20 règles non négociables.**  
 > Détail validation : [`natation-validation-seances.md`](./natation-validation-seances.md) · Sources : [`natation-source-de-verite.md`](./natation-source-de-verite.md) · Journal : [`natation-historique.md`](./natation-historique.md).
@@ -37,7 +37,7 @@
 
 16. **Quality Gate** : séances **composeur** (hors Soft Sheet) passent `validateComposedSession` ; Arthur ne contourne pas le gate ; sous-volume > séance incohérente. Séances Soft Sheet **01–13** : **pas** de quality gate ni parse strict sur les lignes (option A) : le Sheet Arthur fait foi ; une ligne incorrecte se corrige dans le Sheet.
 
-17. **Objectifs** — BNSSA/pompiers : sauvetage (pas endurance générique seule). BPJEPS : 400 m NL. Eau libre : sighting / lieu. Triathlon : cues course. Même niveau + même focus nage : l’objectif (`roleObjectif`) doit changer intent et proportions de blocs (pas seulement le libellé). MySWYM = générateur de séances, pas école de natation.
+17. **Objectifs** — BNSSA/pompiers : sauvetage (pas endurance générique seule). BPJEPS : 400 m NL. Eau libre : sighting / lieu. Triathlon : cues course. Même niveau + même focus nage : l’objectif (`roleObjectif`) doit changer intent et proportions de blocs (pas seulement le libellé). ForSwim = générateur de séances, pas école de natation.
 
 18. **Sprint / seuil** — Sprint = récup complète entre reps. Seuil = effort soutenu et régulier (constance des temps).
 

@@ -41,7 +41,7 @@ test("comment fonctionne l’app → réponse produit, pas ignore", () => {
   assert.equal(r.suggested_action === "no_reply", false);
   assert.equal(r.suggested_action === "handoff_human", false);
   assert.ok(r.message.length > 40);
-  assert.match(r.message, /MySWYM|plan|natation/i);
+  assert.match(r.message, /ForSwim|plan|natation/i);
   assert.match(r.message, /\?/); // une question pour poursuivre
   assert.ok(["myswym_question", "subscription"].includes(r.intent));
 });
@@ -119,7 +119,7 @@ test("handoff légitime, texte exact", () => {
 test("builtin knowledge produit disponible runtime", () => {
   const snips = matchBuiltinKnowledge("Comment fonctionne l’application ?", "myswym_question", 2);
   assert.ok(snips.length >= 1);
-  assert.ok(snips.some((s) => /plan|MySWYM|essai/i.test(s.content)));
+  assert.ok(snips.some((s) => /plan|ForSwim|essai/i.test(s.content)));
 });
 
 test("conversation multi-tours crawl (≥3 échanges)", () => {
@@ -139,7 +139,7 @@ test("conversation multi-tours crawl (≥3 échanges)", () => {
   assert.equal(replies.length, 3);
   assert.match(replies[0], /crawl|respiration|semaine/i);
   assert.ok(replies[1].length > 20);
-  assert.match(replies[2], /plan|MySWYM|inscription|fréquence|objectif/i);
+  assert.match(replies[2], /plan|ForSwim|inscription|fréquence|objectif/i);
 });
 
 test("conversation multi-tours triathlon (≥3 échanges)", () => {
@@ -165,7 +165,7 @@ test("conversation multi-tours découverte app (≥3 échanges)", () => {
     "Quel est le prix ?",
   ];
   const out = turns.map((t) => buildOfflineResponse(t, { reason: "no_api_key" }));
-  assert.match(out[0].message, /MySWYM|plan/i);
+  assert.match(out[0].message, /ForSwim|plan/i);
   assert.notEqual(out[0].suggested_action, "no_reply");
   assert.match(out[1].message, /crawl|semaine/i);
   assert.match(out[2].message, /4[,.]99/);

@@ -97,19 +97,19 @@
     "nb": "Oppsigelse (unntatt under en pågående 12-måneders binding): via Profil → Innstillinger → «Si opp» (Stripe-portalen), eller via verktøyene i Stripe Customer Portal. For å bytte abonnement uten å avslutte: «Endre abonnementet mitt».",
     "fi": "Irtisanominen (paitsi käynnissä olevan 12 kuukauden sitoutumisen aikana): Profiili → Asetukset → ”Irtisano” (Stripe-portaali) tai Stripe Customer Portalin työkalujen kautta. Tilauksen vaihtaminen lopettamatta: ”Muuta tilaustani”."
   },
-  "App iPhone : reconduction tacite via l’App Store. Résiliation : Réglages → Apple ID → Abonnements. L’accès reste actif jusqu’à la fin de la période déjà payée. Supprimer le compte MySWYM n’arrête pas l’abonnement App Store : il faut le résilier dans Réglages. L’app iPhone ne propose pas de paiement web.": {
-    "en": "iPhone app: automatic renewal via the App Store. Cancellation: Settings → Apple ID → Subscriptions. Access remains active until the end of the period already paid. Deleting your MySWYM account does not stop the App Store subscription: you must cancel it in Settings. The iPhone app does not offer web payment.",
-    "de": "iPhone-App: stillschweigende Verlängerung über den App Store. Kündigung: Einstellungen → Apple-ID → Abonnements. Der Zugang bleibt bis zum Ende des bereits bezahlten Zeitraums aktiv. Das Löschen des MySWYM-Kontos beendet das App-Store-Abonnement nicht: Es muss in den Einstellungen gekündigt werden. Die iPhone-App bietet keine Webzahlung an.",
-    "es": "App de iPhone: renovación tácita a través del App Store. Cancelación: Ajustes → ID de Apple → Suscripciones. El acceso sigue activo hasta el final del periodo ya pagado. Eliminar la cuenta MySWYM no detiene la suscripción del App Store: debes cancelarla en Ajustes. La app de iPhone no ofrece pago web.",
-    "ja": "iPhoneアプリ：App Store を通じて自動更新されます。解約：設定 → Apple ID → サブスクリプション。アクセスは支払済み期間の終了まで有効です。MySWYMアカウントを削除しても App Store のサブスクリプションは停止しません。設定から解約する必要があります。iPhoneアプリではWeb決済は提供していません。",
-    "nl": "iPhone-app: stilzwijgende verlenging via de App Store. Opzeggen: Instellingen → Apple ID → Abonnementen. De toegang blijft actief tot het einde van de reeds betaalde periode. Het verwijderen van het MySWYM-account stopt het App Store-abonnement niet: je moet het opzeggen in Instellingen. De iPhone-app biedt geen webbetaling aan.",
-    "it": "App iPhone: rinnovo tacito tramite l’App Store. Disdetta: Impostazioni → ID Apple → Abbonamenti. L’accesso resta attivo fino alla fine del periodo già pagato. Eliminare l’account MySWYM non interrompe l’abbonamento App Store: devi disdirlo in Impostazioni. L’app iPhone non propone pagamenti web.",
-    "pt": "App iPhone: renovação tácita através da App Store. Cancelamento: Definições → ID Apple → Subscrições. O acesso mantém-se ativo até ao fim do período já pago. Eliminar a conta MySWYM não termina a subscrição da App Store: é preciso cancelá-la nas Definições. A app iPhone não propõe pagamento web.",
-    "pt-BR": "App para iPhone: renovação automática pela App Store. Cancelamento: Ajustes → ID Apple → Assinaturas. O acesso continua ativo até o fim do período já pago. Excluir a conta MySWYM não encerra a assinatura da App Store: é preciso cancelá-la em Ajustes. O app para iPhone não oferece pagamento pela web.",
-    "sv": "iPhone-appen: automatisk förnyelse via App Store. Uppsägning: Inställningar → Apple-ID → Prenumerationer. Åtkomsten förblir aktiv till slutet av den redan betalda perioden. Att radera MySWYM-kontot stoppar inte App Store-prenumerationen: du måste säga upp den i Inställningar. iPhone-appen erbjuder ingen webbetalning.",
-    "da": "iPhone-appen: stiltiende fornyelse via App Store. Opsigelse: Indstillinger → Apple-id → Abonnementer. Adgangen forbliver aktiv til udgangen af den allerede betalte periode. Sletning af MySWYM-kontoen stopper ikke App Store-abonnementet: det skal opsiges i Indstillinger. iPhone-appen tilbyder ikke webbetaling.",
-    "nb": "iPhone-appen: automatisk fornyelse via App Store. Oppsigelse: Innstillinger → Apple-ID → Abonnementer. Tilgangen forblir aktiv til slutten av den allerede betalte perioden. Sletting av MySWYM-kontoen stopper ikke App Store-abonnementet: det må sies opp i Innstillinger. iPhone-appen tilbyr ikke nettbetaling.",
-    "fi": "iPhone-sovellus: automaattinen uusiminen App Storen kautta. Irtisanominen: Asetukset → Apple ID → Tilaukset. Käyttöoikeus pysyy voimassa jo maksetun jakson loppuun. MySWYM-tilin poistaminen ei lopeta App Store -tilausta: se on irtisanottava Asetuksissa. iPhone-sovellus ei tarjoa verkkomaksua."
+  "App iPhone : reconduction tacite via l’App Store. Résiliation : Réglages → Apple ID → Abonnements. L’accès reste actif jusqu’à la fin de la période déjà payée. Supprimer le compte ForSwim n’arrête pas l’abonnement App Store : il faut le résilier dans Réglages. L’app iPhone ne propose pas de paiement web.": {
+    "en": "iPhone app: automatic renewal via the App Store. Cancellation: Settings → Apple ID → Subscriptions. Access remains active until the end of the period already paid. Deleting your ForSwim account does not stop the App Store subscription: you must cancel it in Settings. The iPhone app does not offer web payment.",
+    "de": "iPhone-App: stillschweigende Verlängerung über den App Store. Kündigung: Einstellungen → Apple-ID → Abonnements. Der Zugang bleibt bis zum Ende des bereits bezahlten Zeitraums aktiv. Das Löschen des ForSwim-Kontos beendet das App-Store-Abonnement nicht: Es muss in den Einstellungen gekündigt werden. Die iPhone-App bietet keine Webzahlung an.",
+    "es": "App de iPhone: renovación tácita a través del App Store. Cancelación: Ajustes → ID de Apple → Suscripciones. El acceso sigue activo hasta el final del periodo ya pagado. Eliminar la cuenta ForSwim no detiene la suscripción del App Store: debes cancelarla en Ajustes. La app de iPhone no ofrece pago web.",
+    "ja": "iPhoneアプリ：App Store を通じて自動更新されます。解約：設定 → Apple ID → サブスクリプション。アクセスは支払済み期間の終了まで有効です。ForSwimアカウントを削除しても App Store のサブスクリプションは停止しません。設定から解約する必要があります。iPhoneアプリではWeb決済は提供していません。",
+    "nl": "iPhone-app: stilzwijgende verlenging via de App Store. Opzeggen: Instellingen → Apple ID → Abonnementen. De toegang blijft actief tot het einde van de reeds betaalde periode. Het verwijderen van het ForSwim-account stopt het App Store-abonnement niet: je moet het opzeggen in Instellingen. De iPhone-app biedt geen webbetaling aan.",
+    "it": "App iPhone: rinnovo tacito tramite l’App Store. Disdetta: Impostazioni → ID Apple → Abbonamenti. L’accesso resta attivo fino alla fine del periodo già pagato. Eliminare l’account ForSwim non interrompe l’abbonamento App Store: devi disdirlo in Impostazioni. L’app iPhone non propone pagamenti web.",
+    "pt": "App iPhone: renovação tácita através da App Store. Cancelamento: Definições → ID Apple → Subscrições. O acesso mantém-se ativo até ao fim do período já pago. Eliminar a conta ForSwim não termina a subscrição da App Store: é preciso cancelá-la nas Definições. A app iPhone não propõe pagamento web.",
+    "pt-BR": "App para iPhone: renovação automática pela App Store. Cancelamento: Ajustes → ID Apple → Assinaturas. O acesso continua ativo até o fim do período já pago. Excluir a conta ForSwim não encerra a assinatura da App Store: é preciso cancelá-la em Ajustes. O app para iPhone não oferece pagamento pela web.",
+    "sv": "iPhone-appen: automatisk förnyelse via App Store. Uppsägning: Inställningar → Apple-ID → Prenumerationer. Åtkomsten förblir aktiv till slutet av den redan betalda perioden. Att radera ForSwim-kontot stoppar inte App Store-prenumerationen: du måste säga upp den i Inställningar. iPhone-appen erbjuder ingen webbetalning.",
+    "da": "iPhone-appen: stiltiende fornyelse via App Store. Opsigelse: Indstillinger → Apple-id → Abonnementer. Adgangen forbliver aktiv til udgangen af den allerede betalte periode. Sletning af ForSwim-kontoen stopper ikke App Store-abonnementet: det skal opsiges i Indstillinger. iPhone-appen tilbyder ikke webbetaling.",
+    "nb": "iPhone-appen: automatisk fornyelse via App Store. Oppsigelse: Innstillinger → Apple-ID → Abonnementer. Tilgangen forblir aktiv til slutten av den allerede betalte perioden. Sletting av ForSwim-kontoen stopper ikke App Store-abonnementet: det må sies opp i Innstillinger. iPhone-appen tilbyr ikke nettbetaling.",
+    "fi": "iPhone-sovellus: automaattinen uusiminen App Storen kautta. Irtisanominen: Asetukset → Apple ID → Tilaukset. Käyttöoikeus pysyy voimassa jo maksetun jakson loppuun. ForSwim-tilin poistaminen ei lopeta App Store -tilausta: se on irtisanottava Asetuksissa. iPhone-sovellus ei tarjoa verkkomaksua."
   },
   "La suppression du compte est disponible dans les paramètres. Un mensuel Stripe, un engagement 12 mois ou un annuel Stripe encore actif est arrêté à ce moment-là, sans remboursement de la période déjà payée. Un abonnement App Store continue jusqu’à résiliation dans Réglages.": {
     "en": "Account deletion is available in the settings. A still-active Stripe monthly plan, 12-month commitment or Stripe annual plan is stopped at that point, with no refund of the period already paid. An App Store subscription continues until it is cancelled in Settings.",
@@ -223,19 +223,19 @@
     "nb": "og oppgi e-postadressen til kontoen din. Et standardskjema kan bestilles fra support (fri form godtas).",
     "fi": "ja ilmoita tilisi sähköpostiosoite. Vakiolomakkeen voi pyytää tuesta (vapaamuotoinen ilmoitus hyväksytään)."
   },
-  "Pour un abonnement souscrit dans l’app iPhone (App Store), le paiement est traité par Apple. Les demandes de rétractation ou de remboursement pendant le délai légal se font auprès d’Apple (Réglages → Apple ID, ou reportaproblem.apple.com). MySWYM ne peut pas annuler un prélèvement App Store à ta place.": {
-    "en": "For a subscription taken out in the iPhone app (App Store), payment is processed by Apple. Withdrawal or refund requests during the legal period must be made to Apple (Settings → Apple ID, or reportaproblem.apple.com). MySWYM cannot cancel an App Store charge on your behalf.",
-    "de": "Bei einem in der iPhone-App (App Store) abgeschlossenen Abonnement wird die Zahlung von Apple abgewickelt. Widerrufs- oder Erstattungsanfragen innerhalb der gesetzlichen Frist richtest du an Apple (Einstellungen → Apple-ID oder reportaproblem.apple.com). MySWYM kann eine App-Store-Abbuchung nicht für dich stornieren.",
-    "es": "Para una suscripción contratada en la app de iPhone (App Store), el pago lo gestiona Apple. Las solicitudes de desistimiento o reembolso durante el plazo legal se hacen ante Apple (Ajustes → ID de Apple, o reportaproblem.apple.com). MySWYM no puede anular un cobro del App Store por ti.",
-    "ja": "iPhoneアプリ（App Store）で契約したサブスクリプションの場合、支払いはAppleが処理します。法定期間内の撤回または返金の申請はAppleに対して行ってください（設定 → Apple ID、または reportaproblem.apple.com）。MySWYMがあなたに代わって App Store の請求を取り消すことはできません。",
-    "nl": "Voor een abonnement afgesloten in de iPhone-app (App Store) wordt de betaling door Apple verwerkt. Verzoeken tot herroeping of terugbetaling binnen de wettelijke termijn dien je in bij Apple (Instellingen → Apple ID, of reportaproblem.apple.com). MySWYM kan een App Store-afschrijving niet voor jou annuleren.",
-    "it": "Per un abbonamento sottoscritto nell’app iPhone (App Store), il pagamento è gestito da Apple. Le richieste di recesso o rimborso entro il termine di legge vanno fatte ad Apple (Impostazioni → ID Apple, oppure reportaproblem.apple.com). MySWYM non può annullare un addebito App Store al posto tuo.",
-    "pt": "Para uma subscrição feita na app iPhone (App Store), o pagamento é processado pela Apple. Os pedidos de livre resolução ou reembolso durante o prazo legal são feitos junto da Apple (Definições → ID Apple, ou reportaproblem.apple.com). A MySWYM não pode anular um débito da App Store por ti.",
-    "pt-BR": "Para uma assinatura feita no app para iPhone (App Store), o pagamento é processado pela Apple. Os pedidos de arrependimento ou reembolso durante o prazo legal devem ser feitos à Apple (Ajustes → ID Apple, ou reportaproblem.apple.com). O MySWYM não pode cancelar uma cobrança da App Store por você.",
-    "sv": "För en prenumeration som tecknats i iPhone-appen (App Store) hanteras betalningen av Apple. Begäran om ånger eller återbetalning inom den lagstadgade fristen görs hos Apple (Inställningar → Apple-ID, eller reportaproblem.apple.com). MySWYM kan inte annullera en App Store-dragning åt dig.",
-    "da": "For et abonnement tegnet i iPhone-appen (App Store) håndteres betalingen af Apple. Anmodninger om fortrydelse eller refusion inden for den lovbestemte frist rettes til Apple (Indstillinger → Apple-id, eller reportaproblem.apple.com). MySWYM kan ikke annullere en App Store-trækning for dig.",
-    "nb": "For et abonnement tegnet i iPhone-appen (App Store) behandles betalingen av Apple. Forespørsler om angrerett eller refusjon innenfor den lovbestemte fristen rettes til Apple (Innstillinger → Apple-ID, eller reportaproblem.apple.com). MySWYM kan ikke annullere et App Store-trekk for deg.",
-    "fi": "iPhone-sovelluksessa (App Store) tehdyn tilauksen maksun käsittelee Apple. Peruutus- tai palautuspyynnöt lakisääteisen ajan kuluessa tehdään Applelle (Asetukset → Apple ID tai reportaproblem.apple.com). MySWYM ei voi perua App Store -veloitusta puolestasi."
+  "Pour un abonnement souscrit dans l’app iPhone (App Store), le paiement est traité par Apple. Les demandes de rétractation ou de remboursement pendant le délai légal se font auprès d’Apple (Réglages → Apple ID, ou reportaproblem.apple.com). ForSwim ne peut pas annuler un prélèvement App Store à ta place.": {
+    "en": "For a subscription taken out in the iPhone app (App Store), payment is processed by Apple. Withdrawal or refund requests during the legal period must be made to Apple (Settings → Apple ID, or reportaproblem.apple.com). ForSwim cannot cancel an App Store charge on your behalf.",
+    "de": "Bei einem in der iPhone-App (App Store) abgeschlossenen Abonnement wird die Zahlung von Apple abgewickelt. Widerrufs- oder Erstattungsanfragen innerhalb der gesetzlichen Frist richtest du an Apple (Einstellungen → Apple-ID oder reportaproblem.apple.com). ForSwim kann eine App-Store-Abbuchung nicht für dich stornieren.",
+    "es": "Para una suscripción contratada en la app de iPhone (App Store), el pago lo gestiona Apple. Las solicitudes de desistimiento o reembolso durante el plazo legal se hacen ante Apple (Ajustes → ID de Apple, o reportaproblem.apple.com). ForSwim no puede anular un cobro del App Store por ti.",
+    "ja": "iPhoneアプリ（App Store）で契約したサブスクリプションの場合、支払いはAppleが処理します。法定期間内の撤回または返金の申請はAppleに対して行ってください（設定 → Apple ID、または reportaproblem.apple.com）。ForSwimがあなたに代わって App Store の請求を取り消すことはできません。",
+    "nl": "Voor een abonnement afgesloten in de iPhone-app (App Store) wordt de betaling door Apple verwerkt. Verzoeken tot herroeping of terugbetaling binnen de wettelijke termijn dien je in bij Apple (Instellingen → Apple ID, of reportaproblem.apple.com). ForSwim kan een App Store-afschrijving niet voor jou annuleren.",
+    "it": "Per un abbonamento sottoscritto nell’app iPhone (App Store), il pagamento è gestito da Apple. Le richieste di recesso o rimborso entro il termine di legge vanno fatte ad Apple (Impostazioni → ID Apple, oppure reportaproblem.apple.com). ForSwim non può annullare un addebito App Store al posto tuo.",
+    "pt": "Para uma subscrição feita na app iPhone (App Store), o pagamento é processado pela Apple. Os pedidos de livre resolução ou reembolso durante o prazo legal são feitos junto da Apple (Definições → ID Apple, ou reportaproblem.apple.com). A ForSwim não pode anular um débito da App Store por ti.",
+    "pt-BR": "Para uma assinatura feita no app para iPhone (App Store), o pagamento é processado pela Apple. Os pedidos de arrependimento ou reembolso durante o prazo legal devem ser feitos à Apple (Ajustes → ID Apple, ou reportaproblem.apple.com). O ForSwim não pode cancelar uma cobrança da App Store por você.",
+    "sv": "För en prenumeration som tecknats i iPhone-appen (App Store) hanteras betalningen av Apple. Begäran om ånger eller återbetalning inom den lagstadgade fristen görs hos Apple (Inställningar → Apple-ID, eller reportaproblem.apple.com). ForSwim kan inte annullera en App Store-dragning åt dig.",
+    "da": "For et abonnement tegnet i iPhone-appen (App Store) håndteres betalingen af Apple. Anmodninger om fortrydelse eller refusion inden for den lovbestemte frist rettes til Apple (Indstillinger → Apple-id, eller reportaproblem.apple.com). ForSwim kan ikke annullere en App Store-trækning for dig.",
+    "nb": "For et abonnement tegnet i iPhone-appen (App Store) behandles betalingen av Apple. Forespørsler om angrerett eller refusjon innenfor den lovbestemte fristen rettes til Apple (Innstillinger → Apple-ID, eller reportaproblem.apple.com). ForSwim kan ikke annullere et App Store-trekk for deg.",
+    "fi": "iPhone-sovelluksessa (App Store) tehdyn tilauksen maksun käsittelee Apple. Peruutus- tai palautuspyynnöt lakisääteisen ajan kuluessa tehdään Applelle (Asetukset → Apple ID tai reportaproblem.apple.com). ForSwim ei voi perua App Store -veloitusta puolestasi."
   },
   "Essai résilié à temps : 0 €.": {
     "en": "Trial cancelled in time: €0.",
@@ -293,33 +293,33 @@
     "nb": "Årlig / toårig (legacy): ingen forholdsmessig refusjon etter fakturering, unntatt i lovbestemte tilfeller.",
     "fi": "Vuosi- / kahden vuoden tilaus (legacy): ei suhteellista palautusta laskutuksen jälkeen, lakisääteisiä tapauksia lukuun ottamatta."
   },
-  "Cas légaux : rétractation ouverte, défaut de conformité, indisponibilité substantielle imputable à MySWYM, ou autre droit impératif.": {
-    "en": "Legal cases: right of withdrawal still open, lack of conformity, substantial unavailability attributable to MySWYM, or any other mandatory right.",
-    "de": "Gesetzliche Fälle: noch bestehendes Widerrufsrecht, Vertragswidrigkeit, erhebliche von MySWYM zu vertretende Nichtverfügbarkeit oder ein sonstiges zwingendes Recht.",
-    "es": "Casos legales: desistimiento aún abierto, falta de conformidad, indisponibilidad sustancial imputable a MySWYM u otro derecho imperativo.",
-    "ja": "法定の場合：撤回権が有効な場合、契約不適合、MySWYMの責に帰すべき重大な利用不能、その他の強行法規上の権利。",
-    "nl": "Wettelijke gevallen: herroepingsrecht nog open, non-conformiteit, aanzienlijke onbeschikbaarheid toe te rekenen aan MySWYM, of een ander dwingend recht.",
-    "it": "Casi di legge: recesso ancora aperto, difetto di conformità, indisponibilità sostanziale imputabile a MySWYM o altro diritto inderogabile.",
-    "pt": "Casos legais: livre resolução ainda em vigor, falta de conformidade, indisponibilidade substancial imputável à MySWYM, ou outro direito imperativo.",
-    "pt-BR": "Casos legais: arrependimento ainda vigente, falta de conformidade, indisponibilidade substancial atribuível ao MySWYM, ou outro direito obrigatório.",
-    "sv": "Lagstadgade fall: ångerrätt som fortfarande gäller, bristande avtalsenlighet, väsentlig otillgänglighet som kan tillskrivas MySWYM, eller annan tvingande rättighet.",
-    "da": "Lovbestemte tilfælde: fortrydelsesret der stadig gælder, manglende overensstemmelse, væsentlig utilgængelighed som kan tilskrives MySWYM, eller anden ufravigelig rettighed.",
-    "nb": "Lovbestemte tilfeller: angrerett som fortsatt gjelder, mangel ved ytelsen, vesentlig utilgjengelighet som skyldes MySWYM, eller annen ufravikelig rettighet.",
-    "fi": "Lakisääteiset tapaukset: peruuttamisoikeus vielä voimassa, virhe sopimuksenmukaisuudessa, MySWYMin vastuulla oleva merkittävä käyttökatko tai muu pakottava oikeus."
+  "Cas légaux : rétractation ouverte, défaut de conformité, indisponibilité substantielle imputable à ForSwim, ou autre droit impératif.": {
+    "en": "Legal cases: right of withdrawal still open, lack of conformity, substantial unavailability attributable to ForSwim, or any other mandatory right.",
+    "de": "Gesetzliche Fälle: noch bestehendes Widerrufsrecht, Vertragswidrigkeit, erhebliche von ForSwim zu vertretende Nichtverfügbarkeit oder ein sonstiges zwingendes Recht.",
+    "es": "Casos legales: desistimiento aún abierto, falta de conformidad, indisponibilidad sustancial imputable a ForSwim u otro derecho imperativo.",
+    "ja": "法定の場合：撤回権が有効な場合、契約不適合、ForSwimの責に帰すべき重大な利用不能、その他の強行法規上の権利。",
+    "nl": "Wettelijke gevallen: herroepingsrecht nog open, non-conformiteit, aanzienlijke onbeschikbaarheid toe te rekenen aan ForSwim, of een ander dwingend recht.",
+    "it": "Casi di legge: recesso ancora aperto, difetto di conformità, indisponibilità sostanziale imputabile a ForSwim o altro diritto inderogabile.",
+    "pt": "Casos legais: livre resolução ainda em vigor, falta de conformidade, indisponibilidade substancial imputável à ForSwim, ou outro direito imperativo.",
+    "pt-BR": "Casos legais: arrependimento ainda vigente, falta de conformidade, indisponibilidade substancial atribuível ao ForSwim, ou outro direito obrigatório.",
+    "sv": "Lagstadgade fall: ångerrätt som fortfarande gäller, bristande avtalsenlighet, väsentlig otillgänglighet som kan tillskrivas ForSwim, eller annan tvingande rättighet.",
+    "da": "Lovbestemte tilfælde: fortrydelsesret der stadig gælder, manglende overensstemmelse, væsentlig utilgængelighed som kan tilskrives ForSwim, eller anden ufravigelig rettighed.",
+    "nb": "Lovbestemte tilfeller: angrerett som fortsatt gjelder, mangel ved ytelsen, vesentlig utilgjengelighet som skyldes ForSwim, eller annen ufravikelig rettighet.",
+    "fi": "Lakisääteiset tapaukset: peruuttamisoikeus vielä voimassa, virhe sopimuksenmukaisuudessa, ForSwimin vastuulla oleva merkittävä käyttökatko tai muu pakottava oikeus."
   },
-  "App Store : remboursements et rétractation via Apple, selon les conditions Apple. MySWYM ne reverse pas un paiement App Store au prorata.": {
-    "en": "App Store: refunds and withdrawal via Apple, under Apple’s terms. MySWYM does not refund an App Store payment pro rata.",
-    "de": "App Store: Erstattungen und Widerruf über Apple, gemäß den Apple-Bedingungen. MySWYM erstattet eine App-Store-Zahlung nicht anteilig.",
-    "es": "App Store: reembolsos y desistimiento a través de Apple, según las condiciones de Apple. MySWYM no reembolsa un pago del App Store de forma prorrateada.",
-    "ja": "App Store：返金および撤回はAppleの規約に従いAppleを通じて行われます。MySWYMは App Store での支払いを日割りで返金しません。",
-    "nl": "App Store: terugbetalingen en herroeping via Apple, volgens de voorwaarden van Apple. MySWYM betaalt een App Store-betaling niet naar rato terug.",
-    "it": "App Store: rimborsi e recesso tramite Apple, secondo le condizioni Apple. MySWYM non rimborsa pro rata un pagamento App Store.",
-    "pt": "App Store: reembolsos e livre resolução através da Apple, segundo as condições da Apple. A MySWYM não devolve proporcionalmente um pagamento da App Store.",
-    "pt-BR": "App Store: reembolsos e arrependimento pela Apple, conforme as condições da Apple. O MySWYM não reembolsa proporcionalmente um pagamento da App Store.",
-    "sv": "App Store: återbetalning och ånger via Apple, enligt Apples villkor. MySWYM återbetalar inte en App Store-betalning proportionellt.",
-    "da": "App Store: refusion og fortrydelse via Apple i henhold til Apples betingelser. MySWYM refunderer ikke en App Store-betaling forholdsmæssigt.",
-    "nb": "App Store: refusjon og angrerett via Apple, i henhold til Apples vilkår. MySWYM refunderer ikke en App Store-betaling forholdsmessig.",
-    "fi": "App Store: palautukset ja peruutus Applen kautta Applen ehtojen mukaisesti. MySWYM ei palauta App Store -maksua suhteellisesti."
+  "App Store : remboursements et rétractation via Apple, selon les conditions Apple. ForSwim ne reverse pas un paiement App Store au prorata.": {
+    "en": "App Store: refunds and withdrawal via Apple, under Apple’s terms. ForSwim does not refund an App Store payment pro rata.",
+    "de": "App Store: Erstattungen und Widerruf über Apple, gemäß den Apple-Bedingungen. ForSwim erstattet eine App-Store-Zahlung nicht anteilig.",
+    "es": "App Store: reembolsos y desistimiento a través de Apple, según las condiciones de Apple. ForSwim no reembolsa un pago del App Store de forma prorrateada.",
+    "ja": "App Store：返金および撤回はAppleの規約に従いAppleを通じて行われます。ForSwimは App Store での支払いを日割りで返金しません。",
+    "nl": "App Store: terugbetalingen en herroeping via Apple, volgens de voorwaarden van Apple. ForSwim betaalt een App Store-betaling niet naar rato terug.",
+    "it": "App Store: rimborsi e recesso tramite Apple, secondo le condizioni Apple. ForSwim non rimborsa pro rata un pagamento App Store.",
+    "pt": "App Store: reembolsos e livre resolução através da Apple, segundo as condições da Apple. A ForSwim não devolve proporcionalmente um pagamento da App Store.",
+    "pt-BR": "App Store: reembolsos e arrependimento pela Apple, conforme as condições da Apple. O ForSwim não reembolsa proporcionalmente um pagamento da App Store.",
+    "sv": "App Store: återbetalning och ånger via Apple, enligt Apples villkor. ForSwim återbetalar inte en App Store-betalning proportionellt.",
+    "da": "App Store: refusion og fortrydelse via Apple i henhold til Apples betingelser. ForSwim refunderer ikke en App Store-betaling forholdsmæssigt.",
+    "nb": "App Store: refusjon og angrerett via Apple, i henhold til Apples vilkår. ForSwim refunderer ikke en App Store-betaling forholdsmessig.",
+    "fi": "App Store: palautukset ja peruutus Applen kautta Applen ehtojen mukaisesti. ForSwim ei palauta App Store -maksua suhteellisesti."
   },
   "9. Échec de paiement": {
     "en": "9. Payment failure",
@@ -335,19 +335,19 @@
     "nb": "9. Mislykket betaling",
     "fi": "9. Epäonnistunut maksu"
   },
-  "En cas d’échec de paiement au renouvellement, Stripe / MySWYM peuvent retenter le prélèvement. L’accès Premium peut être suspendu si le paiement n’est pas régularisé. Aucune « période de grâce » contractuelle fixe n’est garantie au-delà du comportement Stripe configuré : [À DOCUMENTER côté Stripe Billing].": {
-    "en": "If payment fails at renewal, Stripe / MySWYM may retry the charge. Premium access may be suspended if the payment is not settled. No fixed contractual “grace period” is guaranteed beyond the configured Stripe behaviour: [TO BE DOCUMENTED in Stripe Billing].",
-    "de": "Schlägt die Zahlung bei der Verlängerung fehl, können Stripe / MySWYM die Abbuchung erneut versuchen. Der Premium-Zugang kann gesperrt werden, wenn die Zahlung nicht nachgeholt wird. Über das konfigurierte Stripe-Verhalten hinaus wird keine feste vertragliche „Kulanzfrist“ garantiert: [IN STRIPE BILLING ZU DOKUMENTIEREN].",
-    "es": "Si el pago falla en la renovación, Stripe / MySWYM pueden reintentar el cobro. El acceso Premium puede suspenderse si el pago no se regulariza. No se garantiza ningún «periodo de gracia» contractual fijo más allá del comportamiento configurado en Stripe: [POR DOCUMENTAR en Stripe Billing].",
-    "ja": "更新時に支払いが失敗した場合、Stripe／MySWYMは引き落としを再試行することがあります。支払いが解決されない場合、Premiumアクセスが停止されることがあります。設定済みのStripeの動作を超える契約上の固定の「猶予期間」は保証されません：[Stripe Billing 側で要記載]。",
-    "nl": "Als de betaling bij verlenging mislukt, kunnen Stripe / MySWYM de afschrijving opnieuw proberen. De Premium-toegang kan worden opgeschort als de betaling niet wordt rechtgezet. Er wordt geen vaste contractuele ‘respijtperiode’ gegarandeerd buiten het geconfigureerde gedrag van Stripe: [TE DOCUMENTEREN in Stripe Billing].",
-    "it": "In caso di pagamento non riuscito al rinnovo, Stripe / MySWYM possono ritentare l’addebito. L’accesso Premium può essere sospeso se il pagamento non viene regolarizzato. Nessun «periodo di tolleranza» contrattuale fisso è garantito oltre al comportamento configurato in Stripe: [DA DOCUMENTARE lato Stripe Billing].",
-    "pt": "Em caso de falha de pagamento na renovação, a Stripe / MySWYM podem tentar novamente o débito. O acesso Premium pode ser suspenso se o pagamento não for regularizado. Não é garantido nenhum «período de carência» contratual fixo para além do comportamento configurado na Stripe: [A DOCUMENTAR no Stripe Billing].",
-    "pt-BR": "Em caso de falha no pagamento na renovação, a Stripe / o MySWYM podem tentar a cobrança novamente. O acesso Premium pode ser suspenso se o pagamento não for regularizado. Nenhum “período de carência” contratual fixo é garantido além do comportamento configurado na Stripe: [A DOCUMENTAR no Stripe Billing].",
-    "sv": "Om betalningen misslyckas vid förnyelse kan Stripe / MySWYM försöka dra beloppet igen. Premium-åtkomsten kan stängas av om betalningen inte regleras. Ingen fast avtalad ”anståndsperiod” garanteras utöver det konfigurerade beteendet i Stripe: [SKA DOKUMENTERAS i Stripe Billing].",
-    "da": "Hvis betalingen mislykkes ved fornyelse, kan Stripe / MySWYM forsøge trækningen igen. Premium-adgangen kan suspenderes, hvis betalingen ikke berigtiges. Der garanteres ingen fast kontraktlig »henstandsperiode« ud over den konfigurerede adfærd i Stripe: [SKAL DOKUMENTERES i Stripe Billing].",
-    "nb": "Hvis betalingen mislykkes ved fornyelse, kan Stripe / MySWYM prøve trekket på nytt. Premium-tilgangen kan suspenderes hvis betalingen ikke ordnes. Ingen fast avtalefestet «henstandsperiode» garanteres utover den konfigurerte oppførselen i Stripe: [SKAL DOKUMENTERES i Stripe Billing].",
-    "fi": "Jos maksu epäonnistuu uusimisen yhteydessä, Stripe / MySWYM voivat yrittää veloitusta uudelleen. Premium-käyttöoikeus voidaan keskeyttää, jos maksua ei suoriteta. Kiinteää sopimuksellista ”armonaikaa” ei taata Stripen määritetyn toiminnan lisäksi: [DOKUMENTOITAVA Stripe Billingissä]."
+  "En cas d’échec de paiement au renouvellement, Stripe / ForSwim peuvent retenter le prélèvement. L’accès Premium peut être suspendu si le paiement n’est pas régularisé. Aucune « période de grâce » contractuelle fixe n’est garantie au-delà du comportement Stripe configuré : [À DOCUMENTER côté Stripe Billing].": {
+    "en": "If payment fails at renewal, Stripe / ForSwim may retry the charge. Premium access may be suspended if the payment is not settled. No fixed contractual “grace period” is guaranteed beyond the configured Stripe behaviour: [TO BE DOCUMENTED in Stripe Billing].",
+    "de": "Schlägt die Zahlung bei der Verlängerung fehl, können Stripe / ForSwim die Abbuchung erneut versuchen. Der Premium-Zugang kann gesperrt werden, wenn die Zahlung nicht nachgeholt wird. Über das konfigurierte Stripe-Verhalten hinaus wird keine feste vertragliche „Kulanzfrist“ garantiert: [IN STRIPE BILLING ZU DOKUMENTIEREN].",
+    "es": "Si el pago falla en la renovación, Stripe / ForSwim pueden reintentar el cobro. El acceso Premium puede suspenderse si el pago no se regulariza. No se garantiza ningún «periodo de gracia» contractual fijo más allá del comportamiento configurado en Stripe: [POR DOCUMENTAR en Stripe Billing].",
+    "ja": "更新時に支払いが失敗した場合、Stripe／ForSwimは引き落としを再試行することがあります。支払いが解決されない場合、Premiumアクセスが停止されることがあります。設定済みのStripeの動作を超える契約上の固定の「猶予期間」は保証されません：[Stripe Billing 側で要記載]。",
+    "nl": "Als de betaling bij verlenging mislukt, kunnen Stripe / ForSwim de afschrijving opnieuw proberen. De Premium-toegang kan worden opgeschort als de betaling niet wordt rechtgezet. Er wordt geen vaste contractuele ‘respijtperiode’ gegarandeerd buiten het geconfigureerde gedrag van Stripe: [TE DOCUMENTEREN in Stripe Billing].",
+    "it": "In caso di pagamento non riuscito al rinnovo, Stripe / ForSwim possono ritentare l’addebito. L’accesso Premium può essere sospeso se il pagamento non viene regolarizzato. Nessun «periodo di tolleranza» contrattuale fisso è garantito oltre al comportamento configurato in Stripe: [DA DOCUMENTARE lato Stripe Billing].",
+    "pt": "Em caso de falha de pagamento na renovação, a Stripe / ForSwim podem tentar novamente o débito. O acesso Premium pode ser suspenso se o pagamento não for regularizado. Não é garantido nenhum «período de carência» contratual fixo para além do comportamento configurado na Stripe: [A DOCUMENTAR no Stripe Billing].",
+    "pt-BR": "Em caso de falha no pagamento na renovação, a Stripe / o ForSwim podem tentar a cobrança novamente. O acesso Premium pode ser suspenso se o pagamento não for regularizado. Nenhum “período de carência” contratual fixo é garantido além do comportamento configurado na Stripe: [A DOCUMENTAR no Stripe Billing].",
+    "sv": "Om betalningen misslyckas vid förnyelse kan Stripe / ForSwim försöka dra beloppet igen. Premium-åtkomsten kan stängas av om betalningen inte regleras. Ingen fast avtalad ”anståndsperiod” garanteras utöver det konfigurerade beteendet i Stripe: [SKA DOKUMENTERAS i Stripe Billing].",
+    "da": "Hvis betalingen mislykkes ved fornyelse, kan Stripe / ForSwim forsøge trækningen igen. Premium-adgangen kan suspenderes, hvis betalingen ikke berigtiges. Der garanteres ingen fast kontraktlig »henstandsperiode« ud over den konfigurerede adfærd i Stripe: [SKAL DOKUMENTERES i Stripe Billing].",
+    "nb": "Hvis betalingen mislykkes ved fornyelse, kan Stripe / ForSwim prøve trekket på nytt. Premium-tilgangen kan suspenderes hvis betalingen ikke ordnes. Ingen fast avtalefestet «henstandsperiode» garanteres utover den konfigurerte oppførselen i Stripe: [SKAL DOKUMENTERES i Stripe Billing].",
+    "fi": "Jos maksu epäonnistuu uusimisen yhteydessä, Stripe / ForSwim voivat yrittää veloitusta uudelleen. Premium-käyttöoikeus voidaan keskeyttää, jos maksua ei suoriteta. Kiinteää sopimuksellista ”armonaikaa” ei taata Stripen määritetyn toiminnan lisäksi: [DOKUMENTOITAVA Stripe Billingissä]."
   },
   "Réservé aux comptes Premium en règle.": {
     "en": "Reserved for Premium accounts in good standing.",
@@ -391,19 +391,19 @@
     "nb": "Verver: en kommersiell kreditt tilsvarende 4,99 € på Stripe-kundesaldoen etter vellykket betaling fra den vervede, én gang per kvalifisert vervet venn.",
     "fi": "Kutsuja: 4,99 €:a vastaava hyvitys Stripe-asiakassaldoon kutsutun onnistuneen maksun jälkeen, kerran kutakin kelpoista kutsuttua kohden."
   },
-  "MySWYM peut refuser, suspendre ou annuler un avantage en cas de fraude, auto-parrainage, abus ou non-respect des CGU/CGV.": {
-    "en": "MySWYM may refuse, suspend or cancel a benefit in case of fraud, self-referral, abuse or breach of the Terms of Use / Terms of Sale.",
-    "de": "MySWYM kann einen Vorteil bei Betrug, Selbstwerbung, Missbrauch oder Verstoß gegen die Nutzungs- und Verkaufsbedingungen (AGB) verweigern, aussetzen oder stornieren.",
-    "es": "MySWYM puede denegar, suspender o anular una ventaja en caso de fraude, autorreferido, abuso o incumplimiento de las Condiciones de Uso / Condiciones de Venta.",
-    "ja": "不正、自己紹介、濫用、または利用規約／販売規約の違反があった場合、MySWYMは特典を拒否、停止、または取り消すことがあります。",
-    "nl": "MySWYM kan een voordeel weigeren, opschorten of annuleren bij fraude, zelfdoorverwijzing, misbruik of niet-naleving van de gebruiks- en verkoopvoorwaarden.",
-    "it": "MySWYM può rifiutare, sospendere o annullare un vantaggio in caso di frode, auto-invito, abuso o mancato rispetto delle Condizioni d’uso / Condizioni di vendita.",
-    "pt": "A MySWYM pode recusar, suspender ou anular uma vantagem em caso de fraude, autorreferência, abuso ou incumprimento dos Termos de Utilização / Condições de Venda.",
-    "pt-BR": "O MySWYM pode recusar, suspender ou cancelar um benefício em caso de fraude, autoindicação, abuso ou descumprimento dos Termos de Uso / Condições de Venda.",
-    "sv": "MySWYM kan neka, stänga av eller annullera en förmån vid bedrägeri, självvärvning, missbruk eller brott mot användarvillkoren/försäljningsvillkoren.",
-    "da": "MySWYM kan afvise, suspendere eller annullere en fordel ved svindel, selvhenvisning, misbrug eller manglende overholdelse af brugsvilkårene/salgsbetingelserne.",
-    "nb": "MySWYM kan avslå, suspendere eller annullere en fordel ved svindel, selvverving, misbruk eller brudd på bruksvilkårene/salgsvilkårene.",
-    "fi": "MySWYM voi evätä, keskeyttää tai perua edun petoksen, itsensä kutsumisen, väärinkäytön tai käyttö- ja myyntiehtojen rikkomisen vuoksi."
+  "ForSwim peut refuser, suspendre ou annuler un avantage en cas de fraude, auto-parrainage, abus ou non-respect des CGU/CGV.": {
+    "en": "ForSwim may refuse, suspend or cancel a benefit in case of fraud, self-referral, abuse or breach of the Terms of Use / Terms of Sale.",
+    "de": "ForSwim kann einen Vorteil bei Betrug, Selbstwerbung, Missbrauch oder Verstoß gegen die Nutzungs- und Verkaufsbedingungen (AGB) verweigern, aussetzen oder stornieren.",
+    "es": "ForSwim puede denegar, suspender o anular una ventaja en caso de fraude, autorreferido, abuso o incumplimiento de las Condiciones de Uso / Condiciones de Venta.",
+    "ja": "不正、自己紹介、濫用、または利用規約／販売規約の違反があった場合、ForSwimは特典を拒否、停止、または取り消すことがあります。",
+    "nl": "ForSwim kan een voordeel weigeren, opschorten of annuleren bij fraude, zelfdoorverwijzing, misbruik of niet-naleving van de gebruiks- en verkoopvoorwaarden.",
+    "it": "ForSwim può rifiutare, sospendere o annullare un vantaggio in caso di frode, auto-invito, abuso o mancato rispetto delle Condizioni d’uso / Condizioni di vendita.",
+    "pt": "A ForSwim pode recusar, suspender ou anular uma vantagem em caso de fraude, autorreferência, abuso ou incumprimento dos Termos de Utilização / Condições de Venda.",
+    "pt-BR": "O ForSwim pode recusar, suspender ou cancelar um benefício em caso de fraude, autoindicação, abuso ou descumprimento dos Termos de Uso / Condições de Venda.",
+    "sv": "ForSwim kan neka, stänga av eller annullera en förmån vid bedrägeri, självvärvning, missbruk eller brott mot användarvillkoren/försäljningsvillkoren.",
+    "da": "ForSwim kan afvise, suspendere eller annullere en fordel ved svindel, selvhenvisning, misbrug eller manglende overholdelse af brugsvilkårene/salgsbetingelserne.",
+    "nb": "ForSwim kan avslå, suspendere eller annullere en fordel ved svindel, selvverving, misbruk eller brudd på bruksvilkårene/salgsvilkårene.",
+    "fi": "ForSwim voi evätä, keskeyttää tai perua edun petoksen, itsensä kutsumisen, väärinkäytön tai käyttö- ja myyntiehtojen rikkomisen vuoksi."
   },
   "11. Garanties légales": {
     "en": "11. Legal guarantees",
@@ -419,19 +419,19 @@
     "nb": "11. Lovbestemte garantier",
     "fi": "11. Lakisääteiset takuut"
   },
-  "Le consommateur bénéficie de la garantie légale de conformité applicable aux contenus et services numériques (Code de la consommation), sans préjudice d’autres droits. MySWYM s’engage à fournir le service Premium conforme à la description contractuelle.": {
-    "en": "The consumer benefits from the legal guarantee of conformity applicable to digital content and services (French Consumer Code), without prejudice to other rights. MySWYM undertakes to provide the Premium service in accordance with the contractual description.",
-    "de": "Der Verbraucher genießt die gesetzliche Gewährleistung der Vertragsmäßigkeit für digitale Inhalte und Dienstleistungen (französisches Verbrauchergesetzbuch), unbeschadet sonstiger Rechte. MySWYM verpflichtet sich, den Premium-Dienst gemäß der vertraglichen Beschreibung zu erbringen.",
-    "es": "El consumidor disfruta de la garantía legal de conformidad aplicable a los contenidos y servicios digitales (Código de Consumo francés), sin perjuicio de otros derechos. MySWYM se compromete a prestar el servicio Premium conforme a la descripción contractual.",
-    "ja": "消費者は、他の権利を損なうことなく、デジタルコンテンツおよびデジタルサービスに適用される法定の適合性保証（フランス消費法典）を受けることができます。MySWYMは、契約上の説明に適合したPremiumサービスを提供することを約束します。",
-    "nl": "De consument geniet de wettelijke conformiteitsgarantie die van toepassing is op digitale inhoud en diensten (Frans Consumentenwetboek), onverminderd andere rechten. MySWYM verbindt zich ertoe de Premium-dienst te leveren conform de contractuele beschrijving.",
-    "it": "Il consumatore beneficia della garanzia legale di conformità applicabile ai contenuti e servizi digitali (Codice del consumo francese), fatti salvi altri diritti. MySWYM si impegna a fornire il servizio Premium conforme alla descrizione contrattuale.",
-    "pt": "O consumidor beneficia da garantia legal de conformidade aplicável aos conteúdos e serviços digitais (Código do Consumo francês), sem prejuízo de outros direitos. A MySWYM compromete-se a fornecer o serviço Premium em conformidade com a descrição contratual.",
-    "pt-BR": "O consumidor conta com a garantia legal de conformidade aplicável a conteúdos e serviços digitais (Código de Consumo francês), sem prejuízo de outros direitos. O MySWYM se compromete a fornecer o serviço Premium de acordo com a descrição contratual.",
-    "sv": "Konsumenten omfattas av den lagstadgade garantin om avtalsenlighet som gäller för digitalt innehåll och digitala tjänster (franska konsumentlagen), utan att det påverkar andra rättigheter. MySWYM åtar sig att tillhandahålla Premium-tjänsten i enlighet med den avtalade beskrivningen.",
-    "da": "Forbrugeren er omfattet af den lovbestemte garanti for overensstemmelse, der gælder for digitalt indhold og digitale tjenester (den franske forbrugerlov), med forbehold for andre rettigheder. MySWYM forpligter sig til at levere Premium-tjenesten i overensstemmelse med den kontraktmæssige beskrivelse.",
-    "nb": "Forbrukeren har den lovbestemte garantien for samsvar som gjelder for digitalt innhold og digitale tjenester (den franske forbrukerloven), uten at dette begrenser andre rettigheter. MySWYM forplikter seg til å levere Premium-tjenesten i samsvar med den avtalte beskrivelsen.",
-    "fi": "Kuluttajaa suojaa digitaaliseen sisältöön ja palveluihin sovellettava lakisääteinen sopimuksenmukaisuustakuu (Ranskan kuluttajalaki), muiden oikeuksien estämättä. MySWYM sitoutuu toimittamaan Premium-palvelun sopimuksen mukaisen kuvauksen mukaisesti."
+  "Le consommateur bénéficie de la garantie légale de conformité applicable aux contenus et services numériques (Code de la consommation), sans préjudice d’autres droits. ForSwim s’engage à fournir le service Premium conforme à la description contractuelle.": {
+    "en": "The consumer benefits from the legal guarantee of conformity applicable to digital content and services (French Consumer Code), without prejudice to other rights. ForSwim undertakes to provide the Premium service in accordance with the contractual description.",
+    "de": "Der Verbraucher genießt die gesetzliche Gewährleistung der Vertragsmäßigkeit für digitale Inhalte und Dienstleistungen (französisches Verbrauchergesetzbuch), unbeschadet sonstiger Rechte. ForSwim verpflichtet sich, den Premium-Dienst gemäß der vertraglichen Beschreibung zu erbringen.",
+    "es": "El consumidor disfruta de la garantía legal de conformidad aplicable a los contenidos y servicios digitales (Código de Consumo francés), sin perjuicio de otros derechos. ForSwim se compromete a prestar el servicio Premium conforme a la descripción contractual.",
+    "ja": "消費者は、他の権利を損なうことなく、デジタルコンテンツおよびデジタルサービスに適用される法定の適合性保証（フランス消費法典）を受けることができます。ForSwimは、契約上の説明に適合したPremiumサービスを提供することを約束します。",
+    "nl": "De consument geniet de wettelijke conformiteitsgarantie die van toepassing is op digitale inhoud en diensten (Frans Consumentenwetboek), onverminderd andere rechten. ForSwim verbindt zich ertoe de Premium-dienst te leveren conform de contractuele beschrijving.",
+    "it": "Il consumatore beneficia della garanzia legale di conformità applicabile ai contenuti e servizi digitali (Codice del consumo francese), fatti salvi altri diritti. ForSwim si impegna a fornire il servizio Premium conforme alla descrizione contrattuale.",
+    "pt": "O consumidor beneficia da garantia legal de conformidade aplicável aos conteúdos e serviços digitais (Código do Consumo francês), sem prejuízo de outros direitos. A ForSwim compromete-se a fornecer o serviço Premium em conformidade com a descrição contratual.",
+    "pt-BR": "O consumidor conta com a garantia legal de conformidade aplicável a conteúdos e serviços digitais (Código de Consumo francês), sem prejuízo de outros direitos. O ForSwim se compromete a fornecer o serviço Premium de acordo com a descrição contratual.",
+    "sv": "Konsumenten omfattas av den lagstadgade garantin om avtalsenlighet som gäller för digitalt innehåll och digitala tjänster (franska konsumentlagen), utan att det påverkar andra rättigheter. ForSwim åtar sig att tillhandahålla Premium-tjänsten i enlighet med den avtalade beskrivningen.",
+    "da": "Forbrugeren er omfattet af den lovbestemte garanti for overensstemmelse, der gælder for digitalt indhold og digitale tjenester (den franske forbrugerlov), med forbehold for andre rettigheder. ForSwim forpligter sig til at levere Premium-tjenesten i overensstemmelse med den kontraktmæssige beskrivelse.",
+    "nb": "Forbrukeren har den lovbestemte garantien for samsvar som gjelder for digitalt innhold og digitale tjenester (den franske forbrukerloven), uten at dette begrenser andre rettigheter. ForSwim forplikter seg til å levere Premium-tjenesten i samsvar med den avtalte beskrivelsen.",
+    "fi": "Kuluttajaa suojaa digitaaliseen sisältöön ja palveluihin sovellettava lakisääteinen sopimuksenmukaisuustakuu (Ranskan kuluttajalaki), muiden oikeuksien estämättä. ForSwim sitoutuu toimittamaan Premium-palvelun sopimuksen mukaisen kuvauksen mukaisesti."
   },
   "12. Responsabilité": {
     "en": "12. Liability",
@@ -531,19 +531,19 @@
     "nb": "Fransk rett. Kompetente domstoler i henhold til forbrukervernreglene.",
     "fi": "Ranskan laki. Toimivaltaiset tuomioistuimet kuluttajansuojasääntöjen mukaisesti."
   },
-  "Cookies, PostHog et gestion du consentement sur MySWYM. Pas de Google Analytics.": {
-    "en": "Cookies, PostHog and consent management on MySWYM. No Google Analytics.",
-    "de": "Cookies, PostHog und Einwilligungsverwaltung bei MySWYM. Kein Google Analytics.",
-    "es": "Cookies, PostHog y gestión del consentimiento en MySWYM. Sin Google Analytics.",
-    "ja": "MySWYMにおけるCookie、PostHog、同意管理について。Google Analyticsは使用していません。",
-    "nl": "Cookies, PostHog en toestemmingsbeheer op MySWYM. Geen Google Analytics.",
-    "it": "Cookie, PostHog e gestione del consenso su MySWYM. Niente Google Analytics.",
-    "pt": "Cookies, PostHog e gestão do consentimento na MySWYM. Sem Google Analytics.",
-    "pt-BR": "Cookies, PostHog e gerenciamento de consentimento no MySWYM. Sem Google Analytics.",
-    "sv": "Cookies, PostHog och samtyckeshantering på MySWYM. Ingen Google Analytics.",
-    "da": "Cookies, PostHog og samtykkestyring på MySWYM. Ingen Google Analytics.",
-    "nb": "Informasjonskapsler, PostHog og samtykkehåndtering på MySWYM. Ingen Google Analytics.",
-    "fi": "Evästeet, PostHog ja suostumusten hallinta MySWYMissä. Ei Google Analyticsia."
+  "Cookies, PostHog et gestion du consentement sur ForSwim. Pas de Google Analytics.": {
+    "en": "Cookies, PostHog and consent management on ForSwim. No Google Analytics.",
+    "de": "Cookies, PostHog und Einwilligungsverwaltung bei ForSwim. Kein Google Analytics.",
+    "es": "Cookies, PostHog y gestión del consentimiento en ForSwim. Sin Google Analytics.",
+    "ja": "ForSwimにおけるCookie、PostHog、同意管理について。Google Analyticsは使用していません。",
+    "nl": "Cookies, PostHog en toestemmingsbeheer op ForSwim. Geen Google Analytics.",
+    "it": "Cookie, PostHog e gestione del consenso su ForSwim. Niente Google Analytics.",
+    "pt": "Cookies, PostHog e gestão do consentimento na ForSwim. Sem Google Analytics.",
+    "pt-BR": "Cookies, PostHog e gerenciamento de consentimento no ForSwim. Sem Google Analytics.",
+    "sv": "Cookies, PostHog och samtyckeshantering på ForSwim. Ingen Google Analytics.",
+    "da": "Cookies, PostHog og samtykkestyring på ForSwim. Ingen Google Analytics.",
+    "nb": "Informasjonskapsler, PostHog og samtykkehåndtering på ForSwim. Ingen Google Analytics.",
+    "fi": "Evästeet, PostHog ja suostumusten hallinta ForSwimissä. Ei Google Analyticsia."
   },
   "Cette politique décrit les cookies et traceurs utilisés sur": {
     "en": "This policy describes the cookies and trackers used on",

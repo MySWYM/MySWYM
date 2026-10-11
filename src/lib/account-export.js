@@ -70,7 +70,7 @@ export async function downloadAccountExport(payload, opts = {}) {
     if (mobile && navigator.canShare?.({ files: [nativeFile] })) {
       await navigator.share({
         files: [nativeFile],
-        title: "Données MySWYM",
+        title: "Données ForSwim",
       });
       shared = true;
       return { ok: true, filename, shared, downloaded: false };

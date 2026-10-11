@@ -192,8 +192,8 @@
     }
   },
   "health": {
-    "checkbox": "Accetto in modo esplicito che MySWYM tratti la mia frequenza cardiaca e le mie dichiarazioni di infortunio o fastidio per adattare le sessioni e aiutare a prevenire gli infortuni. Posso rifiutare.",
-    "body": "Per adattare le tue sessioni e ridurre il rischio di infortunio, MySWYM può trattare dati sanitari ai sensi del GDPR: frequenza cardiaca per sessione (ad es. tramite Strava) e lo storico di infortuni o fastidi che dichiari. Base giuridica: il tuo consenso esplicito (GDPR art. 9.2.a). È facoltativo: puoi rifiutare e usare comunque l'app. Puoi revocare il consenso in qualsiasi momento (Impostazioni o contact@myswym.app). Questi dati non vengono inviati a strumenti di analisi di terze parti.",
+    "checkbox": "Accetto in modo esplicito che ForSwim tratti la mia frequenza cardiaca e le mie dichiarazioni di infortunio o fastidio per adattare le sessioni e aiutare a prevenire gli infortuni. Posso rifiutare.",
+    "body": "Per adattare le tue sessioni e ridurre il rischio di infortunio, ForSwim può trattare dati sanitari ai sensi del GDPR: frequenza cardiaca per sessione (ad es. tramite Strava) e lo storico di infortuni o fastidi che dichiari. Base giuridica: il tuo consenso esplicito (GDPR art. 9.2.a). È facoltativo: puoi rifiutare e usare comunque l'app. Puoi revocare il consenso in qualsiasi momento (Impostazioni o contact@myswym.app). Questi dati non vengono inviati a strumenti di analisi di terze parti.",
     "medical": "I piani generati sono indicativi e non sostituiscono il parere di un professionista sanitario. Verifica la tua idoneità (certificato medico se serve) prima di seguire il programma.",
     "declaration": "Dichiaro che le informazioni sanitarie che fornisco sono esatte.",
     "safety": "Allenati in base a come ti senti. Fermati se hai sintomi preoccupanti e rivolgiti a un professionista sanitario se serve. Acque libere: non nuotare mai da solo."
@@ -262,7 +262,7 @@
     "registerTitle": "Crea un account",
     "resetTitle": "Password dimenticata",
     "loginLead": "Entra con Apple, Google, Facebook o la tua email.",
-    "registerLead": "Prova di 7 giorni, senza carta. Poi le tue sessioni vanno in pausa.",
+    "registerLead": "Prova di 7 giorni con carta. Poi parte l’addebito salvo disdetta.",
     "registerReferral": "Codice invito {{code}} : 20% di sconto sulla tua prima fattura Premium.",
     "resetLead": "Indica l’email del tuo account. Riceverai un link sicuro per scegliere una nuova password.",
     "loginCta": "Accedi",
@@ -276,8 +276,8 @@
     "backLogin": "← Torna all'accesso",
     "age": "Confermo di avere 18 anni o più.",
     "terms": "Accetto le <cgu>condizioni d'uso</cgu> e l'<privacy>informativa sulla privacy</privacy>.",
-    "newsletter": "Accetto di ricevere novità di MySWYM via email.",
-    "trial": "Prova di 7 giorni alla creazione dell'account, senza carta. Poi le tue sessioni vanno in pausa finché non ti abboni.",
+    "newsletter": "Accetto di ricevere novità di ForSwim via email.",
+    "trial": "Prova di 7 giorni con carta (Stripe o App Store). Poi parte l’addebito salvo disdetta prima della fine.",
     "google": "Continua con Google",
     "facebook": "Continua con Facebook",
     "apple": "Continua con Apple",

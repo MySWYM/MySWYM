@@ -8,7 +8,7 @@
 import pages from "./seo-pages.json";
 import { LANG_COOKIE, localeFromPathname, stripLocalePrefix, withLocalePrefix } from "./src/i18n/locale-path.js";
 
-const SITE = "https://www.myswym.app";
+const SITE = "https://www.forswim.app";
 const OG_IMAGE = `${SITE}/og-share.png`;
 
 const SECURITY_HEADERS = {
@@ -134,7 +134,7 @@ export default function middleware(request) {
   <title>${title}</title>
   <meta name="description" content="${description}" />
   <meta property="og:type" content="website" />
-  <meta property="og:site_name" content="MySWYM" />
+  <meta property="og:site_name" content="ForSwim" />
   <meta property="og:title" content="${title}" />
   <meta property="og:description" content="${description}" />
   <meta property="og:url" content="${canonical}" />

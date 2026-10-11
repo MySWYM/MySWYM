@@ -1,4 +1,4 @@
-/** Shared brand tokens for MySWYM emails, aligned with public.css DA. */
+/** Shared brand tokens for ForSwim emails, aligned with public.css DA. */
 export const emailBrand = {
   /** Page background (light for inbox readability) */
   bg: "#f4f8fa",
@@ -16,18 +16,18 @@ export const emailBrand = {
   mutedOnDark: "#9bb0c8",
   border: "rgba(0, 107, 253, 0.18)",
   borderSoft: "rgba(10, 22, 44, 0.08)",
-  site: "https://www.myswym.app",
+  site: "https://www.forswim.app",
   contact: "contact@myswym.app",
   support: "support@myswym.app",
-  logoText: "MySWYM",
-  /** Absolute URLs required in email clients */
-  logoOnDark: "https://www.myswym.app/logo-myswym-banner-blanc.png",
-  logoOnLight: "https://www.myswym.app/logo-myswym-on-light.png",
+  logoText: "ForSwim",
+  /** Absolute URLs (canonique forswim ; legacy myswym encore OK via 301). */
+  logoOnDark: "https://www.forswim.app/logo-myswym-banner-blanc.png",
+  logoOnLight: "https://www.forswim.app/logo-myswym-on-light.png",
   tagline: "ton coach natation",
   /** Pricing, source: src/lib/pricing.js */
   pricingLine:
-    "9,99 €/mois sans engagement · 4,99 €/mois sur 12 mois · 52,99 €/an",
-  pricingShort: "dès 4,99 €/mois",
+    "8,99 €/mois sans engagement · 59,99 €/an",
+  pricingShort: "dès 8,99 €/mois",
   referralCredit: "4,99 €",
 } as const;
 

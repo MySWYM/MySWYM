@@ -238,7 +238,7 @@ export function ProfileSupportPanel({ onBack }) {
         <HelpRow
           icon={Globe}
           title={t("help.site")}
-          subtitle="myswym.app"
+          subtitle="forswim.app"
           href={withLocalePrefix("/", locale)}
           external
         />

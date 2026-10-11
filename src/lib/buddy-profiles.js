@@ -191,7 +191,7 @@ export function buildWhatsAppLink(e164, { senderName, buddyName, city, outingLab
   const type = outingLabel ? ` (${outingLabel})` : "";
   const text = [
     `Salut ${buddyName || ""} !`.trim(),
-    `Je t'ai trouvé sur MySWYM${type}${spot}.`,
+    `Je t'ai trouvé sur ForSwim${type}${spot}.`,
     `${senderName ? `${senderName}, ` : ""}Je cherche un binôme pour une sortie, ça te dit ?`,
   ].join(" ");
 

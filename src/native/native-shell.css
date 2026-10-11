@@ -135,7 +135,7 @@ html.myswym-ios .myswym-native-onboarding [style*="padding-top: 84px"] {
 /* Le wordmark n’est plus rendu en natif (App.jsx) : ne pas masquer le 1er enfant ici,
    ce serait maintenant l’OnboardingWizard. */
 
-html.myswym-ios .myswym-native-onboarding img[alt="MySWYM"] {
+html.myswym-ios .myswym-native-onboarding img[alt="ForSwim"] {
   display: none;
 }
 

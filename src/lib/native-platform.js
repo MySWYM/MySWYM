@@ -9,7 +9,8 @@ import { Capacitor } from "@capacitor/core";
 let nativeHttpBox = null;
 import { isAppPath } from "../i18n/locale-path.js";
 
-export const DEFAULT_NATIVE_API_ORIGIN = "https://www.myswym.app";
+/** API live : domaine canonique ForSwim. */
+export const DEFAULT_NATIVE_API_ORIGIN = "https://www.forswim.app";
 
 const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "0.0.0.0"]);
 

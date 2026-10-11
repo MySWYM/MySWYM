@@ -1,4 +1,4 @@
-# Méthodologie MySWYM — contenu des plans
+# Méthodologie ForSwim — contenu des plans
 
 **UI app : ne pas refondre.** On garde l’affichage séances / semaines tel quel.  
 Ce qui évolue = **contenu** des séances + **programmation** (progression).
@@ -29,7 +29,7 @@ Voir `arthur-session-format.md`.
 
 ### Mésocycles (répétés / adaptés à la durée du plan)
 
-| Mésocycle | Phase MySWYM | Volume | Intent |
+| Mésocycle | Phase ForSwim | Volume | Intent |
 |-----------|--------------|--------|--------|
 | Reprise | début `base` | montée douce | 100 % aéro |
 | Volume / Général | `base` tardif + `development` | max de la période | aéro dominant, un peu seuil/VO2 |
@@ -85,5 +85,5 @@ Reprise / perte de poids / compétition maître → plan multi-semaines (pattern
 ## 4. Fichiers code
 
 - `src/lib/swim-session-generator.js` — blocs Arthur + allures Z  
-- `src/lib/swim-plan-bridge.js` — mésocycles COSD + rôles polarisés + pont MySWYM  
+- `src/lib/swim-plan-bridge.js` — mésocycles COSD + rôles polarisés + pont ForSwim  
 - `generatePlan` dans `App.jsx` — appelle le pont (sauf diplôme)

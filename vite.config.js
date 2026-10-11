@@ -8,7 +8,7 @@ import { dirname, join } from 'node:path'
 import { POSTS } from './src/posts.js'
 import { SITE_LANGS, withLocalePrefix } from './src/i18n/locale-path.js'
 
-const SITE = 'https://www.myswym.app'
+const SITE = 'https://www.forswim.app'
 
 const STATIC_PATHS = [
   ['/', 'weekly', '1.0'],

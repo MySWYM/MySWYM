@@ -2,7 +2,7 @@ import type { CapacitorConfig } from "@capacitor/cli";
 
 const config: CapacitorConfig = {
   appId: "app.myswym.ios",
-  appName: "MySWYM",
+  appName: "ForSwim",
   webDir: "dist",
   backgroundColor: "#006bfd",
   ios: {

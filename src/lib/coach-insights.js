@@ -103,7 +103,7 @@ export function getUpgradeCopy(softContext, { weeks = 0, trialEligible = true } 
     case "after_first_session":
       return {
         headline: "Belle première séance.",
-        subtitle: "Le coach peut déjà adapter la suite. Abonne-toi pour garder ton plan vivant : 9,99 €/mois sans engagement, ou 4,99 €/mois sur 12 mois.",
+        subtitle: "Le coach peut déjà adapter la suite. Abonne-toi pour garder ton plan vivant : 8,99 €/mois sans engagement, ou 59,99 €/an.",
       };
     case "buddies":
       return {
@@ -115,12 +115,12 @@ export function getUpgradeCopy(softContext, { weeks = 0, trialEligible = true } 
         headline: weeks > 4
           ? `Ton plan ${weeks} semaines t’attend`
           : "Ton plan est prêt - active ton coach",
-        subtitle: "7 jours offerts sans carte à l’inscription. Ensuite les séances se mettent en pause jusqu’à l’abonnement.",
+        subtitle: "7 jours offerts avec carte. Ensuite le prélèvement démarre, sauf résiliation avant la fin de l’essai.",
       };
     case "trial_expired":
       return {
         headline: "Ton essai est fini - le coach est en pause",
-        subtitle: "Reprends tes séances et l’adaptation : 9,99€/mois sans engagement, 4,99€/mois sur 12 mois, ou 52,99€/an.",
+        subtitle: "Reprends tes séances et l’adaptation : 8,99 €/mois sans engagement, ou 59,99 €/an.",
       };
     case "session_locked":
       return {
@@ -139,10 +139,10 @@ export function getUpgradeCopy(softContext, { weeks = 0, trialEligible = true } 
       };
     default:
       return {
-        headline: "MySWYM Premium",
+        headline: "ForSwim Premium",
         subtitle: trialEligible
-          ? "7 jours offerts sans carte à l’inscription, puis 9,99€/mois sans engagement ou 4,99€/mois sur 12 mois. Après l’essai, tes séances se mettent en pause."
-          : "Continue à 9,99€/mois sans engagement, 4,99€/mois sur 12 mois, ou 52,99€/an.",
+          ? "7 jours offerts avec carte, puis 8,99 €/mois sans engagement ou 59,99 €/an."
+          : "Continue à 8,99 €/mois sans engagement, ou 59,99 €/an.",
       };
   }
 }

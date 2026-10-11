@@ -144,4 +144,4 @@ supabase db push
 
 ### Critère de sortie
 
-Un utilisateur peut fermer MySWYM après `too_hard`, revenir plus tard : `volumeAdj` + `_engineHistory` reconstruite suffisent pour continuer le coaching.
+Un utilisateur peut fermer ForSwim après `too_hard`, revenir plus tard : `volumeAdj` + `_engineHistory` reconstruite suffisent pour continuer le coaching.

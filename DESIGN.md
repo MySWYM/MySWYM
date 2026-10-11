@@ -1,5 +1,5 @@
 ---
-name: MySWYM Soft Mist
+name: ForSwim Soft Mist
 description: App natation personnalisée, DA soft mist (ciel → blanc, glass CSS). App d’abord ; landing alignée.
 colors:
   mist-top: "#7EB8F5"
@@ -106,11 +106,11 @@ components:
     rounded: "{rounded.pill}"
 ---
 
-# MySWYM Soft Mist
+# ForSwim Soft Mist
 
 ## Overview
 
-**MySWYM** est une app de plans de natation personnalisés (FR d’abord). La DA produit s’appelle **soft mist** : mix OPEN tennis (liquid glass CSS) × Miracle soft UI (ciel bleu → blanc, cartes blanches, air).
+**ForSwim** est une app de plans de natation personnalisés (FR d’abord). La DA produit s’appelle **soft mist** : mix OPEN tennis (liquid glass CSS) × Miracle soft UI (ciel bleu → blanc, cartes blanches, air).
 
 ### Priorité des surfaces
 

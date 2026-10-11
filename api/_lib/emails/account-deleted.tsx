@@ -26,7 +26,7 @@ export function AccountDeletedEmail({ firstName }: AccountDeletedEmailProps) {
       <Text style={emailText.h1}>
         {who ? `${who}, c’est fait.` : "C’est fait."}
       </Text>
-      <Text style={emailText.p}>Ton compte MySWYM a bien été supprimé.</Text>
+      <Text style={emailText.p}>Ton compte ForSwim a bien été supprimé.</Text>
       <EmailBullets
         items={[
           "Profil, plans et données associées sont effacés",

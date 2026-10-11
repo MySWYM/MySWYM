@@ -24,7 +24,7 @@ export function isNavigatorOffline() {
  */
 export function buildSupportMailto({ code, message = "", path = "", appVersion = "" }) {
   const email = LEGAL_ENTITY.supportEmail || "support@myswym.app";
-  const subject = `MySWYM bug ${code}`;
+  const subject = `ForSwim bug ${code}`;
   const lines = [
     `Code: ${code}`,
     path ? `Page: ${path}` : null,

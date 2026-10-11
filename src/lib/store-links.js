@@ -48,7 +48,7 @@ export function appStoreHref() {
 }
 
 /**
- * Cible de https://www.myswym.app/go (et /fr/go).
+ * Cible de https://www.forswim.app/go (et /fr/go).
  * iPhone/iPad web → App Store. Android → webapp /app. Desktop → landing.
  * Capacitor : rester dans l’app, pas de lien Store.
  * @param {ClientPlatform} [platform]

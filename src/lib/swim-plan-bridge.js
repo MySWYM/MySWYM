@@ -1,5 +1,5 @@
 /**
- * Pont MySWYM ↔ générateur Arthur + programmation COSD (Yann) + moteur sportif V1.
+ * Pont ForSwim ↔ générateur Arthur + programmation COSD (Yann) + moteur sportif V1.
  * UI app inchangée, on ne fait que le contenu des séances / semaines.
  *
  * Voir docs/plan-methodology.md et docs/sports-engine-v1.md
@@ -325,7 +325,7 @@ export function buildCompetitionSessions(pool, nbSeances, weekNumber, focusLabel
   });
 }
 
-function toMySwymSession(res, role, weekNumber, sessionIndex, focusLabel, beginnerFriendly = false, uiLevel = null) {
+function toForSwimSession(res, role, weekNumber, sessionIndex, focusLabel, beginnerFriendly = false, uiLevel = null) {
   const details = sessionTextToDetails(res.text);
   const total = res.total;
   const isTest = role?.objectif === "test";
@@ -865,7 +865,7 @@ export function buildCoachPlanWeeks(profile, phaseList, isPremium, TIPS, freeFre
       { volMult: engineVolMult, simplifyWording, pool, tasteHints },
     );
     const legacySessions = weekData.sessions.map((s, si) => {
-      const mapped = toMySwymSession(
+      const mapped = toForSwimSession(
         s,
         { ...roles[si], engineWhy },
         wi + 1,
@@ -1743,7 +1743,7 @@ async function buildProgressionLoopSessionContent(profile, cursor = 0, isPremium
     );
     const raw = weekData.sessions[0];
     session = {
-      ...toMySwymSession(raw, role, weekNum, 0, focusLabel, beginnerFriendly),
+      ...toForSwimSession(raw, role, weekNum, 0, focusLabel, beginnerFriendly),
       title: sessionTitle,
       objectives: variant.objectives,
       loopVariant: variant.id,

@@ -192,8 +192,8 @@
     }
   },
   "health": {
-    "checkbox": "Jeg samtykker uttrykkelig til at MySWYM kan behandle pulsen min og det jeg oppgir om skade eller ubehag, for å tilpasse øktene mine og bidra til å forebygge skade. Jeg kan avslå.",
-    "body": "For å tilpasse øktene dine og begrense skaderisikoen kan MySWYM behandle helsedata etter GDPR: puls per økt (f.eks. via Strava) og historikken over skader og ubehag du oppgir. Rettslig grunnlag: ditt uttrykkelige samtykke (GDPR art. 9.2.a). Det er valgfritt: du kan avslå og likevel bruke appen. Du kan trekke samtykket når som helst (Innstillinger eller contact@myswym.app). Disse dataene sendes ikke til analyseverktøy hos tredjeparter.",
+    "checkbox": "Jeg samtykker uttrykkelig til at ForSwim kan behandle pulsen min og det jeg oppgir om skade eller ubehag, for å tilpasse øktene mine og bidra til å forebygge skade. Jeg kan avslå.",
+    "body": "For å tilpasse øktene dine og begrense skaderisikoen kan ForSwim behandle helsedata etter GDPR: puls per økt (f.eks. via Strava) og historikken over skader og ubehag du oppgir. Rettslig grunnlag: ditt uttrykkelige samtykke (GDPR art. 9.2.a). Det er valgfritt: du kan avslå og likevel bruke appen. Du kan trekke samtykket når som helst (Innstillinger eller contact@myswym.app). Disse dataene sendes ikke til analyseverktøy hos tredjeparter.",
     "medical": "Planene som lages er veiledende og erstatter ikke råd fra helsepersonell. Sjekk at du er i form til å trene (legeerklæring hvis det trengs) før du følger programmet.",
     "declaration": "Jeg bekrefter at helseopplysningene jeg oppgir, stemmer.",
     "safety": "Tren etter dagsformen. Stopp ved urovekkende symptomer, og oppsøk helsepersonell ved behov. Åpent vann: svøm aldri alene."
@@ -262,7 +262,7 @@
     "registerTitle": "Opprett en konto",
     "resetTitle": "Glemt passord",
     "loginLead": "Logg inn med Apple, Google, Facebook eller e-posten din.",
-    "registerLead": "7 dagers prøve, uten kort. Deretter settes øktene dine på pause.",
+    "registerLead": "7 dagers prøve med kort. Deretter starter trekk med mindre du sier opp.",
     "registerReferral": "Vervekode {{code}} : 20 % avslag på den første Premium-fakturaen din.",
     "resetLead": "Oppgi e-posten til kontoen din. Du får en sikker lenke for å velge et nytt passord.",
     "loginCta": "Logg inn",
@@ -276,8 +276,8 @@
     "backLogin": "← Tilbake til innlogging",
     "age": "Jeg bekrefter at jeg er 18 år eller eldre.",
     "terms": "Jeg godtar <cgu>bruksvilkårene</cgu> og <privacy>personvernerklæringen</privacy>.",
-    "newsletter": "Jeg vil gjerne få nyheter fra MySWYM på e-post.",
-    "trial": "7 dagers prøve når du oppretter konto, uten kort. Deretter settes øktene dine på pause til du abonnerer.",
+    "newsletter": "Jeg vil gjerne få nyheter fra ForSwim på e-post.",
+    "trial": "7 dagers prøve med kort (Stripe eller App Store). Deretter starter trekk med mindre du sier opp før.",
     "google": "Fortsett med Google",
     "facebook": "Fortsett med Facebook",
     "apple": "Fortsett med Apple",

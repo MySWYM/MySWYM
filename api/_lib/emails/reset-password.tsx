@@ -9,14 +9,14 @@ export type ResetPasswordEmailProps = {
 export function ResetPasswordEmail({ resetUrl }: ResetPasswordEmailProps) {
   return (
     <EmailLayout
-      preview="Choisis un nouveau mot de passe MySWYM."
+      preview="Choisis un nouveau mot de passe ForSwim."
       eyebrow="Sécurité"
       ctaLabel="Choisir un nouveau mot de passe"
       ctaUrl={resetUrl}
     >
       <Text style={emailText.h1}>Nouveau mot de passe</Text>
       <Text style={emailText.p}>
-        Tu as demandé à réinitialiser ton mot de passe MySWYM. Utilise le bouton
+        Tu as demandé à réinitialiser ton mot de passe ForSwim. Utilise le bouton
         ci-dessous pour en choisir un nouveau.
       </Text>
       <Text style={emailText.p}>

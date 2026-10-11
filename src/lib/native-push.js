@@ -16,7 +16,7 @@ export { buddyConnectionId };
 const BUNDLE_ID = "app.myswym.ios";
 const PUSH_PREF_KEY = "myswym_push_enabled";
 
-/** false seulement si l’utilisateur a coupé le switch dans MySWYM. */
+/** false seulement si l’utilisateur a coupé le switch dans ForSwim. */
 export function pushNotificationsWanted() {
   try {
     return localStorage.getItem(PUSH_PREF_KEY) !== "0";
@@ -38,7 +38,7 @@ function dispatchPushPref() {
 }
 
 /**
- * État d’activation pour l’UI (source de vérité = permission iOS + opt-in MySWYM).
+ * État d’activation pour l’UI (source de vérité = permission iOS + opt-in ForSwim).
  * @returns {Promise<{ os: "granted"|"denied"|"prompt", wanted: boolean, active: boolean }>}
  */
 export async function getNotificationActivationState() {
@@ -131,7 +131,7 @@ async function upsertTokenViaApi(token) {
 }
 
 async function upsertDeviceToken(token) {
-  // Déconnexion en cours ou switch MySWYM coupé : AppDelegate rejoue le jeton à
+  // Déconnexion en cours ou switch ForSwim coupé : AppDelegate rejoue le jeton à
   // chaque retour au premier plan, il ne doit pas réinscrire ce téléphone.
   if (suppressTokenUpsert || !pushNotificationsWanted()) {
     return { ok: false, reason: suppressTokenUpsert ? "signing_out" : "opt_out" };
@@ -211,7 +211,7 @@ async function ensureListeners(PushNotifications) {
   });
 }
 
-/** true si iOS a autorisé et que MySWYM n’a pas opt-out. */
+/** true si iOS a autorisé et que ForSwim n’a pas opt-out. */
 export async function notificationsSwitchOn() {
   const state = await getNotificationActivationState();
   return state.active;
@@ -246,7 +246,7 @@ export async function prepareNativeSignOut() {
     new Promise((resolve) => setTimeout(resolve, 1500)),
   ]);
   void import("./native-local-notifications.js")
-    .then((m) => m.cancelMySwymLocalNotifications())
+    .then((m) => m.cancelForSwimLocalNotifications())
     .catch(() => {});
 }
 
@@ -259,15 +259,15 @@ export async function disableNativeNotifications() {
     console.warn("[push] disable", e);
   }
   try {
-    const { cancelMySwymLocalNotifications } = await import("./native-local-notifications.js");
-    await cancelMySwymLocalNotifications();
+    const { cancelForSwimLocalNotifications } = await import("./native-local-notifications.js");
+    await cancelForSwimLocalNotifications();
   } catch { /* ignore */ }
   dispatchPushPref();
   return { ok: true, enabled: false };
 }
 
 /**
- * Active les notifs MySWYM.
+ * Active les notifs ForSwim.
  * Si iOS a déjà autorisé (Réglages), réactive sans popup et sans échouer sur le jeton.
  */
 export async function enableNativeNotifications() {
@@ -306,7 +306,7 @@ export async function enableNativeNotifications() {
   };
 }
 
-/** Ouvre Réglages iPhone → page MySWYM (après un refus de notifications). */
+/** Ouvre Réglages iPhone → page ForSwim (après un refus de notifications). */
 export async function openNativeAppSettings() {
   if (!isNativeIos()) return { ok: false, reason: "not_ios" };
   try {

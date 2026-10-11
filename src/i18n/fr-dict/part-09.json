@@ -335,19 +335,19 @@
     "nb": "Lagre uten å publisere",
     "fi": "Tallenna julkaisematta"
   },
-  "MySWYM facilite uniquement la mise en relation. Les rencontres hors application se font sous la responsabilité des utilisateurs. Voir CGU § mise en relation et politique de confidentialité.": {
-    "en": "MySWYM only facilitates introductions. Meetings outside the app are the users' own responsibility. See Terms of Use § matching and the Privacy Policy.",
-    "de": "MySWYM vermittelt nur den Kontakt. Treffen außerhalb der App erfolgen in der Verantwortung der Nutzer. Siehe Nutzungsbedingungen § Vermittlung und Datenschutzerklärung.",
-    "es": "MySWYM solo facilita el contacto. Los encuentros fuera de la aplicación son responsabilidad de los usuarios. Ver Condiciones de uso § puesta en contacto y Política de privacidad.",
-    "ja": "MySWYMはマッチングの仲介のみを行います。アプリ外での待ち合わせは、利用者自身の責任で行われます。利用規約の「マッチング」条項およびプライバシーポリシーをご確認ください。",
-    "nl": "MySWYM faciliteert alleen het contact. Ontmoetingen buiten de app vallen onder de verantwoordelijkheid van de gebruikers. Zie Gebruiksvoorwaarden § matchen en het privacybeleid.",
-    "it": "MySWYM facilita soltanto il contatto. Gli incontri al di fuori dell'app avvengono sotto la responsabilità degli utenti. Vedi Condizioni d'uso § messa in contatto e informativa sulla privacy.",
-    "pt": "O MySWYM apenas facilita o contacto. Os encontros fora da aplicação são da responsabilidade dos utilizadores. Ver Termos de Utilização § contacto e Política de Privacidade.",
-    "pt-BR": "O MySWYM apenas facilita a conexão. Os encontros fora do aplicativo são de responsabilidade dos usuários. Veja os Termos de Uso § conexão e a Política de Privacidade.",
-    "sv": "MySWYM förmedlar endast kontakten. Möten utanför appen sker på användarnas eget ansvar. Se Användarvillkor § matchning och integritetspolicyn.",
-    "da": "MySWYM formidler kun kontakten. Møder uden for appen sker på brugernes eget ansvar. Se Brugsvilkår § matchning og privatlivspolitikken.",
-    "nb": "MySWYM formidler kun kontakten. Møter utenfor appen skjer på brukernes eget ansvar. Se Bruksvilkår § matching og personvernerklæringen.",
-    "fi": "MySWYM vain helpottaa yhteydenottoa. Sovelluksen ulkopuoliset tapaamiset ovat käyttäjien omalla vastuulla. Katso käyttöehtojen kohta § yhteydenotto ja tietosuojakäytäntö."
+  "ForSwim facilite uniquement la mise en relation. Les rencontres hors application se font sous la responsabilité des utilisateurs. Voir CGU § mise en relation et politique de confidentialité.": {
+    "en": "ForSwim only facilitates introductions. Meetings outside the app are the users' own responsibility. See Terms of Use § matching and the Privacy Policy.",
+    "de": "ForSwim vermittelt nur den Kontakt. Treffen außerhalb der App erfolgen in der Verantwortung der Nutzer. Siehe Nutzungsbedingungen § Vermittlung und Datenschutzerklärung.",
+    "es": "ForSwim solo facilita el contacto. Los encuentros fuera de la aplicación son responsabilidad de los usuarios. Ver Condiciones de uso § puesta en contacto y Política de privacidad.",
+    "ja": "ForSwimはマッチングの仲介のみを行います。アプリ外での待ち合わせは、利用者自身の責任で行われます。利用規約の「マッチング」条項およびプライバシーポリシーをご確認ください。",
+    "nl": "ForSwim faciliteert alleen het contact. Ontmoetingen buiten de app vallen onder de verantwoordelijkheid van de gebruikers. Zie Gebruiksvoorwaarden § matchen en het privacybeleid.",
+    "it": "ForSwim facilita soltanto il contatto. Gli incontri al di fuori dell'app avvengono sotto la responsabilità degli utenti. Vedi Condizioni d'uso § messa in contatto e informativa sulla privacy.",
+    "pt": "O ForSwim apenas facilita o contacto. Os encontros fora da aplicação são da responsabilidade dos utilizadores. Ver Termos de Utilização § contacto e Política de Privacidade.",
+    "pt-BR": "O ForSwim apenas facilita a conexão. Os encontros fora do aplicativo são de responsabilidade dos usuários. Veja os Termos de Uso § conexão e a Política de Privacidade.",
+    "sv": "ForSwim förmedlar endast kontakten. Möten utanför appen sker på användarnas eget ansvar. Se Användarvillkor § matchning och integritetspolicyn.",
+    "da": "ForSwim formidler kun kontakten. Møder uden for appen sker på brugernes eget ansvar. Se Brugsvilkår § matchning og privatlivspolitikken.",
+    "nb": "ForSwim formidler kun kontakten. Møter utenfor appen skjer på brukernes eget ansvar. Se Bruksvilkår § matching og personvernerklæringen.",
+    "fi": "ForSwim vain helpottaa yhteydenottoa. Sovelluksen ulkopuoliset tapaamiset ovat käyttäjien omalla vastuulla. Katso käyttöehtojen kohta § yhteydenotto ja tietosuojakäytäntö."
   },
   ". Les numéros ne seront visibles qu’après acceptation mutuelle.": {
     "en": ". Numbers will only be visible after mutual acceptance.",

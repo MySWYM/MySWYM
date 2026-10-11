@@ -66,8 +66,8 @@ Mêmes % que le générateur coaching :
 - Z4 : 0.92–1.00  
 Base 400 m pour Z1–Z3 ; base 100 m pour Z4.
 
-## Règle produit MySWYM
+## Règle produit ForSwim
 
-Les plans non-diplôme (hors BNSSA/BPJEPS) doivent afficher des séances **dans ce format**, pas des templates génériques MySWYM (pyramide, « ENDURANCE », jargon UI).
+Les plans non-diplôme (hors BNSSA/BPJEPS) doivent afficher des séances **dans ce format**, pas des templates génériques ForSwim (pyramide, « ENDURANCE », jargon UI).
 
 UI : titre + distance ; détail = lignes coach ci-dessus. Rien d’autre.

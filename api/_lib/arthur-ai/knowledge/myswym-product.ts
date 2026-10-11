@@ -1,5 +1,5 @@
 /**
- * Base de connaissance produit MySWYM : disponible au runtime
+ * Base de connaissance produit ForSwim : disponible au runtime
  * (Cursor n’est pas une source de vérité en production).
  *
  * Alignée Tarifs.jsx / Legal / SupportBubble / landing.
@@ -7,16 +7,16 @@
 import type { KnowledgeSnippet } from "../optimization/knowledge.js";
 
 const APP = () =>
-  (process.env.APP_URL || "https://myswym.app").replace(/\/$/, "");
+  (process.env.APP_URL || "https://forswim.app").replace(/\/$/, "");
 
 export const MYSWYM_PRODUCT = {
-  name: "MySWYM",
+  name: "ForSwim",
   tagline: "Plans d’entraînement natation personnalisés",
-  monthlyFlex: "9,99€",
-  monthlyCommit: "4,99€",
-  monthly: "9,99€",
-  annual: "52,99€",
+  monthlyFlex: "8,99€",
+  monthly: "8,99€",
+  annual: "59,99€",
   trialDays: 7,
+  trialRequiresCard: true,
   paths: {
     tarifs: "/fr/tarifs",
     inscription: "/inscription",
@@ -33,7 +33,7 @@ export function getBuiltinMyswymKnowledge(): KnowledgeSnippet[] {
       topic: "myswym_how_it_works",
       title: "Fonctionnement de l’app",
       content:
-        `MySWYM génère un plan de natation personnalisé (bassin / eau libre / triathlon) via un moteur rule-based : tu renseignes objectif, niveau, fréquence et contraintes, puis tu suis des séances structurées (échauffement → technique → corps → retour calme). À la création du compte : essai Premium ${MYSWYM_PRODUCT.trialDays} jours sans carte. Ensuite tes séances se mettent en pause jusqu’à l’abonnement. Inscription : ${base}${MYSWYM_PRODUCT.paths.inscription}`,
+        `ForSwim génère un plan de natation personnalisé (bassin / eau libre / triathlon) via un moteur rule-based : tu renseignes objectif, niveau, fréquence et contraintes, puis tu suis des séances structurées (échauffement → technique → corps → retour calme). Essai Premium ${MYSWYM_PRODUCT.trialDays} jours avec carte (Stripe ou App Store). Ensuite le prélèvement démarre, sauf résiliation avant la fin de l’essai. Inscription : ${base}${MYSWYM_PRODUCT.paths.inscription}`,
       tags: [
         "fonctionne",
         "application",
@@ -50,7 +50,7 @@ export function getBuiltinMyswymKnowledge(): KnowledgeSnippet[] {
       topic: "myswym_pricing",
       title: "Tarifs Premium",
       content:
-        `Premium : essai ${MYSWYM_PRODUCT.trialDays} jours sans carte à l’inscription, puis sur le site ${MYSWYM_PRODUCT.monthlyFlex}/mois sans engagement, ${MYSWYM_PRODUCT.monthlyCommit}/mois avec engagement 12 mois, ou ${MYSWYM_PRODUCT.annual}/an en 1 fois. Sur iPhone, le paiement passe par l’App Store : 6,99 €/mois ou 59,99 €/an. Après l’essai, tes séances se mettent en pause.`,
+        `Premium : essai ${MYSWYM_PRODUCT.trialDays} jours avec carte, puis ${MYSWYM_PRODUCT.monthlyFlex}/mois sans engagement ou ${MYSWYM_PRODUCT.annual}/an en 1 fois. Mêmes tarifs sur le site (Stripe) et sur iPhone (App Store).`,
       tags: ["prix", "tarif", "abonnement", "premium", "essai", "mensuel", "annuel"],
       intent_hints: ["subscription", "myswym_question"],
       priority: 100,
@@ -59,7 +59,7 @@ export function getBuiltinMyswymKnowledge(): KnowledgeSnippet[] {
       topic: "myswym_cancel",
       title: "Résiliation",
       content:
-        "Sur le site : Profil, Modifier mon abonnement, puis le portail Stripe. Supprimer le compte arrête l’abonnement Stripe encore actif, sans remboursement de la période déjà payée. Sur iPhone : Réglages, Apple ID, Abonnements. Supprimer le compte MySWYM n’arrête pas un abonnement App Store. Essai 7 jours sans carte : rien à résilier.",
+        "Sur le site : Profil, Modifier mon abonnement, puis le portail Stripe. Supprimer le compte arrête l’abonnement Stripe encore actif, sans remboursement de la période déjà payée. Sur iPhone : Réglages, Apple ID, Abonnements. Supprimer le compte ForSwim n’arrête pas un abonnement App Store. Pendant l’essai 7 jours avec carte : résilie avant la fin pour éviter le premier prélèvement.",
       tags: ["résil", "annul", "résiliation", "annulation", "stripe"],
       intent_hints: ["subscription", "support"],
       priority: 90,
@@ -68,7 +68,7 @@ export function getBuiltinMyswymKnowledge(): KnowledgeSnippet[] {
       topic: "myswym_features",
       title: "Fonctionnalités Premium",
       content:
-        "Premium : plans complets, départs D…, allures cibles, adaptation selon le feedback. Essai 7 jours sans carte à l’inscription ; ensuite tes séances se mettent en pause jusqu’à l’abonnement.",
+        "Premium : plans complets, départs D…, allures cibles, adaptation selon le feedback. Essai 7 jours avec carte ; ensuite prélèvement sauf résiliation.",
       tags: ["fonctionnalité", "premium", "plan", "allure", "adaptation"],
       intent_hints: ["myswym_question", "plan_request", "subscription"],
       priority: 85,

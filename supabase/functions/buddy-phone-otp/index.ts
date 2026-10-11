@@ -51,7 +51,7 @@ async function sendTwilioSms(toE164: string, body: string): Promise<boolean> {
 
 async function sendResendEmail(to: string, code: string): Promise<boolean> {
   const key = Deno.env.get("RESEND_API_KEY");
-  const from = Deno.env.get("EMAIL_FROM") || "MySWYM <noreply@myswym.app>";
+  const from = Deno.env.get("EMAIL_FROM") || "ForSwim <noreply@myswym.app>";
   if (!key || !to) return false;
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
@@ -62,8 +62,8 @@ async function sendResendEmail(to: string, code: string): Promise<boolean> {
     body: JSON.stringify({
       from,
       to: [to],
-      subject: "Code MySWYM : vérifier ton numéro",
-      text: `Ton code MySWYM pour confirmer ton numéro Binômes : ${code}\nValable 10 minutes.\n`,
+      subject: "Code ForSwim : vérifier ton numéro",
+      text: `Ton code ForSwim pour confirmer ton numéro Binômes : ${code}\nValable 10 minutes.\n`,
     }),
   });
   return res.ok;
@@ -112,7 +112,7 @@ Deno.serve(async (req) => {
       });
       if (upsertErr) throw new Error(upsertErr.message);
 
-      const msg = `MySWYM : ton code Binômes est ${code} (valable 10 min).`;
+      const msg = `ForSwim : ton code Binômes est ${code} (valable 10 min).`;
       let channel: "sms" | "email" | "none" = "none";
       if (await sendTwilioSms(phone, msg)) {
         channel = "sms";

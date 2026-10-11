@@ -77,7 +77,7 @@ test("plan hot plan_request", () => {
   assert.equal(d.action, "plan");
   if (d.action === "plan") {
     assert.equal(d.template_key, "plan_nudge");
-    assert.ok(d.message_preview.includes("MySWYM"));
+    assert.ok(d.message_preview.includes("ForSwim"));
     assert.ok(d.scheduled_for);
   }
 });

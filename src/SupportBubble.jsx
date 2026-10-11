@@ -17,15 +17,15 @@ const BLUE = "#006bfd";
 const MUTED = "#6b7c8f";
 const ARTHUR_PHOTO = "/coach.webp";
 
-/** FAQ rule-based, produit + vocabulaire / méthode natation MySWYM. */
+/** FAQ rule-based, produit + vocabulaire / méthode natation ForSwim. */
 const FAQ_RULES = [
   // ── Produit ──────────────────────────────────────────────
   {
     keys: ["gratuit", "free", "prix", "tarif", "coût", "cout", "abonnement", "premium", "payer", "paiement", "stripe", "combien"],
     answer:
-      `À la création du compte : essai Premium ${TRIAL_DAYS} jours sans carte. Ensuite tes séances se mettent en pause jusqu'à l'abonnement. ${PRICING_SUMMARY_FR}. Détails sur la page Tarifs.`,
+      `Essai Premium ${TRIAL_DAYS} jours avec carte, puis ${PRICING_SUMMARY_FR}. Sans abo ni essai : séances en pause. Détails sur la page Tarifs.`,
     iosAnswer:
-      `À la création du compte : essai Premium ${TRIAL_DAYS} jours sans carte. Ensuite tes séances se mettent en pause jusqu’à l’abonnement. Sur iPhone : ${APPLE_IAP_SUMMARY_FR}, paiement via l’App Store.`,
+      `Essai Premium ${TRIAL_DAYS} jours avec carte Apple ID, puis ${APPLE_IAP_SUMMARY_FR}. Paiement via l’App Store.`,
   },
   {
     keys: [
@@ -49,9 +49,9 @@ const FAQ_RULES = [
       "rembours",
     ],
     answer:
-      "Pour changer d’offre (mensuel, annuel, carte) : Profil → « Modifier mon abonnement ». Pour te désabonner : Profil → « Résilier », puis Stripe. Tu restes Premium jusqu’à la fin de la période déjà payée, puis tes séances se mettent en pause. Essai 7 jours sans carte : rien à résilier. Supprimer le compte depuis Profil arrête l’abonnement Stripe encore actif, sans remboursement de la période déjà payée.",
+      "Pour changer d’offre (mensuel, annuel, carte) : Profil → « Modifier mon abonnement ». Pour te désabonner : Profil → « Résilier », puis Stripe. Tu restes Premium jusqu’à la fin de la période déjà payée, puis tes séances se mettent en pause. Pendant l’essai : résilie avant J+7 pour éviter le prélèvement. Supprimer le compte depuis Profil arrête l’abonnement Stripe encore actif, sans remboursement de la période déjà payée.",
     iosAnswer:
-      "Sur iPhone, l’abonnement se gère dans Réglages, Apple ID, Abonnements. Tu restes Premium jusqu’à la fin de la période déjà payée. Essai 7 jours sans carte : rien à résilier. Supprimer le compte se fait dans Profil : ça n’arrête pas un abonnement App Store tout seul.",
+      "Sur iPhone, l’abonnement se gère dans Réglages, Apple ID, Abonnements. Tu restes Premium jusqu’à la fin de la période déjà payée. Pendant l’essai : résilie avant J+7 pour éviter le prélèvement. Supprimer le compte se fait dans Profil : ça n’arrête pas un abonnement App Store tout seul.",
   },
   {
     id: "goal",
@@ -63,7 +63,7 @@ const FAQ_RULES = [
     id: "beginner",
     keys: ["début", "debut", "débutant", "debutant", "jamais", "apprendre", "savoir nager", "école"],
     answer:
-      "MySWYM convient dès que tu sais déjà nager. Le niveau découverte allège le vocabulaire (zones en français, repos en secondes). Ce n'est pas une école pour apprendre le geste de A à Z. L'app génère et structure tes séances.",
+      "ForSwim convient dès que tu sais déjà nager. Le niveau découverte allège le vocabulaire (zones en français, repos en secondes). Ce n'est pas une école pour apprendre le geste de A à Z. L'app génère et structure tes séances.",
   },
   {
     id: "how",
@@ -111,7 +111,7 @@ const FAQ_RULES = [
     id: "structure",
     keys: ["structure", "échauff", "echauff", "retour calme", "rac", "bloc", "départ", "depart", "corps de séance", "corps de seance"],
     answer:
-      "Séance type MySWYM : départ (souvent godilles en Z1) → bloc technique rotatif → corps physio (Z1–Z4 selon la filière) → fin / retour au calme. Eau libre : consignes spécifiques (sighting, combinaison), pas seulement des reps bassin.",
+      "Séance type ForSwim : départ (souvent godilles en Z1) → bloc technique rotatif → corps physio (Z1–Z4 selon la filière) → fin / retour au calme. Eau libre : consignes spécifiques (sighting, combinaison), pas seulement des reps bassin.",
   },
   {
     keys: ["godille", "sculling", "scull"],
@@ -121,7 +121,7 @@ const FAQ_RULES = [
   {
     keys: ["grand chien", "petit chien", "chien"],
     answer:
-      "Grand / petit chien = éducatifs de position et d'appui. MySWYM les utilise avec parcimonie (~1 séance sur 8 en focus) : on privilégie jambes et nage appliquée. Sur niveau découverte, l'app explique l'éducatif en ligne plutôt que le jargon seul.",
+      "Grand / petit chien = éducatifs de position et d'appui. ForSwim les utilise avec parcimonie (~1 séance sur 8 en focus) : on privilégie jambes et nage appliquée. Sur niveau découverte, l'app explique l'éducatif en ligne plutôt que le jargon seul.",
   },
   {
     keys: ["rattrapé", "rattrape", "catch-up", "catch up", "catchup"],
@@ -324,7 +324,7 @@ function ArthurAvatar({ size = 44, radius = 12 }) {
   );
 }
 
-/** Mascotte MySWYM. Accueil du widget seulement, le fil garde la photo d'Arthur. */
+/** Mascotte ForSwim. Accueil du widget seulement, le fil garde la photo d'Arthur. */
 function LoutreAvatar({ height = 92 }) {
   return (
     <img
@@ -791,7 +791,7 @@ export default function SupportBubble({
                     Arthur
                   </div>
                   <div className="support-widget-subtitle">
-                    Support MySWYM
+                    Support ForSwim
                   </div>
                 </div>
                 {!isPage ? (
@@ -940,7 +940,7 @@ export default function SupportBubble({
                       {firstName ? `Salut ${firstName}` : "Salut"}
                     </h4>
                     <p className="support-home-lead">
-                      Moi c’est la loutre MySWYM, bras droit d’Arthur, et la seule ici
+                      Moi c’est la loutre ForSwim, bras droit d’Arthur, et la seule ici
                       qui n’a jamais eu besoin de palmes. Comment je peux t’aider ?
                     </p>
                     {hasHistory ? (

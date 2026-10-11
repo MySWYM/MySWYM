@@ -41,9 +41,9 @@ const ANNUAL_IDS = new Set(
 );
 
 export const TIER_MRR: Record<Exclude<PriceTier, "unknown">, number> = {
-  monthly_flex: 9.99,
-  monthly_commit: 4.99,
-  annual: Math.round((52.99 / 12) * 100) / 100,
+  monthly_flex: 8.99,
+  monthly_commit: 4.99, // legacy, plus commercialisé
+  annual: Math.round((59.99 / 12) * 100) / 100,
 };
 
 export function accessStatusOf(row: AccessLike | null | undefined): string {

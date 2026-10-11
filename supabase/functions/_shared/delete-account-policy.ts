@@ -20,6 +20,7 @@ function envPrice(name: string): string {
 const PREPAID_PRICE_IDS = new Set([
   envPrice("STRIPE_PRICE_ANNUAL"),
   envPrice("STRIPE_PRICE_BIENNIAL"),
+  "price_1UPMjIAS4mfgF2Tw3VYyFnaV",
   "price_1U7E38AS4mfgF2TwpJGYoMpE",
   "price_1U67kaAS4mfgF2TwvUsVQ3vE",
   "price_1Tue7cAS4mfgF2TwP53wZ7qn",
@@ -27,6 +28,7 @@ const PREPAID_PRICE_IDS = new Set([
 
 const FLEX_PRICE_IDS = new Set([
   envPrice("STRIPE_PRICE_MONTHLY_FLEX"),
+  "price_1UPMipAS4mfgF2Twd2eNOMyl",
   "price_1U3N2tAS4mfgF2TwyaI2hf22",
   "price_1U67kYAS4mfgF2Twaw269yaU",
 ].filter(Boolean));
@@ -44,7 +46,7 @@ export const LIVE_SUB_STATUSES = new Set([
 const CLEANUP_STATUSES = new Set(["incomplete"]);
 
 export const DELETE_APPLE_NOTICE =
-  "Ton abonnement App Store continue jusqu’à ce que tu le résilies : Réglages, Apple ID, Abonnements. Supprimer le compte MySWYM ne l’arrête pas.";
+  "Ton abonnement App Store continue jusqu’à ce que tu le résilies : Réglages, Apple ID, Abonnements. Supprimer le compte ForSwim ne l’arrête pas.";
 
 export const DELETE_BLOCK = {
   unverified:

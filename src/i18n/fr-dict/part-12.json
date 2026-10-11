@@ -942,19 +942,19 @@
     "fi": "Uusi virstanpylväs. Jaa korttisi tai jatka suoraan seuraavaan."
   },
   "Dopamine progression + viralité": null,
-  "Sans abonnement, tes séances se mettent en pause demain. Premium dès 4,99 € / mois (12 mois) ou 9,99 € / mois sans engagement.": {
-    "en": "Without a subscription, your sessions pause tomorrow. Premium from €4.99 / month (12 months) or €9.99 / month with no commitment.",
-    "de": "Ohne Abo werden deine Einheiten morgen pausiert. Premium ab 4,99 € / Monat (12 Monate) oder 9,99 € / Monat ohne Bindung.",
-    "es": "Sin suscripción, tus sesiones se pausan mañana. Premium desde 4,99 € / mes (12 meses) o 9,99 € / mes sin permanencia.",
-    "ja": "サブスクリプションがないと、明日からセッションが一時停止します。Premiumは月額4,99 €(12か月)から、または縛りなしで月額9,99 €。",
-    "nl": "Zonder abonnement worden je sessies morgen gepauzeerd. Premium vanaf € 4,99 / maand (12 maanden) of € 9,99 / maand zonder verplichting.",
-    "it": "Senza abbonamento, le tue sessioni vanno in pausa domani. Premium da 4,99 € / mese (12 mesi) o 9,99 € / mese senza vincoli.",
-    "pt": "Sem subscrição, as tuas sessões ficam em pausa amanhã. Premium desde 4,99 € / mês (12 meses) ou 9,99 € / mês sem fidelização.",
-    "pt-BR": "Sem assinatura, suas sessões ficam em pausa amanhã. Premium a partir de 4,99 € / mês (12 meses) ou 9,99 € / mês sem fidelidade.",
-    "sv": "Utan prenumeration pausas dina pass i morgon. Premium från 4,99 € / månad (12 månader) eller 9,99 € / månad utan bindningstid.",
-    "da": "Uden abonnement sættes dine træninger på pause i morgen. Premium fra 4,99 € / måned (12 måneder) eller 9,99 € / måned uden binding.",
-    "nb": "Uten abonnement settes øktene dine på pause i morgen. Premium fra 4,99 € / måned (12 måneder) eller 9,99 € / måned uten binding.",
-    "fi": "Ilman tilausta harjoituksesi tauotetaan huomenna. Premium alkaen 4,99 € / kk (12 kk) tai 9,99 € / kk ilman sitoutumista."
+  "Sans abonnement, tes séances se mettent en pause demain. Premium : 8,99 € / mois sans engagement, ou 59,99 € / an.": {
+    "en": "Without a subscription, your sessions pause tomorrow. Premium: €8.99/month with no commitment, or €59.99/year.",
+    "de": "Ohne Abo werden deine Einheiten morgen pausiert. Premium: 8,99 €/Monat ohne Bindung oder 59,99 €/Jahr.",
+    "es": "Sin suscripción, tus sesiones se pausan mañana. Premium: 8,99 €/mes sin permanencia, o 59,99 €/año.",
+    "ja": "サブスクリプションがないと、明日からセッションが一時停止します。Premiumは縛りなし月額8,99 €、または年額59,99 €。",
+    "nl": "Zonder abonnement worden je sessies morgen gepauzeerd. Premium: € 8,99/maand zonder verplichting, of € 59,99/jaar.",
+    "it": "Senza abbonamento, le tue sessioni vanno in pausa domani. Premium: 8,99 €/mese senza vincoli, o 59,99 €/anno.",
+    "pt": "Sem subscrição, as tuas sessões ficam em pausa amanhã. Premium: 8,99 €/mês sem fidelização, ou 59,99 €/ano.",
+    "pt-BR": "Sem assinatura, suas sessões ficam em pausa amanhã. Premium: 8,99 €/mês sem fidelidade, ou 59,99 €/ano.",
+    "sv": "Utan prenumeration pausas dina pass i morgon. Premium: 8,99 €/månad utan bindningstid, eller 59,99 €/år.",
+    "da": "Uden abonnement sættes dine træninger på pause i morgen. Premium: 8,99 €/måned uden binding, eller 59,99 €/år.",
+    "nb": "Uten abonnement settes øktene dine på pause i morgen. Premium: 8,99 €/måned uten binding, eller 59,99 €/år.",
+    "fi": "Ilman tilausta harjoituksesi tauotetaan huomenna. Premium: 8,99 €/kk ilman sitoutumista, tai 59,99 €/v."
   },
   "Essai J-2 / J-1, une fois / user": null,
   "Conversion au pic de valeur perçue": null,
@@ -1142,19 +1142,19 @@
     "nb": "Prøveperioden din er over",
     "fi": "Kokeilujaksosi on päättynyt"
   },
-  "Tes séances sont en pause. Abonne-toi pour tout revoir, 9,99 €/mois sans engagement, 4,99 €/mois sur 12 mois, ou 52,99 €/an": {
-    "en": "Your sessions are paused. Subscribe to see everything again: €9.99/month with no commitment, €4.99/month over 12 months, or €52.99/year",
-    "de": "Deine Einheiten sind pausiert. Abonniere, um wieder alles zu sehen: 9,99 €/Monat ohne Bindung, 4,99 €/Monat über 12 Monate oder 52,99 €/Jahr",
-    "es": "Tus sesiones están en pausa. Suscríbete para volver a verlo todo: 9,99 €/mes sin permanencia, 4,99 €/mes durante 12 meses o 52,99 €/año",
-    "ja": "セッションは一時停止中です。登録するとすべて再表示されます:縛りなし月額9,99 €、12か月プラン月額4,99 €、または年額52,99 €",
-    "nl": "Je sessies zijn gepauzeerd. Neem een abonnement om alles weer te zien: € 9,99/maand zonder verplichting, € 4,99/maand voor 12 maanden of € 52,99/jaar",
-    "it": "Le tue sessioni sono in pausa. Abbonati per rivedere tutto: 9,99 €/mese senza vincoli, 4,99 €/mese per 12 mesi o 52,99 €/anno",
-    "pt": "As tuas sessões estão em pausa. Subscreve para voltar a ver tudo: 9,99 €/mês sem fidelização, 4,99 €/mês durante 12 meses ou 52,99 €/ano",
-    "pt-BR": "Suas sessões estão em pausa. Assine para ver tudo de novo: 9,99 €/mês sem fidelidade, 4,99 €/mês por 12 meses ou 52,99 €/ano",
-    "sv": "Dina pass är pausade. Prenumerera för att se allt igen: 9,99 €/månad utan bindningstid, 4,99 €/månad i 12 månader eller 52,99 €/år",
-    "da": "Dine træninger er sat på pause. Abonnér for at se det hele igen: 9,99 €/måned uden binding, 4,99 €/måned i 12 måneder eller 52,99 €/år",
-    "nb": "Øktene dine er satt på pause. Abonner for å se alt igjen: 9,99 €/måned uten binding, 4,99 €/måned i 12 måneder eller 52,99 €/år",
-    "fi": "Harjoituksesi on tauotettu. Tilaa, niin näet kaiken taas: 9,99 €/kk ilman sitoutumista, 4,99 €/kk 12 kuukauden ajan tai 52,99 €/v"
+  "Tes séances sont en pause. Abonne-toi pour tout revoir : 8,99 €/mois sans engagement, ou 59,99 €/an": {
+    "en": "Your sessions are paused. Subscribe to see everything again: €8.99/month with no commitment, or €59.99/year",
+    "de": "Deine Einheiten sind pausiert. Abonniere, um wieder alles zu sehen: 8,99 €/Monat ohne Bindung oder 59,99 €/Jahr",
+    "es": "Tus sesiones están en pausa. Suscríbete para volver a verlo todo: 8,99 €/mes sin permanencia, o 59,99 €/año",
+    "ja": "セッションは一時停止中です。登録するとすべて再表示されます: 縛りなし月額8,99 €、または年額59,99 €",
+    "nl": "Je sessies zijn gepauzeerd. Neem een abonnement om alles weer te zien: € 8,99/maand zonder verplichting, of € 59,99/jaar",
+    "it": "Le tue sessioni sono in pausa. Abbonati per rivedere tutto: 8,99 €/mese senza vincoli, o 59,99 €/anno",
+    "pt": "As tuas sessões estão em pausa. Subscreve para voltar a ver tudo: 8,99 €/mês sem fidelização, ou 59,99 €/ano",
+    "pt-BR": "Suas sessões estão em pausa. Assine para ver tudo de novo: 8,99 €/mês sem fidelidade, ou 59,99 €/ano",
+    "sv": "Dina pass är pausade. Prenumerera för att se allt igen: 8,99 €/månad utan bindningstid, eller 59,99 €/år",
+    "da": "Dine træninger er sat på pause. Abonnér for at se det hele igen: 8,99 €/måned uden binding, eller 59,99 €/år",
+    "nb": "Øktene dine er satt på pause. Abonner for å se alt igjen: 8,99 €/måned uten binding, eller 59,99 €/år",
+    "fi": "Harjoituksesi on tauotettu. Tilaa, niin näet kaiken taas: 8,99 €/kk ilman sitoutumista, tai 59,99 €/v"
   },
   "· encore {{1}} semaine{{2}} de plan": {
     "en": "· {{1}} more week{{2}} of plan",

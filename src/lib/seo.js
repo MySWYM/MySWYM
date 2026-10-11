@@ -1,10 +1,11 @@
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
+import { BRAND_SITE_ORIGIN } from "./brand.js";
 import { LEGAL_ENTITY } from "./legal-entity.js";
 import { localeFromPathname, SITE_LANGS, stripLocalePrefix, withLocalePrefix } from "../i18n/locale-path.js";
 import { intlLocaleFor } from "../i18n/languages.js";
 
-export const SITE_ORIGIN = "https://www.myswym.app";
+export const SITE_ORIGIN = BRAND_SITE_ORIGIN;
 export const DEFAULT_OG_IMAGE = `${SITE_ORIGIN}/og-share.png`;
 
 /** JSON-LD BreadcrumbList, items : { label, href? } (dernier cran sans href). */
@@ -93,7 +94,7 @@ export function usePageSeo({
     upsertMeta("property", "og:image", image);
     upsertMeta("property", "og:locale", locale === "en" ? "en_US" : intlLocaleFor(locale).replace("-", "_"));
     upsertMeta("property", "og:locale:alternate", locale === "en" ? "fr_FR" : "en_US");
-    upsertMeta("property", "og:site_name", "MySWYM");
+    upsertMeta("property", "og:site_name", "ForSwim");
     upsertMeta("name", "twitter:card", "summary_large_image");
     upsertMeta("name", "twitter:title", title);
     upsertMeta("name", "twitter:description", description);
@@ -149,7 +150,7 @@ export function softwareApplicationJsonLd(reviews = []) {
   const app = {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
-    name: "MySWYM",
+    name: "ForSwim",
     applicationCategory: "HealthApplication",
     operatingSystem: "Web",
     url: `${SITE_ORIGIN}/`,
@@ -157,7 +158,7 @@ export function softwareApplicationJsonLd(reviews = []) {
       "Plan d'entraînement natation personnalisé : nager, triathlon, eau libre, prépa diplôme, prêt en 2 minutes.",
     offers: {
       "@type": "Offer",
-      price: "4.99",
+      price: "8.99",
       priceCurrency: "EUR",
     },
     publisher: { "@type": "Organization", name: LEGAL_ENTITY.tradeName },

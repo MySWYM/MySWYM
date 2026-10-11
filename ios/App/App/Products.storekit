@@ -19,12 +19,12 @@
       "id" : "48A1B2C3",
       "localizations" : [
         {
-          "description" : "MySWYM Premium",
-          "displayName" : "MySWYM Premium",
+          "description" : "ForSwim Premium",
+          "displayName" : "ForSwim Premium",
           "locale" : "fr_FR"
         }
       ],
-      "name" : "MySWYM Premium",
+      "name" : "ForSwim Premium",
       "subscriptions" : [
         {
           "adHocOffers" : [

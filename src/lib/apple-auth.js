@@ -4,7 +4,8 @@
  * (liaison auto Supabase). Le plugin Capacitor est injecté pour rester testable.
  */
 export const APPLE_BUNDLE_ID = "app.myswym.ios";
-export const APPLE_REDIRECT_URI = "https://www.myswym.app/app";
+/** Return URL Services ID : www.forswim.app (+ legacy encore autorisé côté Apple). */
+export const APPLE_REDIRECT_URI = "https://www.forswim.app/app";
 
 export function createAppleNonce(byteLength = 32) {
   const bytes = crypto.getRandomValues(new Uint8Array(byteLength));

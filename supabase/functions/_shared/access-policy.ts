@@ -18,8 +18,7 @@ export type AuthUser = {
 
 /**
  * Compte anonyme Supabase Auth.
- * Produit : même essai 7j sans carte que l’inscription (persisté sur user.id,
- * conservé à la conversion email / Apple / Google).
+ * Produit : pas d’essai sans carte ; l’essai 7j démarre avec CB (Stripe / Apple).
  */
 export function isAnonymousAuthUser(user?: AuthUser | null) {
   return user?.is_anonymous === true;
@@ -94,7 +93,7 @@ export const ENTITLEMENT_KEYS = [
 ];
 
 export const TRIAL_LENGTH_DAYS = 7;
-/** Fenêtre minimale pour considérer qu’un essai MySWYM a vraiment été accordé. */
+/** Fenêtre minimale pour considérer qu’un essai ForSwim a vraiment été accordé. */
 const MIN_GRANTED_TRIAL_MS = (TRIAL_LENGTH_DAYS - 1) * 24 * 60 * 60 * 1000;
 
 /**
@@ -159,7 +158,7 @@ export function isLiveAppleEntitlement(state?: Partial<AccessStateRow> | null) {
 }
 
 /**
- * Abo Stripe payant encore couvert. Pas l’essai 7 jours sans carte :
+ * Abo Stripe payant encore couvert. Pas l’essai 7 jours (trialing) :
  * un nageur en essai doit pouvoir passer à l’App Store.
  */
 export function isLiveStripeEntitlement(state?: Partial<AccessStateRow> | null) {
@@ -210,7 +209,7 @@ function parseIsoMs(iso: string | null | undefined) {
   return Number.isFinite(ms) ? ms : null;
 }
 
-/** Essai MySWYM réellement ouvert (≈ 7 jours), pas un leftover Stripe déjà périmé. */
+/** Essai ForSwim réellement ouvert (≈ 7 jours), pas un leftover Stripe déjà périmé. */
 export function hasConsumedValidTrialWindow(current?: Partial<AccessStateRow> | null) {
   if (!current || current.trial_used !== true) return false;
   const startMs = parseIsoMs(current.trial_started_at);
@@ -240,41 +239,26 @@ export function buildTrialState(userId: string, current?: Partial<AccessStateRow
 }
 
 /**
- * Un essai sans carte par compte, à la première connexion.
- * Réaccorde si l’essai n’a jamais eu de fenêtre valide, ou s’il s’est terminé
- * avant la création du compte Auth (customer Stripe d’un autre essai / e-mail).
- * Campagne re-essai (jusqu’à RETRIAL_UNTIL_ISO) : aussi si essai déjà consommé / désabo sans accès restant.
+ * Essai sans carte : désactivé (2026-10).
+ * L’essai 7j passe par Stripe Checkout / App Store (CB enregistrée).
+ * Conservé pour les tests / historique ; retourne toujours false.
  */
 export function shouldGrantCardlessTrial(
-  current?: Partial<AccessStateRow> | null,
-  opts?: GrantTrialOpts,
+  _current?: Partial<AccessStateRow> | null,
+  _opts?: GrantTrialOpts,
 ) {
-  if (!current) return true;
-  if (hasEntitlement({
-    access_status: current.access_status ?? ACCESS_STATUS.expired,
-    trial_ends_at: current.trial_ends_at ?? null,
-    subscription_ends_at: current.subscription_ends_at ?? null,
-  })) {
-    return false;
-  }
-  if (current.trial_used !== true) return true;
-  if (!hasConsumedValidTrialWindow(current)) return true;
-  const createdMs = parseIsoMs(opts?.userCreatedAt);
-  const trialEndMs = parseIsoMs(current.trial_ends_at);
-  if (createdMs != null && trialEndMs != null && trialEndMs <= createdMs) return true;
-  if (isRetrialCampaignActive(opts?.nowMs ?? Date.now())) return true;
   return false;
 }
 
 /**
- * Pas d'abo Stripe actif : garder un essai encore valide, accorder l'essai
- * sans carte une fois, sinon geler (expired).
+ * Pas d'abo Stripe actif : garder un essai encore valide (ex. Stripe trialing
+ * déjà sync), sinon geler (expired). Plus de grant essai sans carte.
  */
 export function resolveAccessWithoutStripeSub(
   userId: string,
   current: AccessStateRow | null,
   stripeCustomerId: string | null,
-  opts?: GrantTrialOpts,
+  _opts?: GrantTrialOpts,
 ): AccessStateRow {
   const withCustomer = {
     ...(current ?? {}),
@@ -285,9 +269,6 @@ export function resolveAccessWithoutStripeSub(
       ...current,
       stripe_customer_id: withCustomer.stripe_customer_id,
     } satisfies AccessStateRow;
-  }
-  if (shouldGrantCardlessTrial(current, opts)) {
-    return buildTrialState(userId, withCustomer);
   }
   return buildExpiredState(userId, withCustomer);
 }

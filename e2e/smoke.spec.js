@@ -5,12 +5,12 @@ import { test, expect } from "@playwright/test";
  * Contre staging : BASE_URL=https://staging.myswym.app npm run test:e2e
  */
 
-test.describe("MySWYM smoke", () => {
+test.describe("ForSwim smoke", () => {
   test("1. landing charge", async ({ page }) => {
     await page.goto("/");
     await expect(page.locator("body")).toBeVisible();
     // Brand / hero signal (EN ou FR selon locale)
-    await expect(page.getByText(/MySWYM|natation|swim/i).first()).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByText(/ForSwim|natation|swim/i).first()).toBeVisible({ timeout: 20_000 });
   });
 
   test("2. /connexion affiche l’auth", async ({ page }) => {
@@ -26,7 +26,7 @@ test.describe("MySWYM smoke", () => {
     await expect(page.locator("body")).toBeVisible();
     // Loading, onboarding ou shell app, pas une page vide 30s
     await expect(
-      page.getByText(/Chargement|MySWYM|Objectif|Commencer|séance|Programme|Connexion|Inscription/i).first(),
+      page.getByText(/Chargement|ForSwim|Objectif|Commencer|séance|Programme|Connexion|Inscription/i).first(),
     ).toBeVisible({ timeout: 25_000 });
   });
 

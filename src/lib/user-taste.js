@@ -278,7 +278,7 @@ export function tasteToGeneratorHints(tasteRaw) {
   const softenIntensity = t.intensity < -0.35;
   const pushIntensity = t.intensity > 0.45 && t.enjoyment > 0.25;
   const forceSimplify = t.clarity >= 0.45;
-  // Cap éducatif : MySWYM ≠ école, bias max soft
+  // Cap éducatif : ForSwim ≠ école, bias max soft
   const educatifBias = clamp(t.educatif * 0.55, -0.5, 0.45);
   const preferJambes = t.educatif < -0.25 || t.styles.includes("jambes");
 

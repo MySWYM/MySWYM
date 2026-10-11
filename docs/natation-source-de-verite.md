@@ -1,4 +1,4 @@
-# Sources de vérité natation MySWYM
+# Sources de vérité natation ForSwim
 
 > Architecture des données et hiérarchie des décisions.  
 > Règles actives : [`natation-regles-actives.md`](./natation-regles-actives.md) · Validation : [`natation-validation-seances.md`](./natation-validation-seances.md) · Journal : [`natation-historique.md`](./natation-historique.md).
@@ -16,7 +16,7 @@
 | Composition hors Soft (diplômes, etc.) | `composeSession` + quality gate |
 | Ancien moteur | Fallback technique temporaire hors Soft, jamais une source Soft concurrente |
 
-**Précision obligatoire** : Soft **01–13** = Sheet (await, pas de composeur de secours). Hors Soft = `composeSession` + quality gate. Arthur **apprend au LLM à entraîner** (méthode MySWYM). Le LLM écrit et propose ; il ne décide pas une séance nageur sans Sheet Soft ou composeur + validation Arthur.
+**Précision obligatoire** : Soft **01–13** = Sheet (await, pas de composeur de secours). Hors Soft = `composeSession` + quality gate. Arthur **apprend au LLM à entraîner** (méthode ForSwim). Le LLM écrit et propose ; il ne décide pas une séance nageur sans Sheet Soft ou composeur + validation Arthur.
 
 ---
 

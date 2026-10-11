@@ -1,5 +1,5 @@
 /**
- * Bottom sheet éducatif, contenu MySWYM uniquement.
+ * Bottom sheet éducatif, contenu ForSwim uniquement.
  * - 1 fiche
  * - liste 4 nages (1 / nage, ordre pap → crawl)
  * - liste même nage (ex. Soft · 3 éducatifs crawl)
@@ -33,7 +33,7 @@ function SingleDrillBody({ educatif }) {
           )}
           <div>
             <div style={{ fontSize: 14, fontWeight: 700, color: "var(--ms-blue)" }}>Voir la vidéo</div>
-            <div style={{ fontSize: 12, color: "var(--ms-ink-soft)", marginTop: 2 }}>Arthur Natation · MySWYM</div>
+            <div style={{ fontSize: 12, color: "var(--ms-ink-soft)", marginTop: 2 }}>Arthur Natation · ForSwim</div>
           </div>
         </a>
       )}

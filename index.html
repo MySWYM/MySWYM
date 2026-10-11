@@ -2,30 +2,30 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" href="/favicon-32x32.png?v=3" sizes="32x32" />
-    <link rel="icon" type="image/png" href="/favicon.png?v=3" sizes="1024x1024" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=3" />
+    <link rel="icon" type="image/png" href="/favicon-32x32.png?v=5" sizes="32x32" />
+    <link rel="icon" type="image/png" href="/favicon.png?v=5" sizes="512x512" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=5" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, shrink-to-fit=no" />
     <meta name="theme-color" content="#9ec8f5" />
     <meta name="color-scheme" content="light" />
-    <title>MySWYM : Personalized swim training plan</title>
+    <title>ForSwim : Personalized swim training plan</title>
     <meta name="description" content="Swim progression, triathlon, open water, diploma prep. Personalized swim training plan, ready in 2 minutes. 7-day Premium trial." />
     <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="MySWYM" />
-    <meta property="og:title" content="MySWYM : Personalized swim training plan" />
+    <meta property="og:site_name" content="ForSwim" />
+    <meta property="og:title" content="ForSwim : Personalized swim training plan" />
     <meta property="og:description" content="Swim progression, triathlon, open water, diploma prep. Personalized swim training plan, ready in 2 minutes. 7-day Premium trial." />
-    <meta property="og:url" content="https://www.myswym.app/" />
-    <meta property="og:image" content="https://www.myswym.app/og-share.png" />
+    <meta property="og:url" content="https://www.forswim.app/" />
+    <meta property="og:image" content="https://www.forswim.app/og-share.png" />
     <meta property="og:locale" content="en_US" />
     <meta property="og:locale:alternate" content="fr_FR" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="MySWYM : Personalized swim training plan" />
+    <meta name="twitter:title" content="ForSwim : Personalized swim training plan" />
     <meta name="twitter:description" content="Swim progression, triathlon, open water, diploma prep. Personalized swim training plan, ready in 2 minutes. 7-day Premium trial." />
-    <meta name="twitter:image" content="https://www.myswym.app/og-share.png" />
-    <link rel="canonical" href="https://www.myswym.app/" />
-    <link rel="alternate" hreflang="en" href="https://www.myswym.app/" />
-    <link rel="alternate" hreflang="fr" href="https://www.myswym.app/fr" />
-    <link rel="alternate" hreflang="x-default" href="https://www.myswym.app/" />
+    <meta name="twitter:image" content="https://www.forswim.app/og-share.png" />
+    <link rel="canonical" href="https://www.forswim.app/" />
+    <link rel="alternate" hreflang="en" href="https://www.forswim.app/" />
+    <link rel="alternate" hreflang="fr" href="https://www.forswim.app/fr" />
+    <link rel="alternate" hreflang="x-default" href="https://www.forswim.app/" />
     <script>
       (function () {
         try {
@@ -41,10 +41,10 @@
           var useFr = fr || stored.indexOf("fr") === 0 || authFr;
           if (useFr) {
             document.documentElement.lang = "fr";
-            if (bare === "/connexion" || bare === "/login") document.title = "Connexion | MySWYM";
-            else if (bare === "/inscription" || bare === "/register") document.title = "Inscription | MySWYM";
-            else if (bare === "/app" || bare.indexOf("/app/") === 0) document.title = "MySWYM";
-            else document.title = "MySWYM : Plan d'entraînement natation personnalisé";
+            if (bare === "/connexion" || bare === "/login") document.title = "Connexion | ForSwim";
+            else if (bare === "/inscription" || bare === "/register") document.title = "Inscription | ForSwim";
+            else if (bare === "/app" || bare.indexOf("/app/") === 0) document.title = "ForSwim";
+            else document.title = "ForSwim : Plan d'entraînement natation personnalisé";
           } else {
             document.documentElement.lang = "en";
           }
@@ -225,11 +225,12 @@
       <div class="myswym-boot" role="status" aria-live="polite" aria-busy="true" aria-label="Chargement">
         <div class="myswym-boot-inner">
           <div class="myswym-boot-app">
-            <img class="myswym-boot-wordmark myswym-boot-wordmark--app" src="/logo-myswym-banner-blanc.png" alt="" height="36" width="155" />
+            <!-- Chemins = LOGO_WORDMARK_* (wordmark seul) dans src/lib/brand.js -->
+            <img class="myswym-boot-wordmark myswym-boot-wordmark--app" src="/brand/wordmark-blanc-transparent.png" alt="" height="36" width="163" />
             <div class="myswym-boot-spin" aria-hidden="true"></div>
           </div>
           <div class="myswym-boot-public-ui">
-            <img class="myswym-boot-wordmark" src="/logo-myswym-on-light.png" alt="" height="24" width="103" />
+            <img class="myswym-boot-wordmark" src="/brand/wordmark-bleu-transparent.png" alt="" height="28" width="127" />
             <div class="myswym-boot-track" aria-hidden="true"><span class="myswym-boot-bar"></span></div>
           </div>
         </div>

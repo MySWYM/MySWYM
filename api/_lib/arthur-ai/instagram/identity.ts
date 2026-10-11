@@ -1,5 +1,5 @@
 /**
- * Résolution d’identité Instagram → MySWYM (mapping validé uniquement).
+ * Résolution d’identité Instagram → ForSwim (mapping validé uniquement).
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { isUuid } from "../security.js";
@@ -8,7 +8,7 @@ import { arthurLog } from "../logging.js";
 export type IdentityProvider = "instagram";
 
 /**
- * Retourne user_id MySWYM seulement si un lien verified existe.
+ * Retourne user_id ForSwim seulement si un lien verified existe.
  * Ne crée jamais de compte. Ne mappe jamais un IGSID arbitraire.
  */
 export async function resolveVerifiedUserId(
@@ -93,7 +93,7 @@ export async function ensurePendingIdentityLink(
 
 /**
  * Vérifie un lien après preuve forte côté app (ex. user connecté + code / deep link).
- * À appeler depuis un endpoint authentifié MySWYM : PAS depuis le webhook Instagram seul.
+ * À appeler depuis un endpoint authentifié ForSwim : PAS depuis le webhook Instagram seul.
  */
 export async function verifyIdentityLink(
   admin: SupabaseClient,

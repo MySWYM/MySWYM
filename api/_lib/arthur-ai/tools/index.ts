@@ -45,7 +45,7 @@ export function getArthurOpenAITools(auth: AuthContext) {
     {
       type: "function" as const,
       name: "get_user_profile",
-      description: "Profil sportif MySWYM de l’utilisateur authentifié.",
+      description: "Profil sportif ForSwim de l’utilisateur authentifié.",
       strict: true,
       parameters: {
         type: "object",
@@ -100,7 +100,7 @@ export function getArthurOpenAITools(auth: AuthContext) {
       type: "function" as const,
       name: "create_training_plan",
       description:
-        "Génère et persiste un plan via le moteur MySWYM. Exiger confirmed=true après accord explicite de l’utilisateur. Si un plan actif existe, replace_existing=true uniquement après 2e confirmation.",
+        "Génère et persiste un plan via le moteur ForSwim. Exiger confirmed=true après accord explicite de l’utilisateur. Si un plan actif existe, replace_existing=true uniquement après 2e confirmation.",
       strict: true,
       parameters: {
         type: "object",
@@ -148,7 +148,7 @@ export function getArthurOpenAITools(auth: AuthContext) {
       type: "function" as const,
       name: "create_checkout",
       description:
-        "Crée une session Stripe Checkout Premium via l’Edge Function MySWYM existante. Retourne checkout_url.",
+        "Crée une session Stripe Checkout Premium via l’Edge Function ForSwim existante. Retourne checkout_url.",
       strict: true,
       parameters: {
         type: "object",
@@ -215,7 +215,7 @@ export async function executeArthurTool(
         if (ctx.auth.channel === "instagram") {
           return toolFail("instagram_writes_disabled", {
             message:
-              "La création de plan se fait dans l’app MySWYM après inscription, pas depuis Instagram.",
+              "La création de plan se fait dans l’app ForSwim après inscription, pas depuis Instagram.",
           }) as Record<string, unknown>;
         }
         return (await createTrainingPlan(
@@ -260,7 +260,7 @@ export async function executeArthurTool(
         if (ctx.auth.channel === "instagram") {
           return toolFail("instagram_writes_disabled", {
             message:
-              "Le paiement se fait dans MySWYM. Je peux t’envoyer le lien myswym.app.",
+              "Le paiement se fait dans ForSwim. Je peux t’envoyer le lien forswim.app.",
           }) as Record<string, unknown>;
         }
         return (await createCheckout(

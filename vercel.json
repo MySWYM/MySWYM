@@ -35,6 +35,30 @@
     },
     {
       "source": "/(.*)",
+      "has": [{ "type": "host", "value": "www.forswim.app" }],
+      "headers": [
+        { "key": "Access-Control-Allow-Origin", "value": "https://www.forswim.app" },
+        { "key": "Vary", "value": "Origin" }
+      ]
+    },
+    {
+      "source": "/(.*)",
+      "has": [{ "type": "host", "value": "forswim.app" }],
+      "headers": [
+        { "key": "Access-Control-Allow-Origin", "value": "https://forswim.app" },
+        { "key": "Vary", "value": "Origin" }
+      ]
+    },
+    {
+      "source": "/(.*)",
+      "has": [{ "type": "host", "value": "staging.forswim.app" }],
+      "headers": [
+        { "key": "Access-Control-Allow-Origin", "value": "https://staging.forswim.app" },
+        { "key": "Vary", "value": "Origin" }
+      ]
+    },
+    {
+      "source": "/(.*)",
       "has": [{ "type": "host", "value": "www.myswym.app" }],
       "headers": [
         { "key": "Access-Control-Allow-Origin", "value": "https://www.myswym.app" },
@@ -104,6 +128,18 @@
     }
   ],
   "redirects": [
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "www.myswym.app" }],
+      "destination": "https://www.forswim.app/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "myswym.app" }],
+      "destination": "https://www.forswim.app/:path*",
+      "permanent": true
+    },
     {
       "source": "/",
       "has": [{ "type": "query", "key": "auth", "value": "login" }],

@@ -38,7 +38,7 @@ Pour chaque clé française, pour chaque `id` de `APP_LANGUAGES` sauf `fr` :
 3. Chaque jeton `{{nom}}` du français est présent, sans jeton en plus.
 4. La valeur ne contient pas `—` (U+2014) ni `–` (U+2013).
 
-Une chaîne entière identique est acceptée si elle est exactement l'un de : `MySWYM`, `mySWYM`, `Premium`, `T100`, `FAQ`, `OK`, `Apple`, `Google`, `Facebook`, `Strava`, `Garmin`.
+Une chaîne entière identique est acceptée si elle est exactement l'un de : `ForSwim`, `mySWYM`, `Premium`, `T100`, `FAQ`, `OK`, `Apple`, `Google`, `Facebook`, `Strava`, `Garmin`.
 
 Les 77 trous mesurés le 5 oct. 2026 sont corrigés dans le même commit que le script. Après ça, le catalogue n'a pas de liste de dettes.
 

@@ -1,6 +1,9 @@
+import { LOGO_WORDMARK_LIGHT, LOGO_WORDMARK_RATIO } from "../lib/brand.js";
 import { bootStatusLabel } from "../lib/boot-warm.js";
 import { isNativeApp } from "../lib/native-platform.js";
 import Loading from "./Loading.jsx";
+
+const WORDMARK_H = 22;
 
 /** Chargement marketing : wordmark + barre. Styles dans index.html. iOS : logo bleu. */
 export default function PublicLoading() {
@@ -16,10 +19,10 @@ export default function PublicLoading() {
       <div className="myswym-boot-inner">
         <img
           className="myswym-boot-wordmark myswym-boot-wordmark--public myswym-boot-wordmark--static"
-          src="/logo-myswym-on-light.png"
+          src={LOGO_WORDMARK_LIGHT}
           alt=""
-          height={22}
-          width={95}
+          height={WORDMARK_H}
+          width={Math.round(WORDMARK_H * LOGO_WORDMARK_RATIO)}
         />
         <div className="myswym-boot-track" aria-hidden="true">
           <span className="myswym-boot-bar" />
