@@ -91,6 +91,7 @@ Redirect URLs à garder : forswim + myswym + `myswym://auth/callback`.
 6. [ ] Vercel + Supabase secrets : `EMAIL_FROM`, `EMAIL_REPLY_TO`, `EMAIL_CONTACT_TO`, `APP_URL`, `LATEST_APP_VERSION`, `FORCE_UPDATE_MESSAGE`
 7. [ ] ASC : prix 8,99 / 59,99 + intro 7 j, puis build forswim
 
-## STOP / décision Arthur
+## Versions (décision Arthur 11 oct. 2026)
 
-- [ ] **P1-3** : quelle version fait foi ? Xcode `1.1` (build 40/41), `vite` `1.0.1`, prod `/api/app-version` `1.0.0` — aligner puis pousser staging après ta réponse. Ne pas toucher `MIN_SUPPORTED_APP_VERSION`.
+- [x] **P1-3** : build **39** fait foi → marketing `1.0.1`, `CURRENT_PROJECT_VERSION=39`, vite/`DEFAULT_LATEST` = `1.0.1`. `MIN_SUPPORTED_APP_VERSION` inchangé (`1.0.0`).
+- [ ] Toi Vercel : `LATEST_APP_VERSION=1.0.1` si l’env écrase encore `1.0.0` en prod.
