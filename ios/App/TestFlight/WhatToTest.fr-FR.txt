@@ -1,4 +1,4 @@
-Build 39 : tarifs + essai CB + binomes. A tester en priorite.
+Build 40 (1.1) : tarifs + essai CB + binomes. A tester en priorite.
 
 A tester
 

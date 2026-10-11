@@ -80,7 +80,7 @@ function sitemapPlugin() {
 }
 
 /** Version client exposée au Version Gate (override via VITE_APP_VERSION). */
-const APP_VERSION = process.env.VITE_APP_VERSION || '1.0.1'
+const APP_VERSION = process.env.VITE_APP_VERSION || '1.1'
 
 function natationSheetDevApi(env) {
   const id = String(env.NATATION_SHEET_ID || '')

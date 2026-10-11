@@ -8,8 +8,8 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 
 const DEFAULT_MIN = "1.0.0";
-/** Aligné sur le build iOS de référence (build 39 = marketing 1.0.1). */
-const DEFAULT_LATEST = "1.0.1";
+/** Aligné sur le build iOS de référence (prochaine piste = marketing 1.1 (build 40+)). */
+const DEFAULT_LATEST = "1.1";
 
 function asSemverish(value: unknown, fallback: string): string {
   if (typeof value !== "string") return fallback;
