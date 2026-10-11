@@ -1135,19 +1135,19 @@
     "nb": "Rettslig grunnlag: ditt uttrykkelige samtykke (art. 9 nr. 2 bokstav a GDPR). Det er frivillig: du kan avslå og bruke appen uten disse dataene.",
     "fi": "Oikeusperuste: nimenomainen suostumuksesi (GDPR 9 artiklan 2 kohdan a alakohta). Se on vapaaehtoista: voit kieltäytyä ja käyttää sovellusta ilman näitä tietoja."
   },
-  "Tu peux retirer ton consentement à tout moment (Paramètres ou contact@myswym.app).": {
-    "en": "You can withdraw your consent at any time (Settings or contact@myswym.app).",
-    "de": "Du kannst deine Einwilligung jederzeit widerrufen (Einstellungen oder contact@myswym.app).",
-    "es": "Puedes retirar tu consentimiento en cualquier momento (Ajustes o contact@myswym.app).",
-    "ja": "同意はいつでも撤回できます（設定または contact@myswym.app）。",
-    "nl": "Je kunt je toestemming op elk moment intrekken (Instellingen of contact@myswym.app).",
-    "it": "Puoi revocare il tuo consenso in qualsiasi momento (Impostazioni o contact@myswym.app).",
-    "pt": "Podes retirar o teu consentimento a qualquer momento (Definições ou contact@myswym.app).",
-    "pt-BR": "Você pode retirar seu consentimento a qualquer momento (Configurações ou contact@myswym.app).",
-    "sv": "Du kan när som helst återkalla ditt samtycke (Inställningar eller contact@myswym.app).",
-    "da": "Du kan til enhver tid trække dit samtykke tilbage (Indstillinger eller contact@myswym.app).",
-    "nb": "Du kan når som helst trekke tilbake samtykket ditt (Innstillinger eller contact@myswym.app).",
-    "fi": "Voit perua suostumuksesi milloin tahansa (Asetukset tai contact@myswym.app)."
+  "Tu peux retirer ton consentement à tout moment (Paramètres ou contact@forswim.app).": {
+    "en": "You can withdraw your consent at any time (Settings or contact@forswim.app).",
+    "de": "Du kannst deine Einwilligung jederzeit widerrufen (Einstellungen oder contact@forswim.app).",
+    "es": "Puedes retirar tu consentimiento en cualquier momento (Ajustes o contact@forswim.app).",
+    "ja": "同意はいつでも撤回できます（設定または contact@forswim.app）。",
+    "nl": "Je kunt je toestemming op elk moment intrekken (Instellingen of contact@forswim.app).",
+    "it": "Puoi revocare il tuo consenso in qualsiasi momento (Impostazioni o contact@forswim.app).",
+    "pt": "Podes retirar o teu consentimento a qualquer momento (Definições ou contact@forswim.app).",
+    "pt-BR": "Você pode retirar seu consentimento a qualquer momento (Configurações ou contact@forswim.app).",
+    "sv": "Du kan när som helst återkalla ditt samtycke (Inställningar eller contact@forswim.app).",
+    "da": "Du kan til enhver tid trække dit samtykke tilbage (Indstillinger eller contact@forswim.app).",
+    "nb": "Du kan når som helst trekke tilbake samtykket ditt (Innstillinger eller contact@forswim.app).",
+    "fi": "Voit perua suostumuksesi milloin tahansa (Asetukset tai contact@forswim.app)."
   },
   "Ces données ne sont pas envoyées aux outils d’analytics tiers.": {
     "en": "This data is not sent to third-party analytics tools.",

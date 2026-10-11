@@ -457,10 +457,10 @@
     "subjectPh": "Emne",
     "message": "Besked *",
     "messagePh": "Fortæl din situation eller dit spørgsmål.",
-    "privacy": "Din besked sendes til contact@myswym.app. Vi gemmer den ikke i appen.",
+    "privacy": "Din besked sendes til contact@forswim.app. Vi gemmer den ikke i appen.",
     "send": "Send",
     "sending": "Sender…",
-    "sendError": "Kunne ikke sende. Prøv igen, eller skriv til contact@myswym.app.",
+    "sendError": "Kunne ikke sende. Prøv igen, eller skriv til contact@forswim.app.",
     "honeypot": "Lad det her felt være tomt",
     "allFaq": "Alle spørgsmål"
   },

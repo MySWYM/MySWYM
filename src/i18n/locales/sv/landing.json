@@ -457,10 +457,10 @@
     "subjectPh": "Ämne",
     "message": "Meddelande *",
     "messagePh": "Berätta din situation eller din fråga.",
-    "privacy": "Ditt meddelande skickas till contact@myswym.app. Vi lagrar det inte i appen.",
+    "privacy": "Ditt meddelande skickas till contact@forswim.app. Vi lagrar det inte i appen.",
     "send": "Skicka",
     "sending": "Skickar…",
-    "sendError": "Kunde inte skicka. Försök igen eller skriv till contact@myswym.app.",
+    "sendError": "Kunde inte skicka. Försök igen eller skriv till contact@forswim.app.",
     "honeypot": "Lämna det här fältet tomt",
     "allFaq": "Alla frågor"
   },

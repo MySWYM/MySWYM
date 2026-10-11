@@ -21,7 +21,7 @@ Binary : iPhone only (`TARGETED_DEVICE_FAMILY = 1`). Pas de screenshots iPad.
 | CGU | https://www.forswim.app/cgu |
 | CGV | https://www.forswim.app/cgv |
 | Copyright | 2026 A.Natation |
-| Contact review | Arthur Noël · contact@myswym.app |
+| Contact review | Arthur Noël · contact@forswim.app |
 
 ### Coller dans ASC → Version 1.0.1 (FR)
 

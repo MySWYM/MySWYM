@@ -85,10 +85,12 @@ https://staging.forswim.app
 
 ---
 
-## Resend
+## Resend / mail
 
 - [x] Domaine `forswim.app` vérifié (Arthur, 11 oct. 2026)
 - [x] Défauts code `EMAIL_FROM` → `ForSwim <noreply@forswim.app>`
+- [x] `contact@forswim.app` (OVH) → reply-to / inbox / copy produit
+- [ ] `support@forswim.app` quand la boîte existe (encore `support@myswym.app`)
 
 ---
 

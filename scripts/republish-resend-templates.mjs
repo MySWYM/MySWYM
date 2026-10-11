@@ -16,7 +16,7 @@ if (!KEY) {
 }
 
 const FROM = process.env.EMAIL_FROM || "ForSwim <noreply@forswim.app>";
-const REPLY = process.env.EMAIL_REPLY_TO || "contact@myswym.app";
+const REPLY = process.env.EMAIL_REPLY_TO || "contact@forswim.app";
 const APP = process.env.APP_URL || "https://forswim.app";
 
 /** Automation display name → catalog template name */

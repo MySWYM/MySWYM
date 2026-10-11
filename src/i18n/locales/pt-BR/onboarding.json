@@ -193,7 +193,7 @@
   },
   "health": {
     "checkbox": "Aceito explicitamente que a ForSwim trate minha frequência cardíaca e minhas declarações de lesão / incômodo para adaptar meus treinos e ajudar a prevenir lesão. Posso recusar.",
-    "body": "Para adaptar seus treinos e reduzir o risco de lesão, a ForSwim pode tratar dados de saúde nos termos do GDPR: frequência cardíaca por treino (p. ex. via Strava) e o histórico de lesões / incômodos que você declarar. Base legal: seu consentimento explícito (GDPR, art. 9.2.a). É opcional: você pode recusar e usar o app mesmo assim. Você pode retirar o consentimento quando quiser (Configurações ou contact@myswym.app). Esses dados não vão para ferramentas de análise de terceiros.",
+    "body": "Para adaptar seus treinos e reduzir o risco de lesão, a ForSwim pode tratar dados de saúde nos termos do GDPR: frequência cardíaca por treino (p. ex. via Strava) e o histórico de lesões / incômodos que você declarar. Base legal: seu consentimento explícito (GDPR, art. 9.2.a). É opcional: você pode recusar e usar o app mesmo assim. Você pode retirar o consentimento quando quiser (Configurações ou contact@forswim.app). Esses dados não vão para ferramentas de análise de terceiros.",
     "medical": "Os planos gerados são indicativos e não substituem a orientação de um profissional de saúde. Confirme sua aptidão (atestado médico se precisar) antes de seguir o programa.",
     "declaration": "Declaro que as informações de saúde que eu forneço são verdadeiras.",
     "safety": "Treine de acordo com o que você sente. Pare se aparecer um sintoma preocupante e procure um profissional de saúde se precisar. Águas abertas: nunca nade sozinho."

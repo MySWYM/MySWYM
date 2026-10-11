@@ -575,7 +575,7 @@ export async function handleOperatorInbound(input: {
   if (isLandingContactNotify(inbound.replyToText)) {
     await port.sendMessage(
       inbound.chatId,
-      "Ce message vient du formulaire /contact. Réponds par e-mail dans ta boîte (contact@myswym.app).",
+      "Ce message vient du formulaire /contact. Réponds par e-mail dans ta boîte (contact@forswim.app).",
       inbound.replyToMessageId,
     );
     return { ok: true, action: "contact_email_only" };

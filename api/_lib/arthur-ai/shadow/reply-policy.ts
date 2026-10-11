@@ -20,7 +20,7 @@ export const MYSWYM_PRICING = {
 } as const;
 
 export const HUMAN_HANDOFF_CLIENT_MESSAGE =
-  "Quelqu’un de l’équipe ForSwim te répondra dès que possible. En cas d’urgence : contact@myswym.app";
+  "Quelqu’un de l’équipe ForSwim te répondra dès que possible. En cas d’urgence : contact@forswim.app";
 
 const MYSWYM_LINK_RE =
   /https?:\/\/(?:www\.)?myswym\.app[^\s]*|myswym\.app\/[^\s]*/gi;

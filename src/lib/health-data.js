@@ -36,7 +36,7 @@ export const HEALTH_CONSENT_BODY =
   "Pour adapter tes séances et limiter le risque de blessure, ForSwim peut traiter des données de santé au sens du RGPD : " +
   "fréquence cardiaque par séance (ex. via Strava) et historique de blessures / gênes que tu déclares. " +
   "Base légale : ton consentement explicite (art. 9.2.a RGPD). C’est facultatif : tu peux refuser et utiliser l’app sans ces données. " +
-  "Tu peux retirer ton consentement à tout moment (Paramètres ou contact@myswym.app). " +
+  "Tu peux retirer ton consentement à tout moment (Paramètres ou contact@forswim.app). " +
   "Ces données ne sont pas envoyées aux outils d’analytics tiers.";
 
 /** @deprecated Prefer INJURY_CONSENT_CHECKBOX / HEART_RATE_CONSENT_CHECKBOX */

@@ -193,7 +193,7 @@
   },
   "health": {
     "checkbox": "Jag samtycker uttryckligen till att ForSwim får behandla min puls och mina uppgifter om skada / besvär för att anpassa mina pass och hjälpa till att förebygga skada. Jag kan neka.",
-    "body": "För att anpassa dina pass och minska skaderisken kan ForSwim behandla hälsodata enligt GDPR: puls per pass (t.ex. via Strava) och den historik om skada / besvär som du anger. Rättslig grund: ditt uttryckliga samtycke (GDPR art. 9.2.a). Det är valfritt: du kan neka och ändå använda appen. Du kan ta tillbaka samtycket när som helst (Inställningar eller contact@myswym.app). De här uppgifterna skickas inte till externa analysverktyg.",
+    "body": "För att anpassa dina pass och minska skaderisken kan ForSwim behandla hälsodata enligt GDPR: puls per pass (t.ex. via Strava) och den historik om skada / besvär som du anger. Rättslig grund: ditt uttryckliga samtycke (GDPR art. 9.2.a). Det är valfritt: du kan neka och ändå använda appen. Du kan ta tillbaka samtycket när som helst (Inställningar eller contact@forswim.app). De här uppgifterna skickas inte till externa analysverktyg.",
     "medical": "Planerna som skapas är vägledande och ersätter inte professionell medicinsk rådgivning. Kontrollera din hälsa (läkarintyg om det behövs) innan du följer programmet.",
     "declaration": "Jag intygar att hälsoinformationen jag lämnar stämmer.",
     "safety": "Träna efter hur du känner dig. Stanna om du får oroande symtom och sök vård vid behov. Öppet vatten: simma aldrig ensam."
