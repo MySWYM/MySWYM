@@ -457,10 +457,10 @@
     "subjectPh": "Onderwerp",
     "message": "Bericht *",
     "messagePh": "Vertel je context of je vraag.",
-    "privacy": "Je bericht gaat naar contact@myswym.app. We slaan het niet op in de app.",
+    "privacy": "Je bericht gaat naar contact@forswim.app. We slaan het niet op in de app.",
     "send": "Versturen",
     "sending": "Bezig met versturen…",
-    "sendError": "Versturen mislukt. Probeer opnieuw of schrijf naar contact@myswym.app.",
+    "sendError": "Versturen mislukt. Probeer opnieuw of schrijf naar contact@forswim.app.",
     "honeypot": "Laat dit veld leeg",
     "allFaq": "Alle vragen"
   },

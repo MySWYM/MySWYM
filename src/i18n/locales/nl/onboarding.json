@@ -193,7 +193,7 @@
   },
   "health": {
     "checkbox": "Ik ga er uitdrukkelijk mee akkoord dat ForSwim mijn hartslag en mijn opgaven van blessure / klacht mag verwerken om mijn trainingen aan te passen en blessures te helpen voorkomen. Ik kan weigeren.",
-    "body": "Om je trainingen aan te passen en het blessurerisico te verlagen, mag ForSwim gezondheidsgegevens verwerken onder de AVG: hartslag per training (bijv. via Strava) en de geschiedenis van blessures / klachten die je opgeeft. Rechtsgrond: je uitdrukkelijke toestemming (AVG art. 9.2.a). Het is optioneel: je kunt weigeren en de app toch gebruiken. Je kunt je toestemming op elk moment intrekken (Instellingen of contact@myswym.app). Deze gegevens gaan niet naar analysetools van derden.",
+    "body": "Om je trainingen aan te passen en het blessurerisico te verlagen, mag ForSwim gezondheidsgegevens verwerken onder de AVG: hartslag per training (bijv. via Strava) en de geschiedenis van blessures / klachten die je opgeeft. Rechtsgrond: je uitdrukkelijke toestemming (AVG art. 9.2.a). Het is optioneel: je kunt weigeren en de app toch gebruiken. Je kunt je toestemming op elk moment intrekken (Instellingen of contact@forswim.app). Deze gegevens gaan niet naar analysetools van derden.",
     "medical": "Gegenereerde plannen zijn indicatief en vervangen geen professioneel medisch advies. Check je geschiktheid (medische verklaring als dat nodig is) voordat je het programma volgt.",
     "declaration": "Ik verklaar dat de gezondheidsinformatie die ik geef klopt.",
     "safety": "Train naar hoe je je voelt. Stop bij verontrustende symptomen en ga zo nodig naar een zorgprofessional. Open water: zwem nooit alleen."

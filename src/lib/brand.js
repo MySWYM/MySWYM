@@ -17,9 +17,10 @@ export const LEGACY_DOMAIN = "myswym.app";
 export const LEGACY_SITE_ORIGIN = `https://www.${LEGACY_DOMAIN}`;
 export const LEGACY_SITE_APEX = `https://${LEGACY_DOMAIN}`;
 
-/** Boîtes inbox encore sur legacy (Zoho) tant que MX forswim n’est pas prêt. */
+/** Support encore sur legacy tant que support@forswim n’existe pas. */
 export const BRAND_SUPPORT_EMAIL = `support@${LEGACY_DOMAIN}`;
-export const BRAND_CONTACT_EMAIL = `contact@${LEGACY_DOMAIN}`;
+/** Inbox contact OVH forswim. */
+export const BRAND_CONTACT_EMAIL = `contact@${BRAND_DOMAIN}`;
 /** Expéditeur Resend (domaine forswim vérifié). */
 export const BRAND_NOREPLY_EMAIL = `noreply@${BRAND_DOMAIN}`;
 /** Nom d’expéditeur Resend : « ForSwim <noreply@…> ». */

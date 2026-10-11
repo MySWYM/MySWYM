@@ -49,7 +49,7 @@ export function buildOfflineResponse(
     structured.suggested_action = "continue";
   } else if (opts.reason === "channel_disabled") {
     structured = fallbackStructured(
-      `Arthur est momentanément indisponible sur ce canal. En attendant : ${APP()}, ou ${"contact@myswym.app"}.`,
+      `Arthur est momentanément indisponible sur ce canal. En attendant : ${APP()}, ou ${"contact@forswim.app"}.`,
     );
     structured.suggested_action = "continue";
   } else if (isLegitimateHandoffDm(userMessage)) {

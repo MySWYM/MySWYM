@@ -193,7 +193,7 @@
   },
   "health": {
     "checkbox": "Acepto de forma explícita que ForSwim trate mi frecuencia cardíaca y mis declaraciones de lesión o molestia para adaptar mis sesiones y ayudar a prevenir lesiones. Puedo negarme.",
-    "body": "Para adaptar tus sesiones y reducir el riesgo de lesión, ForSwim puede tratar datos de salud según el RGPD: la frecuencia cardíaca por sesión (p. ej. vía Strava) y el historial de lesiones o molestias que declares. Base legal: tu consentimiento explícito (RGPD art. 9.2.a). Es opcional: puedes negarte y seguir usando la app. Puedes retirar el consentimiento cuando quieras (Ajustes o contact@myswym.app). Estos datos no se envían a herramientas de analítica de terceros.",
+    "body": "Para adaptar tus sesiones y reducir el riesgo de lesión, ForSwim puede tratar datos de salud según el RGPD: la frecuencia cardíaca por sesión (p. ej. vía Strava) y el historial de lesiones o molestias que declares. Base legal: tu consentimiento explícito (RGPD art. 9.2.a). Es opcional: puedes negarte y seguir usando la app. Puedes retirar el consentimiento cuando quieras (Ajustes o contact@forswim.app). Estos datos no se envían a herramientas de analítica de terceros.",
     "medical": "Los planes generados son orientativos y no sustituyen el consejo de un profesional sanitario. Comprueba tu aptitud (certificado médico si hace falta) antes de seguir el programa.",
     "declaration": "Certifico que la información de salud que doy es exacta.",
     "safety": "Entrena según cómo te sientas. Para si tienes síntomas preocupantes y consulta a un profesional sanitario si hace falta. Aguas abiertas: no nades nunca solo."

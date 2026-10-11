@@ -21,7 +21,7 @@ export const MYSWYM_PRODUCT = {
     tarifs: "/fr/tarifs",
     inscription: "/inscription",
     app: "/app",
-    support: "contact@myswym.app",
+    support: "contact@forswim.app",
   },
 } as const;
 

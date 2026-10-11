@@ -457,10 +457,10 @@
     "subjectPh": "Aihe",
     "message": "Viesti *",
     "messagePh": "Kerro sun tilanne tai kysymys.",
-    "privacy": "Sun viesti lähetetään osoitteeseen contact@myswym.app. Sitä ei tallenneta appiin.",
+    "privacy": "Sun viesti lähetetään osoitteeseen contact@forswim.app. Sitä ei tallenneta appiin.",
     "send": "Lähetä",
     "sending": "Lähetetään…",
-    "sendError": "Lähetys ei onnistunut. Kokeile uudestaan tai kirjoita osoitteeseen contact@myswym.app.",
+    "sendError": "Lähetys ei onnistunut. Kokeile uudestaan tai kirjoita osoitteeseen contact@forswim.app.",
     "honeypot": "Jätä tämä kenttä tyhjäksi",
     "allFaq": "Kaikki kysymykset"
   },

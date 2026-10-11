@@ -457,10 +457,10 @@
     "subjectPh": "Tema",
     "message": "Mensaje *",
     "messagePh": "Cuéntanos tu contexto o tu pregunta.",
-    "privacy": "Tu mensaje se envía a contact@myswym.app. No lo guardamos en la app.",
+    "privacy": "Tu mensaje se envía a contact@forswim.app. No lo guardamos en la app.",
     "send": "Enviar",
     "sending": "Enviando…",
-    "sendError": "No se ha podido enviar. Inténtalo de nuevo o escribe a contact@myswym.app.",
+    "sendError": "No se ha podido enviar. Inténtalo de nuevo o escribe a contact@forswim.app.",
     "honeypot": "Deja este campo vacío",
     "allFaq": "Todas las preguntas"
   },

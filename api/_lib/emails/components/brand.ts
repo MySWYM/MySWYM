@@ -17,7 +17,7 @@ export const emailBrand = {
   border: "rgba(0, 107, 253, 0.18)",
   borderSoft: "rgba(10, 22, 44, 0.08)",
   site: "https://www.forswim.app",
-  contact: "contact@myswym.app",
+  contact: "contact@forswim.app",
   support: "support@myswym.app",
   logoText: "ForSwim",
   /** Absolute URLs (canonique forswim ; legacy myswym encore OK via 301). */

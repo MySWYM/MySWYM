@@ -24,7 +24,7 @@ export function getEmailFrom(): string {
 }
 
 export function getEmailReplyTo(): string {
-  return process.env.EMAIL_REPLY_TO || "contact@myswym.app";
+  return process.env.EMAIL_REPLY_TO || "contact@forswim.app";
 }
 
 /** Inbox that receives public contact form messages (Zoho). */
@@ -32,6 +32,6 @@ export function getContactInbox(): string {
   return (
     process.env.EMAIL_CONTACT_TO ||
     process.env.EMAIL_REPLY_TO ||
-    "contact@myswym.app"
+    "contact@forswim.app"
   );
 }

@@ -457,10 +457,10 @@
     "subjectPh": "テーマ",
     "message": "メッセージ *",
     "messagePh": "状況か、質問を書く。",
-    "privacy": "メッセージは contact@myswym.app に送る。アプリには保存しない。",
+    "privacy": "メッセージは contact@forswim.app に送る。アプリには保存しない。",
     "send": "送る",
     "sending": "送信中…",
-    "sendError": "送れなかった。もう一度試すか、contact@myswym.app に書く。",
+    "sendError": "送れなかった。もう一度試すか、contact@forswim.app に書く。",
     "honeypot": "この欄は空のまま",
     "allFaq": "すべての質問"
   },

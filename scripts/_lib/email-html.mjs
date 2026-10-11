@@ -102,7 +102,7 @@ export function emailHtml(opts) {
       <p style="color:${B.ink};font-size:12px;font-weight:600;margin:0 0 6px">ForSwim · ton coach natation</p>
       <p style="color:${B.muted};font-size:12px;margin:0">
         <a href="{{{RESEND_UNSUBSCRIBE_URL}}}" style="color:${B.muted}">Se désabonner</a>
-        · contact@myswym.app
+        · contact@forswim.app
       </p>
     </div>
   </div>

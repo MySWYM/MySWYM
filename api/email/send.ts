@@ -52,14 +52,14 @@ function fromAddress(): string {
 }
 
 function replyToDefault(): string {
-  return process.env.EMAIL_REPLY_TO || "contact@myswym.app";
+  return process.env.EMAIL_REPLY_TO || "contact@forswim.app";
 }
 
 function contactInbox(): string {
   return (
     process.env.EMAIL_CONTACT_TO ||
     process.env.EMAIL_REPLY_TO ||
-    "contact@myswym.app"
+    "contact@forswim.app"
   );
 }
 
@@ -129,7 +129,7 @@ function layout(options: {
     </div>
     <div style="padding:24px 8px 8px;text-align:center">
       <p style="color:${B.ink};font-size:12px;font-weight:600;margin:0 0 6px">ForSwim · ton coach natation</p>
-      <p style="color:${B.muted};font-size:12px;margin:0 0 4px">contact@myswym.app · support@myswym.app</p>
+      <p style="color:${B.muted};font-size:12px;margin:0 0 4px">contact@forswim.app · support@myswym.app</p>
       <p style="color:${B.muted};font-size:12px;margin:0"><a href="${B.site}" style="color:${B.primary};text-decoration:underline">forswim.app</a></p>
       ${unsub}
     </div>

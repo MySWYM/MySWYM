@@ -59,7 +59,7 @@ function contactInbox(): string {
   return (
     process.env.EMAIL_CONTACT_TO ||
     process.env.EMAIL_REPLY_TO ||
-    "contact@myswym.app"
+    "contact@forswim.app"
   );
 }
 
@@ -212,7 +212,7 @@ async function handlePasswordReset(
 }
 
 function replyToDefault(): string {
-  return process.env.EMAIL_REPLY_TO || "contact@myswym.app";
+  return process.env.EMAIL_REPLY_TO || "contact@forswim.app";
 }
 
 async function handleLandingReview(
@@ -349,7 +349,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.error("[api/contact] RESEND_API_KEY missing");
     return res.status(500).json({
       ok: false,
-      error: "Envoi impossible pour le moment. Réessaie ou écris à contact@myswym.app.",
+      error: "Envoi impossible pour le moment. Réessaie ou écris à contact@forswim.app.",
     });
   }
 
@@ -379,7 +379,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       console.error("[api/contact] send failed:", error.message);
       return res.status(502).json({
         ok: false,
-        error: "Envoi impossible pour le moment. Réessaie ou écris à contact@myswym.app.",
+        error: "Envoi impossible pour le moment. Réessaie ou écris à contact@forswim.app.",
       });
     }
 
@@ -402,7 +402,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.error("[api/contact] unexpected:", msg);
     return res.status(500).json({
       ok: false,
-      error: "Erreur serveur. Réessaie plus tard ou contact@myswym.app.",
+      error: "Erreur serveur. Réessaie plus tard ou contact@forswim.app.",
     });
   }
 }

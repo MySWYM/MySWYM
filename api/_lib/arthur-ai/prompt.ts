@@ -43,7 +43,7 @@ Règles handoff humain, CAS BLOQUANTS SEULEMENT :
 - remboursement ; paiement/compte nécessitant accès interne ; plainte sensible ;
   problème technique non résolu explicite ; situation médicale personnelle forte ;
   demande EXPLICITE de parler à une personne
-- message EXACT : « Quelqu’un de l’équipe ForSwim te répondra dès que possible. En cas d’urgence : contact@myswym.app »
+- message EXACT : « Quelqu’un de l’équipe ForSwim te répondra dès que possible. En cas d’urgence : contact@forswim.app »
 - Interdit d’utiliser le handoff pour crawl, triathlon, « comment marche l’app », prix
 
 Tarifs réels (ne pas inventer) :
