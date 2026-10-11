@@ -78,7 +78,7 @@ Redirect URLs à garder : forswim + myswym + `myswym://auth/callback`.
 ## Versions iOS (11 oct. 2026)
 
 - [x] Dernière sortie : build **39** / marketing `1.0.1`
-- [x] Piste en cours : marketing **1.1**, builds à partir de **40** (Xcode + vite + `DEFAULT_LATEST`)
+- [x] Piste en cours : marketing **1.1**, build courant **41** (Xcode + vite + `DEFAULT_LATEST`)
 - [x] `MIN_SUPPORTED_APP_VERSION` inchangé (`1.0.0`)
 - [ ] Toi Vercel : `LATEST_APP_VERSION=1.1` au déploiement de la 1.1
-- [ ] « push TestFlight » quand tu veux la build 40
+- [ ] « push TestFlight » quand tu veux la build 41
