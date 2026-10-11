@@ -42,43 +42,14 @@ Arthur
 
 ---
 
-## Suite maintenant (toi, ~5 min) — Supabase PROD
+## Supabase auth (fait 11 oct. 2026 soir)
 
-### 1. Site URL
+- [x] Site URL PROD = `https://www.forswim.app` (Arthur)
+- [x] Sujets + HTML Confirm / Magic link / Recovery → ForSwim (agent via API)
+- [x] Invite / change email / notifs password+email → sujets ForSwim
+- [x] DEV : Site URL `https://staging.forswim.app` + mêmes templates brandés
 
-Auth → URL Configuration → **Site URL** :
-
-```
-https://www.forswim.app
-```
-
-(avant : `https://www.myswym.app`)
-
-Garder en Redirect URLs :
-
-```
-https://www.forswim.app/**
-https://forswim.app/**
-https://www.myswym.app/**
-https://myswym.app/**
-myswym://auth/callback
-```
-
-### 2. Sujets e-mails auth (PROD + DEV)
-
-| Template | Subject |
-| --- | --- |
-| Confirm signup | Confirme ton compte ForSwim |
-| Reset password | Réinitialise ton mot de passe ForSwim |
-| Magic Link | Ton lien ForSwim |
-| Invite user | Invitation ForSwim |
-| Change email | Confirme ton nouvel e-mail ForSwim |
-
-Dans chaque template HTML : remplacer « MySWYM » visible par « ForSwim » si encore présent.
-
-### 3. DEV (optionnel)
-
-Site URL DEV : `https://staging.forswim.app` (ou laisser localhost).
+Redirect URLs à garder : forswim + myswym + `myswym://auth/callback`.
 
 ---
 
