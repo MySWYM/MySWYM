@@ -35,7 +35,7 @@ if (!apiKey) {
   process.exit(1);
 }
 
-const from = process.env.EMAIL_FROM || "ForSwim <noreply@myswym.app>";
+const from = process.env.EMAIL_FROM || "ForSwim <noreply@forswim.app>";
 const to = process.env.EMAIL_TEST_TO || "delivered@resend.dev";
 
 const resend = new Resend(apiKey);
