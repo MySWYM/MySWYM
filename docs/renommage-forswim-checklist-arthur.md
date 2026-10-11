@@ -1,6 +1,6 @@
 # Checklist Arthur — ForSwim (max autonomie)
 
-Mis à jour : 11 oct. 2026 (correctifs post-renommage P0).
+Mis à jour : 11 oct. 2026 (P0+P1 mergés dans staging).
 
 ## Fait
 
@@ -13,9 +13,12 @@ Mis à jour : 11 oct. 2026 (correctifs post-renommage P0).
 - [x] `contact@forswim.app` = support / reply-to
 - [x] Apple / Google redirect forswim
 - [x] Supabase Redirect URLs forswim (Arthur)
-- [x] P0-1 paywall `showTrialOffer` / `trialEligible` (branche `fix/post-renommage-p0`)
-- [x] P0-2 `vercel.json` : `/api/` exclu des 308 hôte myswym (à merger puis tester curl)
-- [x] P0-3 Edge Functions redéployées à la main (CORS `www.forswim.app` OK) ; CI encore sans secret
+- [x] P0 : paywall `showTrialOffer` / `trialEligible` + `/api/` hors 308 + no-undef (mergé staging)
+- [x] P0-3 : Edge Functions redéployées (CORS forswim OK) ; CI encore sans secret
+- [x] P1-1 : regex IA Instagram forswim+myswym (mergé staging)
+- [x] P1-2 : `.env.local` / `.env.production.local` EMAIL_* → ForSwim (local)
+- [x] P1-4 : sitemap statique retiré (plugin Vite = source)
+- [x] P1-6 : `.audit-src.tar.gz` supprimé
 
 ## Com (plus tard, pas maintenant)
 
@@ -68,11 +71,13 @@ Redirect URLs à garder : forswim + myswym + `myswym://auth/callback`.
 - [x] Fichier prêt : `public/brand/app-store-icon-1024.png`
 - [x] `Products.storekit` : 8,99 + intro 7 j ; paywall save 44 % ; cartes binôme soft mist + i18n
 - [ ] **Toi ASC** : prix 8,99 / 59,99 + offre intro 7 j sur les SKUs `app.myswym.ios.premium.*`
-- [ ] « push TestFlight » quand tu veux (build + WhatToTest déjà prêts)
+- [ ] « push TestFlight » quand tu veux la build **41** (1.1)
 
 ### Autre
 
 - [ ] Instagram `@myswym.app` → nouveau handle (hors code)
+- [ ] Facebook / LinkedIn / App Store slug `myswym` (comptes externes, P1-5 signalés)
+- [ ] `admin@myswym.app` (volontairement inchangé)
 - [ ] staging.myswym.app : **pas** de 301 (reste dual)
 - [x] Articles blog PROD (+ DEV) : MySWYM → ForSwim dans `contenu`
 
@@ -81,14 +86,13 @@ Redirect URLs à garder : forswim + myswym + `myswym://auth/callback`.
 ## Versions iOS (11 oct. 2026)
 
 - [x] Dernière sortie : build **39** / marketing `1.0.1`
-- [x] Piste en cours : marketing **1.1**, build courant **41** (Xcode + vite + `DEFAULT_LATEST`)
+- [x] Piste en cours : marketing **1.1**, build courant **41**
 - [x] `MIN_SUPPORTED_APP_VERSION` inchangé (`1.0.0`)
 - [ ] Toi Vercel : `LATEST_APP_VERSION=1.1` au déploiement de la 1.1
-- [ ] « push TestFlight » quand tu veux la build 41
 
-## À faire toi (hors code) — post-renommage 11 oct.
+## À faire toi (hors code) — post-renommage
 
-1. [ ] **Vercel → Domains** : retirer redirect dashboard myswym si encore là (après deploy P0-2).
+1. [ ] **Vercel → Domains** : retirer redirect dashboard myswym si encore là (après deploy P0-2 sur main).
 2. [ ] **GitHub → Secrets** : `SUPABASE_ACCESS_TOKEN`
 3. [ ] **Telegram** : webhook → `https://www.forswim.app/api/telegram/webhook`
 4. [ ] **Meta** : webhook → `https://www.forswim.app/api/instagram/webhook`

@@ -81,7 +81,7 @@ test("prix → tarif clair + /tarifs", () => {
   const inbound = "Quel est le prix ?";
   assert.equal(isPricingDm(inbound), true);
   const r = buildOfflineResponse(inbound, { reason: "openai_error" });
-  assert.match(r.message, /4[,.]99/);
+  assert.match(r.message, /8[,.]99/);
   assert.match(r.message, /tarifs/i);
   assert.notEqual(r.suggested_action, "handoff_human");
 });
@@ -168,7 +168,7 @@ test("conversation multi-tours découverte app (≥3 échanges)", () => {
   assert.match(out[0].message, /ForSwim|plan/i);
   assert.notEqual(out[0].suggested_action, "no_reply");
   assert.match(out[1].message, /crawl|semaine/i);
-  assert.match(out[2].message, /4[,.]99/);
+  assert.match(out[2].message, /8[,.]99/);
   assert.ok(containsMyswymLink(out[2].message) || /tarifs/i.test(out[2].message));
 });
 
@@ -185,7 +185,7 @@ test("conversation multi-tours abonnement (≥3 échanges)", () => {
   }
   assert.match(
     buildOfflineResponse(turns[0], { reason: "openai_error" }).message,
-    /4[,.]99/,
+    /8[,.]99/,
   );
 });
 

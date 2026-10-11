@@ -22,15 +22,18 @@ export const MYSWYM_PRICING = {
 export const HUMAN_HANDOFF_CLIENT_MESSAGE =
   "Quelqu’un de l’équipe ForSwim te répondra dès que possible. En cas d’urgence : contact@forswim.app";
 
-const MYSWYM_LINK_RE =
-  /https?:\/\/(?:www\.)?myswym\.app[^\s]*|myswym\.app\/[^\s]*/gi;
+/** Domaines marque : forswim + myswym (src/lib/brand.js). Sans `g` pour .test() (lastIndex). */
+const BRAND_LINK_TEST_RE =
+  /https?:\/\/(?:www\.)?(?:forswim|myswym)\.app[^\s]*|(?:forswim|myswym)\.app\/[^\s]*/i;
+const BRAND_LINK_REPLACE_RE =
+  /https?:\/\/(?:www\.)?(?:forswim|myswym)\.app[^\s]*|(?:forswim|myswym)\.app\/[^\s]*/gi;
 
 const INTERNAL_BOT_SPEAK_RE =
   /arthur se met en pause|je te passe un humain|en tant qu['’]ia|je suis une (ia|intelligence)|chatbot|mode pause/i;
 
 /** Pertinent : produit, natation, sport, objectifs, support soft. */
 const RELEVANT_RE =
-  /\b(nage|nager|natation|crawl|brasse|dos|papillon|piscine|bassin|eau\s*libre|triathlon|ironman|séance|entrain|entraîn|plan|programme|coach|objectif|progress|technique|respiration|virage|coulée|allure|volume|z[1-4]|premium|myswym|abonnement|tarif|prix|essai|compétition|course|bpjeps|bnssa|appli|application|app|fonctionne|fonctionnement|inscription|inscrire|résil|annul|comment|utiliser|entraînement|entrainement|prep|prépa)\b/i;
+  /\b(nage|nager|natation|crawl|brasse|dos|papillon|piscine|bassin|eau\s*libre|triathlon|ironman|séance|entrain|entraîn|plan|programme|coach|objectif|progress|technique|respiration|virage|coulée|allure|volume|z[1-4]|premium|myswym|forswim|abonnement|tarif|prix|essai|compétition|course|bpjeps|bnssa|appli|application|app|fonctionne|fonctionnement|inscription|inscrire|résil|annul|comment|utiliser|entraînement|entrainement|prep|prépa)\b/i;
 
 const OBVIOUS_OFFTOPIC_RE =
   /\b(kebab|pizza|burger|tacos|sushi|mcdonald|nourriture|manger|faim|recette|bitcoin|crypto|nft|forex|dating|rencontre|nude|onlyfans|voip|pharmacie|viagra)\b/i;
@@ -39,12 +42,12 @@ const PRICING_RE =
   /\b(prix|tarif|tarifs|combien|co[uû]t|abo|abonnement|premium|essai|mensuel|annuel|payer|paiement|résil|annul)\b/i;
 
 export function containsMyswymLink(text: string): boolean {
-  return MYSWYM_LINK_RE.test(text || "");
+  return BRAND_LINK_TEST_RE.test(text || "");
 }
 
 export function stripMyswymLinks(text: string): string {
   return String(text || "")
-    .replace(MYSWYM_LINK_RE, "")
+    .replace(BRAND_LINK_REPLACE_RE, "")
     .replace(/[ \t]{2,}/g, " ")
     .replace(/\s+([.,!?])/g, "$1")
     .trim();
@@ -349,7 +352,7 @@ export function applyShadowReplyPolicy(
     out.intent = "subscription";
     out.lead_temperature = "warm";
     out.suggested_action = "continue";
-    if (!/\b4[,.]99\b/.test(out.message)) {
+    if (!/\b8[,.]99\b/.test(out.message)) {
       out.message = buildPricingReplyMessage();
     }
     out.extracted_data.shadow_policy = "pricing";

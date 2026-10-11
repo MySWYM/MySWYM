@@ -20,11 +20,14 @@ export interface QualityScoreResult {
   message_length: number;
 }
 
+/** Domaines marque : forswim (canonique) + myswym (legacy). Aligné sur src/lib/brand.js. */
+const BRAND_HOST = "(?:forswim|myswym)\\.app";
+
 const CTA_PATTERNS: Array<{ type: string; re: RegExp }> = [
-  { type: "inscription", re: /myswym\.app\/inscription/i },
-  { type: "tarifs", re: /myswym\.app\/(?:fr\/)?tarifs|myswym\.app\/pricing/i },
-  { type: "accueil", re: /myswym\.app(\/accueil|\/\s|$|\?)/i },
-  { type: "generic_link", re: /myswym\.app/i },
+  { type: "inscription", re: new RegExp(`${BRAND_HOST}/inscription`, "i") },
+  { type: "tarifs", re: new RegExp(`${BRAND_HOST}/(?:fr/)?tarifs|${BRAND_HOST}/pricing`, "i") },
+  { type: "accueil", re: new RegExp(`${BRAND_HOST}(/accueil|/\\s|$|\\?)`, "i") },
+  { type: "generic_link", re: new RegExp(BRAND_HOST, "i") },
   { type: "suggest_action", re: /suggested_action_placeholder_never/i },
 ];
 
