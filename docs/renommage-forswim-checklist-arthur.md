@@ -55,10 +55,10 @@ Redirect URLs à garder : forswim + myswym + `myswym://auth/callback`.
 
 ## Suite optionnelle
 
-### Stripe custom email (toi, Dashboard)
+### Stripe custom email
 
-Settings → Customer emails → custom domain `forswim.app` → ajouter chez OVH **exactement** les TXT/CNAME affichés (ownership + Mail From + DKIM).  
-DMARC déjà OK : `v=DMARC1; p=none;` (ne pas mettre Stripe dans le TXT `_dmarc`).
+- [x] DNS collés (Arthur, 11 oct. 2026) ; validation Stripe en cours (jusqu’à ~72 h)
+- [ ] Badge Verified dans Stripe → mails reçus / factures depuis `@forswim.app`
 
 ### iOS Store
 
