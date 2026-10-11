@@ -22,7 +22,7 @@ export function ReactivationEmail({
     <EmailLayout
       preview="Ouvre l'app : ta semaine se met à jour. 7 jours pour voir."
       eyebrow="Mise à jour"
-      ctaLabel="Rouvrir MySWYM"
+      ctaLabel="Rouvrir ForSwim"
       ctaUrl={ctaUrl}
       showUnsubscribe
     >

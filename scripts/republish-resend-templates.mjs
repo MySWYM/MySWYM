@@ -1,5 +1,5 @@
 /**
- * Republish all MySWYM Resend automation templates (update in place by name)
+ * Republish all ForSwim Resend automation templates (update in place by name)
  * and sync automation send_email subjects to match the catalog.
  *
  * Usage:
@@ -15,9 +15,9 @@ if (!KEY) {
   process.exit(1);
 }
 
-const FROM = process.env.EMAIL_FROM || "MySWYM <noreply@myswym.app>";
+const FROM = process.env.EMAIL_FROM || "ForSwim <noreply@myswym.app>";
 const REPLY = process.env.EMAIL_REPLY_TO || "contact@myswym.app";
-const APP = process.env.APP_URL || "https://myswym.app";
+const APP = process.env.APP_URL || "https://forswim.app";
 
 /** Automation display name → catalog template name */
 const AUTOMATION_TO_TEMPLATE = {

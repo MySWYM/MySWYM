@@ -1,4 +1,4 @@
-/** Tokens MySWYM marketing / public : soft mist + bleu logo. */
+/** Tokens ForSwim marketing / public : soft mist + bleu logo. */
 
 export const BRAND = {
   bg: "#f4f8fc",

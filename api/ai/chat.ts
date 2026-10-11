@@ -93,7 +93,7 @@ async function resolveChatAuth(req: VercelRequest): Promise<
   ).trim();
 
   if (internal && headerSecret && headerSecret === internal) {
-    // Mode test interne (secret serveur) : UUID MySWYM de test uniquement, jamais un ID Instagram.
+    // Mode test interne (secret serveur) : UUID ForSwim de test uniquement, jamais un ID Instagram.
     const body = (req.body ?? {}) as Record<string, unknown>;
     const testUserId = asNonEmptyString(body.testUserId, 64);
     if (testUserId && isUuid(testUserId)) {

@@ -1,20 +1,20 @@
 {
   "meta": {
-    "title": "MySWYM : Plano de treino de natação personalizado",
+    "title": "ForSwim : Plano de treino de natação personalizado",
     "description": "Progressão na natação, triatlo, águas abertas, preparação de diploma. Plano de treino de natação personalizado, pronto em 2 minutos. Teste Premium de 7 dias.",
-    "howTitle": "Como funciona | MySWYM",
-    "howDescription": "3 perguntas, um plano estruturado de imediato. É assim que a MySWYM te treina."
+    "howTitle": "Como funciona | ForSwim",
+    "howDescription": "3 perguntas, um plano estruturado de imediato. É assim que a ForSwim te treina."
   },
   "hero": {
     "title": "A tua próxima sessão de natação, em 3 perguntas.",
     "titleLine1": "A tua próxima sessão de natação,",
     "titleAccent": "em 3 perguntas",
-    "subtitle": "Objetivo, nível, frequência. A MySWYM monta as sessões. Acabou o improviso na piscina.",
+    "subtitle": "Objetivo, nível, frequência. A ForSwim monta as sessões. Acabou o improviso na piscina.",
     "cta": "Criar o meu plano",
     "ctaSecondary": "Ver uma sessão",
     "seeSession": "Ver uma sessão",
     "freeNote": "Teste 7 dias · com cartão · desde 8,99 €/mês",
-    "mockupAlt": "Pré-visualização da aplicação MySWYM em dois iPhones: sessão e progressão",
+    "mockupAlt": "Pré-visualização da aplicação ForSwim em dois iPhones: sessão e progressão",
     "proof1Value": "+15",
     "proof1Label": "objetivos",
     "proof2Value": "4",
@@ -93,7 +93,7 @@
   },
   "features": {
     "f1Title": "Plano até ao dia da prova",
-    "f1Desc": "Define a data do objetivo: a MySWYM monta um plano progressivo com fases de base, de construção, de intensidade e de afinação.",
+    "f1Desc": "Define a data do objetivo: a ForSwim monta um plano progressivo com fases de base, de construção, de intensidade e de afinação.",
     "f2Title": "Adaptado ao teu material",
     "f2Desc": "Palas, pull-buoy, barbatanas, prancha… só entra o que tens mesmo.",
     "f3Title": "Todos os estilos",
@@ -106,7 +106,7 @@
     "eyebrow": "Feito por um nadador, para nadadores",
     "titleLine1": "Torna-te o nadador",
     "titleLine2": "que queres ser",
-    "body": "A MySWYM estrutura o teu treino como o caderno de um treinador: objetivo, data, nível, frequência, e depois sessões claras antes de entrares na água. As dicas de técnica também estão no Instagram.",
+    "body": "A ForSwim estrutura o teu treino como o caderno de um treinador: objetivo, data, nível, frequência, e depois sessões claras antes de entrares na água. As dicas de técnica também estão no Instagram.",
     "quote": "Progredir é análise, repetição e vontade de lá chegar. Não é improvisar à borda da piscina.",
     "cta": "Criar o meu plano",
     "igCta": "Ver @arthurnatation",
@@ -132,8 +132,8 @@
     "badgePrem": "PREMIUM"
   },
   "why": {
-    "label": "PORQUÊ MYSWYM",
-    "title": "Porquê usar a MySWYM?",
+    "label": "PORQUÊ ForSwim",
+    "title": "Porquê usar a ForSwim?",
     "subtitle": "Tudo o que precisas para estruturar o treino, nada a mais.",
     "uiPreview": "Pré-visualização da interface",
     "b1Title": "Adaptado ao teu material",
@@ -163,8 +163,8 @@
     "label": "PRÉ-VISUALIZAÇÃO DA SESSÃO",
     "title": "Claro antes de entrares na água",
     "subtitle": "Cada sessão tem uma estrutura de treinador: aquecimento, série principal, retorno à calma, mais uma dica concreta.",
-    "mockupAlt": "Sessão MySWYM no iPhone: aquecimento, série principal e retorno à calma",
-    "detailMockupAlt": "Detalhe de uma sessão MySWYM: aquecimento, série principal e retorno à calma",
+    "mockupAlt": "Sessão ForSwim no iPhone: aquecimento, série principal e retorno à calma",
+    "detailMockupAlt": "Detalhe de uma sessão ForSwim: aquecimento, série principal e retorno à calma",
     "cta": "Criar o meu plano",
     "type": "Resistência",
     "heading": "Séries confortáveis",
@@ -181,7 +181,7 @@
     "label": "CREDIBILIDADE",
     "titleLine1": "Um acompanhamento estruturado,",
     "titleLine2": "não uma improvisação",
-    "subtitle": "A MySWYM assenta em regras de treino claras, não em prompts ao acaso.",
+    "subtitle": "A ForSwim assenta em regras de treino claras, não em prompts ao acaso.",
     "p1Title": "Geração local, fiável",
     "p1Desc": "O teu plano é calculado na aplicação, sem IA externa, sem espera. Resultado imediato e reproduzível.",
     "p2Title": "Estrutura de profissional",
@@ -227,14 +227,14 @@
     "title": "Perguntas frequentes",
     "chatKicker": "Apoio Premium",
     "chatTitle": "Uma conversa a sério, não um bot",
-    "chatBody": "Quem tem Premium escreve no chat da MySWYM. O Arthur lê e responde em pessoa, quando pode. Nenhuma IA inventa a resposta.",
+    "chatBody": "Quem tem Premium escreve no chat da ForSwim. O Arthur lê e responde em pessoa, quando pode. Nenhuma IA inventa a resposta.",
     "chatPoint1": "Acesso ao chat no Premium",
     "chatPoint2": "Resposta humana, não um bot",
     "chatPoint3": "Escreve quando quiseres",
     "chatCta": "Ver os planos Premium",
-    "mockupAlt": "Chat MySWYM no iPhone: faz uma pergunta ao treinador",
+    "mockupAlt": "Chat ForSwim no iPhone: faz uma pergunta ao treinador",
     "q1": "Nunca segui um plano estruturado. Isto é para mim?",
-    "a1": "Sim, se já sabes nadar. O nível iniciante usa volumes simples e linguagem clara. A MySWYM estrutura as tuas sessões. Não é uma escola de natação.",
+    "a1": "Sim, se já sabes nadar. O nível iniciante usa volumes simples e linguagem clara. A ForSwim estrutura as tuas sessões. Não é uma escola de natação.",
     "q2": "Posso mudar de objetivo a meio?",
     "a2": "Sim. No teu perfil, podes recomeçar o questionário para um novo objetivo e gerar outro plano. Com o Premium, também geres vários planos em paralelo.",
     "q3": "Como funciona a subscrição?",
@@ -331,7 +331,7 @@
     "t3Desc": "Sem subscrição, as sessões ficam em pausa: deixa de haver o que ver. Para continuar: 8,99 €/mês ou 59,99 €/ano.",
     "whoLabel": "Para quem é",
     "whoTitle": "Se já sabes nadar.",
-    "whoLead": "A MySWYM estrutura as tuas sessões. Não é uma escola para aprenderes o estilo do zero.",
+    "whoLead": "A ForSwim estrutura as tuas sessões. Não é uma escola para aprenderes o estilo do zero.",
     "w1": "Tens um objetivo: progredir, triatlo, águas abertas ou um diploma.",
     "w2": "Já nadas uns comprimentos, mesmo modestos.",
     "w3": "Queres um plano legível, não improvisar à borda da piscina.",
@@ -351,14 +351,14 @@
     "toPricing": "Ver preços"
   },
   "faqPage": {
-    "metaTitle": "FAQ | MySWYM",
+    "metaTitle": "FAQ | ForSwim",
     "metaDescription": "Subscrição, piscinas de 25 m / 50 m, mudar de objetivo: respostas para começares o teu plano de natação.",
     "intro": "As perguntas que mais nos fazem: teste, preço, comprimento da piscina, mudar de objetivo.",
     "moreTitle": "Ainda tens uma pergunta?",
     "moreCta": "Escrever ao apoio"
   },
   "pricingPage": {
-    "metaTitle": "Preços | MySWYM",
+    "metaTitle": "Preços | ForSwim",
     "metaDescription": "Teste Premium 7 dias com cartão, depois 8,99 €/mês sem fidelização ou 59,99 €/ano. Planos de natação personalizados.",
     "eyebrow": "PREÇOS",
     "h1": "Um teste. Duas formas de continuar.",
@@ -441,7 +441,7 @@
     "chooseAnnual": "Pagar 59,99 €"
   },
   "contactPage": {
-    "metaTitle": "Contacto | MySWYM",
+    "metaTitle": "Contacto | ForSwim",
     "metaDescription": "Uma pergunta sobre o teu plano de natação? Escreve-nos. Respondemos em 24-48 horas úteis.",
     "eyebrow": "CONTACTO",
     "h1": "Uma pergunta sobre o teu plano?",
@@ -465,8 +465,8 @@
     "allFaq": "Todas as perguntas"
   },
   "reviewsPage": {
-    "metaTitle": "Opiniões | MySWYM",
-    "metaDescription": "Opiniões de nadadores sobre a MySWYM. Só feedback real, publicado depois de moderação.",
+    "metaTitle": "Opiniões | ForSwim",
+    "metaDescription": "Opiniões de nadadores sobre a ForSwim. Só feedback real, publicado depois de moderação.",
     "label": "OPINIÕES",
     "title": "O que dizem os nadadores",
     "subtitle": "Só opiniões reais, publicadas depois de moderação. Sem testemunhos inventados.",

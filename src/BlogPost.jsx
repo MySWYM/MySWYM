@@ -27,8 +27,8 @@ function ArticleSeo({ article, cover }) {
     { label: article?.titre || t("nav.blog") },
   ];
   usePageSeo({
-    title: article ? `${article.titre} | MySWYM` : "Article | MySWYM",
-    description: article?.extrait || article?.titre || "Article natation MySWYM",
+    title: article ? `${article.titre} | ForSwim` : "Article | ForSwim",
+    description: article?.extrait || article?.titre || "Article natation ForSwim",
     path: article?.slug ? `/blog/${article.slug}` : "/blog",
     image: ogImageForCover(cover),
     jsonLd: breadcrumbJsonLd(crumbs),

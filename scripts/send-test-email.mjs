@@ -35,14 +35,14 @@ if (!apiKey) {
   process.exit(1);
 }
 
-const from = process.env.EMAIL_FROM || "MySWYM <noreply@myswym.app>";
+const from = process.env.EMAIL_FROM || "ForSwim <noreply@myswym.app>";
 const to = process.env.EMAIL_TEST_TO || "delivered@resend.dev";
 
 const resend = new Resend(apiKey);
 const { data, error } = await resend.emails.send({
   from,
   to: [to],
-  subject: "[MySWYM] Resend smoke test",
+  subject: "[ForSwim] Resend smoke test",
   html: "<p>Resend API key OK — infrastructure smoke test.</p>",
   tags: [{ name: "category", value: "smoke_test" }],
 });

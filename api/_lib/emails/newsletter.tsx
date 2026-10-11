@@ -20,14 +20,14 @@ export type NewsletterEmailProps = {
 export function NewsletterEmail({
   previewText,
   sections,
-  ctaLabel = "Ouvrir MySWYM",
+  ctaLabel = "Ouvrir ForSwim",
   ctaUrl = `${emailBrand.site}/app`,
   unsubscribeUrl,
 }: NewsletterEmailProps) {
   return (
     <EmailLayout
       preview={previewText}
-      eyebrow="MySWYM"
+      eyebrow="ForSwim"
       ctaLabel={ctaLabel}
       ctaUrl={ctaUrl}
       showUnsubscribe

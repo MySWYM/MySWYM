@@ -1,5 +1,5 @@
 /**
- * Catalogue d’éducatifs MySWYM / Arthur Natation.
+ * Catalogue d’éducatifs ForSwim / Arthur Natation.
  * Architecture prête pour vidéos & contenus propriétaires.
  * Aucun contenu OpenSwim / concurrent.
  *

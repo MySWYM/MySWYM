@@ -4,4 +4,4 @@ import { SUPPORTED_LANGS } from "../languages.js";
 export const TARGET_LANGS = SUPPORTED_LANGS.filter((l) => l !== "fr");
 
 /** Chaînes identiques dans toutes les langues. */
-export const KEEP_AS_IS = new Set(["MySWYM", "mySWYM", "Premium", "T100", "FAQ", "OK", "Apple", "Google", "Facebook", "Strava", "Garmin"]);
+export const KEEP_AS_IS = new Set(["ForSwim", "mySWYM", "Premium", "T100", "FAQ", "OK", "Apple", "Google", "Facebook", "Strava", "Garmin"]);

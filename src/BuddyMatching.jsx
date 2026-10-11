@@ -1476,7 +1476,7 @@ function BuddyMatchingPaid({ user, profile, onOpenMenu, onTabChange, onUpgrade }
               </div>
 
               <p style={{ fontSize: 11, color: G.greyMid, lineHeight: 1.55, margin: "0 0 8px", textAlign: "center" }}>
-                MySWYM facilite uniquement la mise en relation. Les rencontres hors application se font sous la responsabilité
+                ForSwim facilite uniquement la mise en relation. Les rencontres hors application se font sous la responsabilité
                 des utilisateurs. Voir CGU § mise en relation et politique de confidentialité.
               </p>
             </div>

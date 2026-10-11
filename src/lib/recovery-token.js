@@ -1,5 +1,5 @@
 /**
- * Lien « mot de passe oublié » : https://www.myswym.app/app?reset=1&token_hash=…&type=recovery
+ * Lien « mot de passe oublié » : https://www.forswim.app/app?reset=1&token_hash=…&type=recovery
  * (construit par api/contact.ts, plus de lien *.supabase.co dans le mail).
  * `native=1` : la page web renvoie vers l’app iOS, qui consomme le jeton elle-même.
  */

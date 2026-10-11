@@ -1,4 +1,4 @@
-# Mémoire natation MySWYM
+# Mémoire natation ForSwim
 
 > Ancien fichier monolithique **scindé** le 2026-08-15.  
 > L’agent doit lire les fichiers ci-dessous **avant** de modifier le contenu des séances.

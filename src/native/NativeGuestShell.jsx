@@ -55,7 +55,7 @@ export default function NativeGuestShell({
               <X size={22} strokeWidth={2.25} aria-hidden />
             </button>
           ) : showBrand ? (
-            <BrandLogo variant={funnel ? "mark" : "wordmark"} onDark={funnel} height={funnel ? 26 : 22} alt="MySWYM" />
+            <BrandLogo variant={funnel ? "mark" : "wordmark"} onDark={funnel} height={funnel ? 26 : 22} alt="ForSwim" />
           ) : (
             <span style={{ width: 44 }} />
           )}

@@ -1,5 +1,5 @@
 /**
- * Bibliothèque de connaissances coaching (F3) + produit MySWYM builtin.
+ * Bibliothèque de connaissances coaching (F3) + produit ForSwim builtin.
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { arthurLog } from "../logging.js";

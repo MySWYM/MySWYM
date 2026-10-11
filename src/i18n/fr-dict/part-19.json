@@ -490,19 +490,19 @@
     "nb": "Ettermiddag",
     "fi": "Iltapäivä"
   },
-  "Je t'ai trouvé sur MySWYM{{1}}{{2}}.": {
-    "en": "I found you on MySWYM{{1}}{{2}}.",
-    "de": "Ich habe dich auf MySWYM gefunden{{1}}{{2}}.",
-    "es": "Te he encontrado en MySWYM{{1}}{{2}}.",
-    "ja": "MySWYMであなたを見つけました{{1}}{{2}}。",
-    "nl": "Ik heb je gevonden op MySWYM{{1}}{{2}}.",
-    "it": "Ti ho trovato su MySWYM{{1}}{{2}}.",
-    "pt": "Encontrei-te no MySWYM{{1}}{{2}}.",
-    "pt-BR": "Te encontrei no MySWYM{{1}}{{2}}.",
-    "sv": "Jag hittade dig på MySWYM{{1}}{{2}}.",
-    "da": "Jeg fandt dig på MySWYM{{1}}{{2}}.",
-    "nb": "Jeg fant deg på MySWYM{{1}}{{2}}.",
-    "fi": "Löysin sinut MySWYMistä{{1}}{{2}}."
+  "Je t'ai trouvé sur ForSwim{{1}}{{2}}.": {
+    "en": "I found you on ForSwim{{1}}{{2}}.",
+    "de": "Ich habe dich auf ForSwim gefunden{{1}}{{2}}.",
+    "es": "Te he encontrado en ForSwim{{1}}{{2}}.",
+    "ja": "ForSwimであなたを見つけました{{1}}{{2}}。",
+    "nl": "Ik heb je gevonden op ForSwim{{1}}{{2}}.",
+    "it": "Ti ho trovato su ForSwim{{1}}{{2}}.",
+    "pt": "Encontrei-te no ForSwim{{1}}{{2}}.",
+    "pt-BR": "Te encontrei no ForSwim{{1}}{{2}}.",
+    "sv": "Jag hittade dig på ForSwim{{1}}{{2}}.",
+    "da": "Jeg fandt dig på ForSwim{{1}}{{2}}.",
+    "nb": "Jeg fant deg på ForSwim{{1}}{{2}}.",
+    "fi": "Löysin sinut ForSwimistä{{1}}{{2}}."
   },
   "{{1}}Je cherche un binôme pour une sortie, ça te dit ?": {
     "en": "{{1}}I'm looking for a buddy for a swim, fancy it?",
@@ -1093,19 +1093,19 @@
     "nb": "Helsedata (valgfritt)",
     "fi": "Terveystiedot (valinnainen)"
   },
-  "Pour adapter tes séances et limiter le risque de blessure, MySWYM peut traiter des données de santé au sens du RGPD :": {
-    "en": "To adapt your sessions and reduce the risk of injury, MySWYM may process health data within the meaning of the GDPR:",
-    "de": "Um deine Einheiten anzupassen und das Verletzungsrisiko zu senken, kann MySWYM Gesundheitsdaten im Sinne der DSGVO verarbeiten:",
-    "es": "Para adaptar tus sesiones y reducir el riesgo de lesión, MySWYM puede tratar datos de salud en el sentido del RGPD:",
-    "ja": "セッションを調整し、怪我のリスクを抑えるため、MySWYMはGDPRに定める健康データを処理することがあります：",
-    "nl": "Om je sessies aan te passen en het risico op blessures te beperken, kan MySWYM gezondheidsgegevens in de zin van de AVG verwerken:",
-    "it": "Per adattare le tue sessioni e ridurre il rischio di infortuni, MySWYM può trattare dati sanitari ai sensi del GDPR:",
-    "pt": "Para adaptar as tuas sessões e limitar o risco de lesão, a MySWYM pode tratar dados de saúde na aceção do RGPD:",
-    "pt-BR": "Para adaptar suas sessões e reduzir o risco de lesão, o MySWYM pode tratar dados de saúde nos termos do RGPD (GDPR europeu):",
-    "sv": "För att anpassa dina pass och minska skaderisken kan MySWYM behandla hälsodata enligt GDPR:",
-    "da": "For at tilpasse dine sessioner og begrænse risikoen for skader kan MySWYM behandle helbredsoplysninger i henhold til GDPR:",
-    "nb": "For å tilpasse øktene dine og redusere skaderisikoen kan MySWYM behandle helseopplysninger i henhold til GDPR:",
-    "fi": "Mukauttaakseen harjoituksiasi ja vähentääkseen loukkaantumisriskiä MySWYM voi käsitellä tietosuoja-asetuksen (GDPR) tarkoittamia terveystietoja:"
+  "Pour adapter tes séances et limiter le risque de blessure, ForSwim peut traiter des données de santé au sens du RGPD :": {
+    "en": "To adapt your sessions and reduce the risk of injury, ForSwim may process health data within the meaning of the GDPR:",
+    "de": "Um deine Einheiten anzupassen und das Verletzungsrisiko zu senken, kann ForSwim Gesundheitsdaten im Sinne der DSGVO verarbeiten:",
+    "es": "Para adaptar tus sesiones y reducir el riesgo de lesión, ForSwim puede tratar datos de salud en el sentido del RGPD:",
+    "ja": "セッションを調整し、怪我のリスクを抑えるため、ForSwimはGDPRに定める健康データを処理することがあります：",
+    "nl": "Om je sessies aan te passen en het risico op blessures te beperken, kan ForSwim gezondheidsgegevens in de zin van de AVG verwerken:",
+    "it": "Per adattare le tue sessioni e ridurre il rischio di infortuni, ForSwim può trattare dati sanitari ai sensi del GDPR:",
+    "pt": "Para adaptar as tuas sessões e limitar o risco de lesão, a ForSwim pode tratar dados de saúde na aceção do RGPD:",
+    "pt-BR": "Para adaptar suas sessões e reduzir o risco de lesão, o ForSwim pode tratar dados de saúde nos termos do RGPD (GDPR europeu):",
+    "sv": "För att anpassa dina pass och minska skaderisken kan ForSwim behandla hälsodata enligt GDPR:",
+    "da": "For at tilpasse dine sessioner og begrænse risikoen for skader kan ForSwim behandle helbredsoplysninger i henhold til GDPR:",
+    "nb": "For å tilpasse øktene dine og redusere skaderisikoen kan ForSwim behandle helseopplysninger i henhold til GDPR:",
+    "fi": "Mukauttaakseen harjoituksiasi ja vähentääkseen loukkaantumisriskiä ForSwim voi käsitellä tietosuoja-asetuksen (GDPR) tarkoittamia terveystietoja:"
   },
   "fréquence cardiaque par séance (ex. via Strava) et historique de blessures / gênes que tu déclares.": {
     "en": "heart rate per session (e.g. via Strava) and the history of injuries / discomfort you report.",
@@ -1163,19 +1163,19 @@
     "nb": "Disse dataene sendes ikke til analyseverktøy fra tredjeparter.",
     "fi": "Näitä tietoja ei lähetetä kolmansien osapuolten analytiikkatyökaluihin."
   },
-  "J’accepte explicitement que MySWYM traite ma fréquence cardiaque et mes déclarations de blessure / gêne pour adapter mes séances et prévenir le risque de blessure. Je peux refuser.": {
-    "en": "I explicitly agree that MySWYM may process my heart rate and my injury / discomfort reports to adapt my sessions and prevent the risk of injury. I can refuse.",
-    "de": "Ich willige ausdrücklich ein, dass MySWYM meine Herzfrequenz und meine Angaben zu Verletzungen / Beschwerden verarbeitet, um meine Einheiten anzupassen und Verletzungen vorzubeugen. Ich kann ablehnen.",
-    "es": "Acepto explícitamente que MySWYM trate mi frecuencia cardiaca y mis declaraciones de lesiones / molestias para adaptar mis sesiones y prevenir el riesgo de lesión. Puedo negarme.",
-    "ja": "MySWYMが、セッションの調整と怪我の予防のために、私の心拍数および怪我・違和感の申告を処理することに明示的に同意します。拒否することもできます。",
-    "nl": "Ik ga er uitdrukkelijk mee akkoord dat MySWYM mijn hartslag en mijn meldingen van blessures / ongemak verwerkt om mijn sessies aan te passen en het risico op blessures te voorkomen. Ik kan weigeren.",
-    "it": "Accetto esplicitamente che MySWYM tratti la mia frequenza cardiaca e le mie dichiarazioni di infortuni / fastidi per adattare le mie sessioni e prevenire il rischio di infortuni. Posso rifiutare.",
-    "pt": "Aceito explicitamente que a MySWYM trate a minha frequência cardíaca e as minhas declarações de lesão / desconforto para adaptar as minhas sessões e prevenir o risco de lesão. Posso recusar.",
-    "pt-BR": "Aceito explicitamente que o MySWYM trate minha frequência cardíaca e minhas declarações de lesão / desconforto para adaptar minhas sessões e prevenir o risco de lesão. Posso recusar.",
-    "sv": "Jag samtycker uttryckligen till att MySWYM behandlar min puls och mina uppgifter om skador / besvär för att anpassa mina pass och förebygga skaderisk. Jag kan avböja.",
-    "da": "Jeg giver udtrykkeligt samtykke til, at MySWYM behandler min puls og mine oplysninger om skader / ubehag for at tilpasse mine sessioner og forebygge risikoen for skader. Jeg kan afslå.",
-    "nb": "Jeg samtykker uttrykkelig i at MySWYM behandler pulsen min og mine opplysninger om skader / plager for å tilpasse øktene mine og forebygge skaderisiko. Jeg kan avslå.",
-    "fi": "Hyväksyn nimenomaisesti, että MySWYM käsittelee sykettäni ja ilmoittamiani vammoja / vaivoja mukauttaakseen harjoituksiani ja ehkäistäkseen loukkaantumisriskiä. Voin kieltäytyä."
+  "J’accepte explicitement que ForSwim traite ma fréquence cardiaque et mes déclarations de blessure / gêne pour adapter mes séances et prévenir le risque de blessure. Je peux refuser.": {
+    "en": "I explicitly agree that ForSwim may process my heart rate and my injury / discomfort reports to adapt my sessions and prevent the risk of injury. I can refuse.",
+    "de": "Ich willige ausdrücklich ein, dass ForSwim meine Herzfrequenz und meine Angaben zu Verletzungen / Beschwerden verarbeitet, um meine Einheiten anzupassen und Verletzungen vorzubeugen. Ich kann ablehnen.",
+    "es": "Acepto explícitamente que ForSwim trate mi frecuencia cardiaca y mis declaraciones de lesiones / molestias para adaptar mis sesiones y prevenir el riesgo de lesión. Puedo negarme.",
+    "ja": "ForSwimが、セッションの調整と怪我の予防のために、私の心拍数および怪我・違和感の申告を処理することに明示的に同意します。拒否することもできます。",
+    "nl": "Ik ga er uitdrukkelijk mee akkoord dat ForSwim mijn hartslag en mijn meldingen van blessures / ongemak verwerkt om mijn sessies aan te passen en het risico op blessures te voorkomen. Ik kan weigeren.",
+    "it": "Accetto esplicitamente che ForSwim tratti la mia frequenza cardiaca e le mie dichiarazioni di infortuni / fastidi per adattare le mie sessioni e prevenire il rischio di infortuni. Posso rifiutare.",
+    "pt": "Aceito explicitamente que a ForSwim trate a minha frequência cardíaca e as minhas declarações de lesão / desconforto para adaptar as minhas sessões e prevenir o risco de lesão. Posso recusar.",
+    "pt-BR": "Aceito explicitamente que o ForSwim trate minha frequência cardíaca e minhas declarações de lesão / desconforto para adaptar minhas sessões e prevenir o risco de lesão. Posso recusar.",
+    "sv": "Jag samtycker uttryckligen till att ForSwim behandlar min puls och mina uppgifter om skador / besvär för att anpassa mina pass och förebygga skaderisk. Jag kan avböja.",
+    "da": "Jeg giver udtrykkeligt samtykke til, at ForSwim behandler min puls og mine oplysninger om skader / ubehag for at tilpasse mine sessioner og forebygge risikoen for skader. Jeg kan afslå.",
+    "nb": "Jeg samtykker uttrykkelig i at ForSwim behandler pulsen min og mine opplysninger om skader / plager for å tilpasse øktene mine og forebygge skaderisiko. Jeg kan avslå.",
+    "fi": "Hyväksyn nimenomaisesti, että ForSwim käsittelee sykettäni ja ilmoittamiani vammoja / vaivoja mukauttaakseen harjoituksiani ja ehkäistäkseen loukkaantumisriskiä. Voin kieltäytyä."
   },
   "Blessures / gênes (optionnel)": {
     "en": "Injuries / discomfort (optional)",
@@ -1191,19 +1191,19 @@
     "nb": "Skader / plager (valgfritt)",
     "fi": "Vammat / vaivat (valinnainen)"
   },
-  "Si tu déclares une blessure ou une gêne, MySWYM peut adapter l’intensité de tes prochaines séances.": {
-    "en": "If you report an injury or discomfort, MySWYM can adapt the intensity of your upcoming sessions.",
-    "de": "Wenn du eine Verletzung oder Beschwerden angibst, kann MySWYM die Intensität deiner nächsten Einheiten anpassen.",
-    "es": "Si declaras una lesión o molestia, MySWYM puede adaptar la intensidad de tus próximas sesiones.",
-    "ja": "怪我や違和感を申告すると、MySWYMが次のセッションの強度を調整できます。",
-    "nl": "Als je een blessure of ongemak meldt, kan MySWYM de intensiteit van je volgende sessies aanpassen.",
-    "it": "Se dichiari un infortunio o un fastidio, MySWYM può adattare l’intensità delle tue prossime sessioni.",
-    "pt": "Se declarares uma lesão ou desconforto, a MySWYM pode adaptar a intensidade das tuas próximas sessões.",
-    "pt-BR": "Se você informar uma lesão ou desconforto, o MySWYM pode adaptar a intensidade das suas próximas sessões.",
-    "sv": "Om du uppger en skada eller besvär kan MySWYM anpassa intensiteten i dina kommande pass.",
-    "da": "Hvis du angiver en skade eller ubehag, kan MySWYM tilpasse intensiteten i dine næste sessioner.",
-    "nb": "Hvis du oppgir en skade eller plage, kan MySWYM tilpasse intensiteten i de neste øktene dine.",
-    "fi": "Jos ilmoitat vammasta tai vaivasta, MySWYM voi mukauttaa tulevien harjoitustesi tehoa."
+  "Si tu déclares une blessure ou une gêne, ForSwim peut adapter l’intensité de tes prochaines séances.": {
+    "en": "If you report an injury or discomfort, ForSwim can adapt the intensity of your upcoming sessions.",
+    "de": "Wenn du eine Verletzung oder Beschwerden angibst, kann ForSwim die Intensität deiner nächsten Einheiten anpassen.",
+    "es": "Si declaras una lesión o molestia, ForSwim puede adaptar la intensidad de tus próximas sesiones.",
+    "ja": "怪我や違和感を申告すると、ForSwimが次のセッションの強度を調整できます。",
+    "nl": "Als je een blessure of ongemak meldt, kan ForSwim de intensiteit van je volgende sessies aanpassen.",
+    "it": "Se dichiari un infortunio o un fastidio, ForSwim può adattare l’intensità delle tue prossime sessioni.",
+    "pt": "Se declarares uma lesão ou desconforto, a ForSwim pode adaptar a intensidade das tuas próximas sessões.",
+    "pt-BR": "Se você informar uma lesão ou desconforto, o ForSwim pode adaptar a intensidade das suas próximas sessões.",
+    "sv": "Om du uppger en skada eller besvär kan ForSwim anpassa intensiteten i dina kommande pass.",
+    "da": "Hvis du angiver en skade eller ubehag, kan ForSwim tilpasse intensiteten i dine næste sessioner.",
+    "nb": "Hvis du oppgir en skade eller plage, kan ForSwim tilpasse intensiteten i de neste øktene dine.",
+    "fi": "Jos ilmoitat vammasta tai vaivasta, ForSwim voi mukauttaa tulevien harjoitustesi tehoa."
   },
   "Base légale : consentement explicite (art. 9.2.a RGPD). Tu peux laisser « Aucune » et refuser.": {
     "en": "Legal basis: explicit consent (Art. 9(2)(a) GDPR). You can leave \"None\" and refuse.",
@@ -1219,19 +1219,19 @@
     "nb": "Rettslig grunnlag: uttrykkelig samtykke (art. 9 nr. 2 bokstav a GDPR). Du kan la «Ingen» stå og avslå.",
     "fi": "Oikeusperuste: nimenomainen suostumus (GDPR 9 artiklan 2 kohdan a alakohta). Voit jättää valinnaksi ”Ei mitään” ja kieltäytyä."
   },
-  "J’accepte que MySWYM traite mes déclarations de blessure / gêne pour adapter mes séances. Je peux refuser.": {
-    "en": "I agree that MySWYM may process my injury / discomfort reports to adapt my sessions. I can refuse.",
-    "de": "Ich willige ein, dass MySWYM meine Angaben zu Verletzungen / Beschwerden verarbeitet, um meine Einheiten anzupassen. Ich kann ablehnen.",
-    "es": "Acepto que MySWYM trate mis declaraciones de lesiones / molestias para adaptar mis sesiones. Puedo negarme.",
-    "ja": "MySWYMがセッションを調整するために、私の怪我・違和感の申告を処理することに同意します。拒否することもできます。",
-    "nl": "Ik ga ermee akkoord dat MySWYM mijn meldingen van blessures / ongemak verwerkt om mijn sessies aan te passen. Ik kan weigeren.",
-    "it": "Accetto che MySWYM tratti le mie dichiarazioni di infortuni / fastidi per adattare le mie sessioni. Posso rifiutare.",
-    "pt": "Aceito que a MySWYM trate as minhas declarações de lesão / desconforto para adaptar as minhas sessões. Posso recusar.",
-    "pt-BR": "Aceito que o MySWYM trate minhas declarações de lesão / desconforto para adaptar minhas sessões. Posso recusar.",
-    "sv": "Jag samtycker till att MySWYM behandlar mina uppgifter om skador / besvär för att anpassa mina pass. Jag kan avböja.",
-    "da": "Jeg giver samtykke til, at MySWYM behandler mine oplysninger om skader / ubehag for at tilpasse mine sessioner. Jeg kan afslå.",
-    "nb": "Jeg samtykker i at MySWYM behandler mine opplysninger om skader / plager for å tilpasse øktene mine. Jeg kan avslå.",
-    "fi": "Hyväksyn, että MySWYM käsittelee ilmoittamiani vammoja / vaivoja mukauttaakseen harjoituksiani. Voin kieltäytyä."
+  "J’accepte que ForSwim traite mes déclarations de blessure / gêne pour adapter mes séances. Je peux refuser.": {
+    "en": "I agree that ForSwim may process my injury / discomfort reports to adapt my sessions. I can refuse.",
+    "de": "Ich willige ein, dass ForSwim meine Angaben zu Verletzungen / Beschwerden verarbeitet, um meine Einheiten anzupassen. Ich kann ablehnen.",
+    "es": "Acepto que ForSwim trate mis declaraciones de lesiones / molestias para adaptar mis sesiones. Puedo negarme.",
+    "ja": "ForSwimがセッションを調整するために、私の怪我・違和感の申告を処理することに同意します。拒否することもできます。",
+    "nl": "Ik ga ermee akkoord dat ForSwim mijn meldingen van blessures / ongemak verwerkt om mijn sessies aan te passen. Ik kan weigeren.",
+    "it": "Accetto che ForSwim tratti le mie dichiarazioni di infortuni / fastidi per adattare le mie sessioni. Posso rifiutare.",
+    "pt": "Aceito que a ForSwim trate as minhas declarações de lesão / desconforto para adaptar as minhas sessões. Posso recusar.",
+    "pt-BR": "Aceito que o ForSwim trate minhas declarações de lesão / desconforto para adaptar minhas sessões. Posso recusar.",
+    "sv": "Jag samtycker till att ForSwim behandlar mina uppgifter om skador / besvär för att anpassa mina pass. Jag kan avböja.",
+    "da": "Jeg giver samtykke til, at ForSwim behandler mine oplysninger om skader / ubehag for at tilpasse mine sessioner. Jeg kan afslå.",
+    "nb": "Jeg samtykker i at ForSwim behandler mine opplysninger om skader / plager for å tilpasse øktene mine. Jeg kan avslå.",
+    "fi": "Hyväksyn, että ForSwim käsittelee ilmoittamiani vammoja / vaivoja mukauttaakseen harjoituksiani. Voin kieltäytyä."
   },
   "Fréquence cardiaque (optionnel)": {
     "en": "Heart rate (optional)",
@@ -1247,19 +1247,19 @@
     "nb": "Puls (valgfritt)",
     "fi": "Syke (valinnainen)"
   },
-  "Pour afficher la FC dans l’analyse MySWYM (import Strava), MySWYM doit stocker ta fréquence cardiaque par séance.": {
-    "en": "To show HR in the MySWYM analysis (Strava import), MySWYM needs to store your heart rate for each session.",
-    "de": "Um die HF in der MySWYM-Analyse anzuzeigen (Strava-Import), muss MySWYM deine Herzfrequenz pro Einheit speichern.",
-    "es": "Para mostrar la FC en el análisis de MySWYM (importación de Strava), MySWYM tiene que guardar tu frecuencia cardiaca por sesión.",
-    "ja": "MySWYMの分析に心拍数を表示する（Stravaインポート）には、MySWYMがセッションごとの心拍数を保存する必要があります。",
-    "nl": "Om je hartslag te tonen in de MySWYM-analyse (Strava-import), moet MySWYM je hartslag per sessie opslaan.",
-    "it": "Per mostrare la FC nell’analisi MySWYM (importazione Strava), MySWYM deve salvare la tua frequenza cardiaca per sessione.",
-    "pt": "Para mostrar a FC na análise MySWYM (importação Strava), a MySWYM tem de guardar a tua frequência cardíaca por sessão.",
-    "pt-BR": "Para mostrar a FC na análise do MySWYM (importação do Strava), o MySWYM precisa armazenar sua frequência cardíaca por sessão.",
-    "sv": "För att visa pulsen i MySWYM-analysen (Strava-import) måste MySWYM lagra din puls per pass.",
-    "da": "For at vise pulsen i MySWYM-analysen (Strava-import) skal MySWYM gemme din puls pr. session.",
-    "nb": "For å vise pulsen i MySWYM-analysen (Strava-import) må MySWYM lagre pulsen din per økt.",
-    "fi": "Jotta syke näkyy MySWYM-analyysissa (Strava-tuonti), MySWYMin täytyy tallentaa sykkeesi harjoituskohtaisesti."
+  "Pour afficher la FC dans l’analyse ForSwim (import Strava), ForSwim doit stocker ta fréquence cardiaque par séance.": {
+    "en": "To show HR in the ForSwim analysis (Strava import), ForSwim needs to store your heart rate for each session.",
+    "de": "Um die HF in der ForSwim-Analyse anzuzeigen (Strava-Import), muss ForSwim deine Herzfrequenz pro Einheit speichern.",
+    "es": "Para mostrar la FC en el análisis de ForSwim (importación de Strava), ForSwim tiene que guardar tu frecuencia cardiaca por sesión.",
+    "ja": "ForSwimの分析に心拍数を表示する（Stravaインポート）には、ForSwimがセッションごとの心拍数を保存する必要があります。",
+    "nl": "Om je hartslag te tonen in de ForSwim-analyse (Strava-import), moet ForSwim je hartslag per sessie opslaan.",
+    "it": "Per mostrare la FC nell’analisi ForSwim (importazione Strava), ForSwim deve salvare la tua frequenza cardiaca per sessione.",
+    "pt": "Para mostrar a FC na análise ForSwim (importação Strava), a ForSwim tem de guardar a tua frequência cardíaca por sessão.",
+    "pt-BR": "Para mostrar a FC na análise do ForSwim (importação do Strava), o ForSwim precisa armazenar sua frequência cardíaca por sessão.",
+    "sv": "För att visa pulsen i ForSwim-analysen (Strava-import) måste ForSwim lagra din puls per pass.",
+    "da": "For at vise pulsen i ForSwim-analysen (Strava-import) skal ForSwim gemme din puls pr. session.",
+    "nb": "For å vise pulsen i ForSwim-analysen (Strava-import) må ForSwim lagre pulsen din per økt.",
+    "fi": "Jotta syke näkyy ForSwim-analyysissa (Strava-tuonti), ForSwimin täytyy tallentaa sykkeesi harjoituskohtaisesti."
   },
   "Sans ce consentement, Strava reste connecté (distance, allure) mais la cardio reste masquée.": {
     "en": "Without this consent, Strava stays connected (distance, pace) but heart rate stays hidden.",
@@ -1289,19 +1289,19 @@
     "nb": "Rettslig grunnlag: uttrykkelig samtykke (art. 9 nr. 2 bokstav a GDPR). Du kan avslå.",
     "fi": "Oikeusperuste: nimenomainen suostumus (GDPR 9 artiklan 2 kohdan a alakohta). Voit kieltäytyä."
   },
-  "J’accepte que MySWYM stocke ma fréquence cardiaque (ex. via Strava) pour l’afficher dans mon analyse. Je peux refuser.": {
-    "en": "I agree that MySWYM may store my heart rate (e.g. via Strava) to show it in my analysis. I can refuse.",
-    "de": "Ich willige ein, dass MySWYM meine Herzfrequenz (z. B. über Strava) speichert, um sie in meiner Analyse anzuzeigen. Ich kann ablehnen.",
-    "es": "Acepto que MySWYM guarde mi frecuencia cardiaca (p. ej. a través de Strava) para mostrarla en mi análisis. Puedo negarme.",
-    "ja": "MySWYMが私の心拍数（例：Strava経由）を保存し、分析に表示することに同意します。拒否することもできます。",
-    "nl": "Ik ga ermee akkoord dat MySWYM mijn hartslag (bijv. via Strava) opslaat om die in mijn analyse te tonen. Ik kan weigeren.",
-    "it": "Accetto che MySWYM salvi la mia frequenza cardiaca (es. tramite Strava) per mostrarla nella mia analisi. Posso rifiutare.",
-    "pt": "Aceito que a MySWYM guarde a minha frequência cardíaca (ex. via Strava) para a mostrar na minha análise. Posso recusar.",
-    "pt-BR": "Aceito que o MySWYM armazene minha frequência cardíaca (ex.: via Strava) para mostrá-la na minha análise. Posso recusar.",
-    "sv": "Jag samtycker till att MySWYM lagrar min puls (t.ex. via Strava) för att visa den i min analys. Jag kan avböja.",
-    "da": "Jeg giver samtykke til, at MySWYM gemmer min puls (f.eks. via Strava) for at vise den i min analyse. Jeg kan afslå.",
-    "nb": "Jeg samtykker i at MySWYM lagrer pulsen min (f.eks. via Strava) for å vise den i analysen min. Jeg kan avslå.",
-    "fi": "Hyväksyn, että MySWYM tallentaa sykkeeni (esim. Stravan kautta) näyttääkseen sen analyysissani. Voin kieltäytyä."
+  "J’accepte que ForSwim stocke ma fréquence cardiaque (ex. via Strava) pour l’afficher dans mon analyse. Je peux refuser.": {
+    "en": "I agree that ForSwim may store my heart rate (e.g. via Strava) to show it in my analysis. I can refuse.",
+    "de": "Ich willige ein, dass ForSwim meine Herzfrequenz (z. B. über Strava) speichert, um sie in meiner Analyse anzuzeigen. Ich kann ablehnen.",
+    "es": "Acepto que ForSwim guarde mi frecuencia cardiaca (p. ej. a través de Strava) para mostrarla en mi análisis. Puedo negarme.",
+    "ja": "ForSwimが私の心拍数（例：Strava経由）を保存し、分析に表示することに同意します。拒否することもできます。",
+    "nl": "Ik ga ermee akkoord dat ForSwim mijn hartslag (bijv. via Strava) opslaat om die in mijn analyse te tonen. Ik kan weigeren.",
+    "it": "Accetto che ForSwim salvi la mia frequenza cardiaca (es. tramite Strava) per mostrarla nella mia analisi. Posso rifiutare.",
+    "pt": "Aceito que a ForSwim guarde a minha frequência cardíaca (ex. via Strava) para a mostrar na minha análise. Posso recusar.",
+    "pt-BR": "Aceito que o ForSwim armazene minha frequência cardíaca (ex.: via Strava) para mostrá-la na minha análise. Posso recusar.",
+    "sv": "Jag samtycker till att ForSwim lagrar min puls (t.ex. via Strava) för att visa den i min analys. Jag kan avböja.",
+    "da": "Jeg giver samtykke til, at ForSwim gemmer min puls (f.eks. via Strava) for at vise den i min analyse. Jeg kan afslå.",
+    "nb": "Jeg samtykker i at ForSwim lagrer pulsen min (f.eks. via Strava) for å vise den i analysen min. Jeg kan avslå.",
+    "fi": "Hyväksyn, että ForSwim tallentaa sykkeeni (esim. Stravan kautta) näyttääkseen sen analyysissani. Voin kieltäytyä."
   },
   "Je certifie sur l’honneur l’exactitude des informations de santé que je fournis.": {
     "en": "I solemnly declare that the health information I provide is accurate.",

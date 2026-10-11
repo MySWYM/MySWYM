@@ -113,7 +113,7 @@ console.log("VG7, reload force update (pas de wipe storage)");
 {
   const markers = { replaced: null, cachesDeleted: false };
   const fakeLocation = {
-    href: "https://myswym.app/app?plan=1",
+    href: "https://forswim.app/app?plan=1",
     replace(next) {
       markers.replaced = next;
     },
@@ -169,7 +169,7 @@ console.log("VG8, cleanup query + foreground recheck path");
 {
   let replaced = null;
   const fakeWin = {
-    location: { href: "https://myswym.app/?__myswym_update=123" },
+    location: { href: "https://forswim.app/?__myswym_update=123" },
     history: {
       state: null,
       replaceState(_s, _t, url) {

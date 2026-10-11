@@ -20,7 +20,7 @@ const shared = [
   "On a repris le générateur de séances.",
   "Tes séances déjà validées restent",
   "7 jours pour tout voir, avec carte",
-  "Rouvrir MySWYM",
+  "Rouvrir ForSwim",
 ];
 
 for (const phrase of shared) {
@@ -29,7 +29,7 @@ for (const phrase of shared) {
 }
 
 assert.ok(
-  sendTs.includes("Tes séances MySWYM ont changé"),
+  sendTs.includes("Tes séances ForSwim ont changé"),
   "send.ts missing subject",
 );
 
@@ -49,8 +49,8 @@ assert.ok(
   "job still gates on v1 reactivation_email_sent only",
 );
 assert.ok(
-  job.includes("https://www.myswym.app/app"),
-  "job CTA should use www.myswym.app",
+  job.includes("https://www.forswim.app/app"),
+  "job CTA should use www.forswim.app",
 );
 
 console.log("reactivation email copy ok");

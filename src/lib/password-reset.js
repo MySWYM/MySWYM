@@ -1,5 +1,5 @@
 /**
- * Demande de reset mot de passe via l’API MySWYM (email Resend pro + redirect prod).
+ * Demande de reset mot de passe via l’API ForSwim (email Resend pro + redirect prod).
  * Fallback Supabase si l’API n’est pas encore déployée (ex. iOS → www avant merge main).
  */
 import { supabase } from "../supabase.js";
@@ -9,7 +9,7 @@ import {
   PASSWORD_RESET_QUERY_VALUE,
 } from "./password-recovery-intent.js";
 
-const PROD_APP = `https://www.myswym.app/app?${PASSWORD_RESET_QUERY}=${PASSWORD_RESET_QUERY_VALUE}`;
+const PROD_APP = `https://www.forswim.app/app?${PASSWORD_RESET_QUERY}=${PASSWORD_RESET_QUERY_VALUE}`;
 
 export function passwordResetApiUrl() {
   const base = isNativeApp() ? nativeApiOrigin() : "";
@@ -19,7 +19,7 @@ export function passwordResetApiUrl() {
 /** Redirect après clic mail : /app?reset=1 (query survit quand supabase consomme le hash). */
 export function withPasswordResetQuery(appUrl) {
   try {
-    const u = new URL(String(appUrl || ""), "https://www.myswym.app");
+    const u = new URL(String(appUrl || ""), "https://www.forswim.app");
     u.searchParams.set(PASSWORD_RESET_QUERY, PASSWORD_RESET_QUERY_VALUE);
     return u.toString();
   } catch {

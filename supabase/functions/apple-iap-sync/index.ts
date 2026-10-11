@@ -43,7 +43,7 @@ Deno.serve(async (req) => {
     const linkedUserId = await findUserIdByOriginalTx(supabaseAdmin, tx.originalTransactionId!);
     if (linkedUserId && linkedUserId !== user.id) {
       return new Response(JSON.stringify({
-        error: "Cet achat Apple est déjà lié à un autre compte MySWYM.",
+        error: "Cet achat Apple est déjà lié à un autre compte ForSwim.",
         code: "apple_tx_other_account",
       }), {
         status: 409,

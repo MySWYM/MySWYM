@@ -85,7 +85,7 @@ export default function PublicNav() {
       <nav className={`ms-header${scrolled || menuOpen ? " is-solid" : ""}`}>
         <div className="ms-header-inner">
           <LocalizedLink to="/" className="ms-brand" aria-label={t("nav.homeAria")}>
-            <BrandLogo variant="wordmark" height={26} alt="MySWYM" />
+            <BrandLogo variant="wordmark" height={26} alt="ForSwim" />
           </LocalizedLink>
 
           {!isMobile && (

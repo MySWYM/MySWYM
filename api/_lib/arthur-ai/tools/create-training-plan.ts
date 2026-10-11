@@ -36,7 +36,7 @@ export async function createTrainingPlan(
   if (!userId || !isUuid(userId)) {
     return toolFail("unauthenticated", {
       requires_auth: true,
-      reason: "MySWYM login required",
+      reason: "ForSwim login required",
     });
   }
 

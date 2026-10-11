@@ -129,19 +129,19 @@
     "nb": "Avslutt samtalen",
     "fi": "Päätä keskustelu"
   },
-  "Moi c’est la loutre MySWYM, bras droit d’Arthur, et la seule ici qui n’a jamais eu besoin de palmes. Comment je peux t’aider ?": {
-    "en": "I'm the MySWYM otter, Arthur's right-hand, and the only one here who's never needed fins. How can I help?",
-    "de": "Ich bin der MySWYM-Otter, Arthurs rechte Hand, und der Einzige hier, der nie Flossen gebraucht hat. Wie kann ich dir helfen?",
-    "es": "Soy la nutria de MySWYM, la mano derecha de Arthur, y la única aquí que nunca ha necesitado aletas. ¿En qué te puedo ayudar?",
-    "ja": "ぼくはMySWYMのカワウソ。Arthurの右腕で、ここで唯一フィンがいらないんだ。何か手伝えることある？",
-    "nl": "Ik ben de MySWYM-otter, de rechterhand van Arthur, en de enige hier die nooit vinnen nodig heeft gehad. Hoe kan ik je helpen?",
-    "it": "Sono la lontra MySWYM, il braccio destro di Arthur, e l'unica qui che non ha mai avuto bisogno delle pinne. Come posso aiutarti?",
-    "pt": "Sou a lontra MySWYM, o braço direito do Arthur, e a única aqui que nunca precisou de barbatanas. Como te posso ajudar?",
-    "pt-BR": "Eu sou a lontra MySWYM, braço direito do Arthur, e a única aqui que nunca precisou de nadadeiras. Como posso te ajudar?",
-    "sv": "Jag är MySWYM-uttern, Arthurs högra hand, och den enda här som aldrig har behövt fenor. Hur kan jag hjälpa dig?",
-    "da": "Jeg er MySWYM-odderen, Arthurs højre hånd, og den eneste her, der aldrig har haft brug for svømmefødder. Hvordan kan jeg hjælpe dig?",
-    "nb": "Jeg er MySWYM-oteren, Arthurs høyre hånd, og den eneste her som aldri har trengt svømmeføtter. Hvordan kan jeg hjelpe deg?",
-    "fi": "Olen MySWYM-saukko, Arthurin oikea käsi, ja ainoa täällä, joka ei ole koskaan tarvinnut räpylöitä. Miten voin auttaa?"
+  "Moi c’est la loutre ForSwim, bras droit d’Arthur, et la seule ici qui n’a jamais eu besoin de palmes. Comment je peux t’aider ?": {
+    "en": "I'm the ForSwim otter, Arthur's right-hand, and the only one here who's never needed fins. How can I help?",
+    "de": "Ich bin der ForSwim-Otter, Arthurs rechte Hand, und der Einzige hier, der nie Flossen gebraucht hat. Wie kann ich dir helfen?",
+    "es": "Soy la nutria de ForSwim, la mano derecha de Arthur, y la única aquí que nunca ha necesitado aletas. ¿En qué te puedo ayudar?",
+    "ja": "ぼくはForSwimのカワウソ。Arthurの右腕で、ここで唯一フィンがいらないんだ。何か手伝えることある？",
+    "nl": "Ik ben de ForSwim-otter, de rechterhand van Arthur, en de enige hier die nooit vinnen nodig heeft gehad. Hoe kan ik je helpen?",
+    "it": "Sono la lontra ForSwim, il braccio destro di Arthur, e l'unica qui che non ha mai avuto bisogno delle pinne. Come posso aiutarti?",
+    "pt": "Sou a lontra ForSwim, o braço direito do Arthur, e a única aqui que nunca precisou de barbatanas. Como te posso ajudar?",
+    "pt-BR": "Eu sou a lontra ForSwim, braço direito do Arthur, e a única aqui que nunca precisou de nadadeiras. Como posso te ajudar?",
+    "sv": "Jag är ForSwim-uttern, Arthurs högra hand, och den enda här som aldrig har behövt fenor. Hur kan jag hjälpa dig?",
+    "da": "Jeg er ForSwim-odderen, Arthurs højre hånd, og den eneste her, der aldrig har haft brug for svømmefødder. Hvordan kan jeg hjælpe dig?",
+    "nb": "Jeg er ForSwim-oteren, Arthurs høyre hånd, og den eneste her som aldri har trengt svømmeføtter. Hvordan kan jeg hjelpe deg?",
+    "fi": "Olen ForSwim-saukko, Arthurin oikea käsi, ja ainoa täällä, joka ei ole koskaan tarvinnut räpylöitä. Miten voin auttaa?"
   },
   "Dernière conversation": {
     "en": "Latest conversation",
@@ -241,19 +241,19 @@
     "nb": "{{1}} ganger i uken",
     "fi": "{{1}} kertaa viikossa"
   },
-  "Une nouvelle version de MySWYM est disponible.": {
-    "en": "A new version of MySWYM is available.",
-    "de": "Eine neue Version von MySWYM ist verfügbar.",
-    "es": "Hay una nueva versión de MySWYM disponible.",
-    "ja": "MySWYMの新しいバージョンがあります。",
-    "nl": "Er is een nieuwe versie van MySWYM beschikbaar.",
-    "it": "È disponibile una nuova versione di MySWYM.",
-    "pt": "Está disponível uma nova versão da MySWYM.",
-    "pt-BR": "Uma nova versão do MySWYM está disponível.",
-    "sv": "En ny version av MySWYM finns tillgänglig.",
-    "da": "En ny version af MySWYM er tilgængelig.",
-    "nb": "En ny versjon av MySWYM er tilgjengelig.",
-    "fi": "MySWYMistä on saatavilla uusi versio."
+  "Une nouvelle version de ForSwim est disponible.": {
+    "en": "A new version of ForSwim is available.",
+    "de": "Eine neue Version von ForSwim ist verfügbar.",
+    "es": "Hay una nueva versión de ForSwim disponible.",
+    "ja": "ForSwimの新しいバージョンがあります。",
+    "nl": "Er is een nieuwe versie van ForSwim beschikbaar.",
+    "it": "È disponibile una nuova versione di ForSwim.",
+    "pt": "Está disponível uma nova versão da ForSwim.",
+    "pt-BR": "Uma nova versão do ForSwim está disponível.",
+    "sv": "En ny version av ForSwim finns tillgänglig.",
+    "da": "En ny version af ForSwim er tilgængelig.",
+    "nb": "En ny versjon av ForSwim er tilgjengelig.",
+    "fi": "ForSwimistä on saatavilla uusi versio."
   },
   "Une mise à jour est nécessaire pour continuer à utiliser l’application.": {
     "en": "An update is required to keep using the app.",
@@ -311,19 +311,19 @@
     "nb": "Se videoen",
     "fi": "Katso video"
   },
-  "Arthur Natation · MySWYM": {
-    "en": "Arthur Swimming · MySWYM",
-    "de": "Arthur Schwimmen · MySWYM",
-    "es": "Arthur Natación · MySWYM",
-    "ja": "Arthur 水泳 · MySWYM",
-    "nl": "Arthur Zwemmen · MySWYM",
-    "it": "Arthur Nuoto · MySWYM",
-    "pt": "Arthur Natação · MySWYM",
-    "pt-BR": "Arthur Natação · MySWYM",
-    "sv": "Arthur Simning · MySWYM",
-    "da": "Arthur Svømning · MySWYM",
-    "nb": "Arthur Svømming · MySWYM",
-    "fi": "Arthur Uinti · MySWYM"
+  "Arthur Natation · ForSwim": {
+    "en": "Arthur Swimming · ForSwim",
+    "de": "Arthur Schwimmen · ForSwim",
+    "es": "Arthur Natación · ForSwim",
+    "ja": "Arthur 水泳 · ForSwim",
+    "nl": "Arthur Zwemmen · ForSwim",
+    "it": "Arthur Nuoto · ForSwim",
+    "pt": "Arthur Natação · ForSwim",
+    "pt-BR": "Arthur Natação · ForSwim",
+    "sv": "Arthur Simning · ForSwim",
+    "da": "Arthur Svømning · ForSwim",
+    "nb": "Arthur Svømming · ForSwim",
+    "fi": "Arthur Uinti · ForSwim"
   },
   "Matériel optionnel": {
     "en": "Optional equipment",
@@ -1039,18 +1039,18 @@
     "nb": "Kopier øktreferanse {{1}} til support",
     "fi": "Kopioi treenin viite {{1}} tukea varten"
   },
-  "Ouvre MySWYM sur iPhone, ou l’essai dans le navigateur.": {
-    "en": "Open MySWYM on iPhone, or the trial in your browser.",
-    "de": "Öffne MySWYM auf dem iPhone oder die Testversion im Browser.",
-    "es": "Abre MySWYM en el iPhone, o la prueba en el navegador.",
-    "ja": "iPhoneでMySWYMを開くか、ブラウザで無料体験を開いて。",
-    "nl": "Open MySWYM op je iPhone, of de proefversie in je browser.",
-    "it": "Apri MySWYM su iPhone, o la prova nel browser.",
-    "pt": "Abre o MySWYM no iPhone, ou o teste no navegador.",
-    "pt-BR": "Abra o MySWYM no iPhone, ou o teste no navegador.",
-    "sv": "Öppna MySWYM på iPhone, eller provperioden i webbläsaren.",
-    "da": "Åbn MySWYM på iPhone, eller prøveperioden i browseren.",
-    "nb": "Åpne MySWYM på iPhone, eller prøveperioden i nettleseren.",
-    "fi": "Avaa MySWYM iPhonessa tai kokeilu selaimessa."
+  "Ouvre ForSwim sur iPhone, ou l’essai dans le navigateur.": {
+    "en": "Open ForSwim on iPhone, or the trial in your browser.",
+    "de": "Öffne ForSwim auf dem iPhone oder die Testversion im Browser.",
+    "es": "Abre ForSwim en el iPhone, o la prueba en el navegador.",
+    "ja": "iPhoneでForSwimを開くか、ブラウザで無料体験を開いて。",
+    "nl": "Open ForSwim op je iPhone, of de proefversie in je browser.",
+    "it": "Apri ForSwim su iPhone, o la prova nel browser.",
+    "pt": "Abre o ForSwim no iPhone, ou o teste no navegador.",
+    "pt-BR": "Abra o ForSwim no iPhone, ou o teste no navegador.",
+    "sv": "Öppna ForSwim på iPhone, eller provperioden i webbläsaren.",
+    "da": "Åbn ForSwim på iPhone, eller prøveperioden i browseren.",
+    "nb": "Åpne ForSwim på iPhone, eller prøveperioden i nettleseren.",
+    "fi": "Avaa ForSwim iPhonessa tai kokeilu selaimessa."
   }
 }

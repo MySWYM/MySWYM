@@ -1,20 +1,20 @@
 {
   "meta": {
-    "title": "MySWYM : Personalized swim training plan",
+    "title": "ForSwim : Personalized swim training plan",
     "description": "Swim progression, triathlon, open water, diploma prep. Personalized swim training plan, ready in 2 minutes. 7-day Premium trial.",
-    "howTitle": "How it works | MySWYM",
-    "howDescription": "3 questions, a structured plan right away. That’s how MySWYM trains you."
+    "howTitle": "How it works | ForSwim",
+    "howDescription": "3 questions, a structured plan right away. That’s how ForSwim trains you."
   },
   "hero": {
     "title": "Your next swim session, in 3 questions.",
     "titleLine1": "Your next swim session,",
     "titleAccent": "in 3 questions",
-    "subtitle": "Goal, level, frequency. MySWYM builds the sessions. No more guessing at the pool.",
+    "subtitle": "Goal, level, frequency. ForSwim builds the sessions. No more guessing at the pool.",
     "cta": "Create my plan",
     "ctaSecondary": "See a session",
     "seeSession": "See a session",
     "freeNote": "7-day trial · with card · from €8.99/month",
-    "mockupAlt": "MySWYM app preview on two iPhones: workout and progress",
+    "mockupAlt": "ForSwim app preview on two iPhones: workout and progress",
     "proof1Value": "+15",
     "proof1Label": "goals",
     "proof2Value": "4",
@@ -93,7 +93,7 @@
   },
   "features": {
     "f1Title": "Plan through race day",
-    "f1Desc": "Set your goal date: MySWYM builds a progressive plan with base, build, intensity, and taper phases.",
+    "f1Desc": "Set your goal date: ForSwim builds a progressive plan with base, build, intensity, and taper phases.",
     "f2Title": "Adapted to your gear",
     "f2Desc": "Paddles, pull buoy, fins, kickboard… we only use what you actually have.",
     "f3Title": "All strokes",
@@ -106,7 +106,7 @@
     "eyebrow": "Built by a swimmer, for swimmers",
     "titleLine1": "Become the swimmer",
     "titleLine2": "you want to be",
-    "body": "MySWYM structures your training like a coach's logbook: goal, date, level, frequency, then clear sessions before you hit the water. Technique tips also live on Instagram.",
+    "body": "ForSwim structures your training like a coach's logbook: goal, date, level, frequency, then clear sessions before you hit the water. Technique tips also live on Instagram.",
     "quote": "Progress is analysis, repetition, and the drive to get there. Not improvising poolside.",
     "cta": "Create my plan",
     "igCta": "See @arthurnatation",
@@ -132,8 +132,8 @@
     "badgePrem": "PREMIUM"
   },
   "why": {
-    "label": "WHY MYSWYM",
-    "title": "Why use MySWYM?",
+    "label": "WHY ForSwim",
+    "title": "Why use ForSwim?",
     "subtitle": "Everything you need to structure your training, nothing extra.",
     "uiPreview": "UI preview",
     "b1Title": "Adapted to your gear",
@@ -163,8 +163,8 @@
     "label": "SESSION PREVIEW",
     "title": "Clear before you hit the water",
     "subtitle": "Every session has a coach structure: warm-up, main set, cool-down, plus a concrete tip.",
-    "mockupAlt": "MySWYM session on iPhone: warm-up, main set, and cool-down",
-    "detailMockupAlt": "MySWYM session detail: warm-up, main set, and cool-down",
+    "mockupAlt": "ForSwim session on iPhone: warm-up, main set, and cool-down",
+    "detailMockupAlt": "ForSwim session detail: warm-up, main set, and cool-down",
     "cta": "Create my plan",
     "type": "Endurance",
     "heading": "Comfortable sets",
@@ -181,7 +181,7 @@
     "label": "CREDIBILITY",
     "titleLine1": "Structured coaching,",
     "titleLine2": "not improvisation",
-    "subtitle": "MySWYM is built on clear training rules, not random prompts.",
+    "subtitle": "ForSwim is built on clear training rules, not random prompts.",
     "p1Title": "Local, reliable generation",
     "p1Desc": "Your plan is computed in the app, no external AI, no waiting. Immediate, reproducible results.",
     "p2Title": "Pro structure",
@@ -227,14 +227,14 @@
     "title": "Frequently asked questions",
     "chatKicker": "Premium support",
     "chatTitle": "A real conversation, not a bot",
-    "chatBody": "Premium members write in the MySWYM chat. Arthur reads and replies in person, when he can. No AI inventing an answer.",
+    "chatBody": "Premium members write in the ForSwim chat. Arthur reads and replies in person, when he can. No AI inventing an answer.",
     "chatPoint1": "Chat access for Premium",
     "chatPoint2": "Human reply, not a bot",
     "chatPoint3": "Write anytime",
     "chatCta": "See Premium plans",
-    "mockupAlt": "MySWYM chatbox on iPhone: ask the coach a question",
+    "mockupAlt": "ForSwim chatbox on iPhone: ask the coach a question",
     "q1": "I've never followed a structured plan. Is it for me?",
-    "a1": "Yes if you already know how to swim. Beginner level uses simple volumes and clear language. MySWYM structures your sessions. It's not a learn-to-swim school.",
+    "a1": "Yes if you already know how to swim. Beginner level uses simple volumes and clear language. ForSwim structures your sessions. It's not a learn-to-swim school.",
     "q2": "Can I change my goal along the way?",
     "a2": "Yes. From your profile, you can restart onboarding for a new goal and regenerate a plan. With Premium, you can also manage several plans in parallel.",
     "q3": "How does the subscription work?",
@@ -331,7 +331,7 @@
     "t3Desc": "Without a subscription your sessions pause: nothing left to see. To continue: €8.99/month or €59.99/year.",
     "whoLabel": "Who it’s for",
     "whoTitle": "If you already know how to swim.",
-    "whoLead": "MySWYM structures your sessions. It isn’t a school to learn the stroke from scratch.",
+    "whoLead": "ForSwim structures your sessions. It isn’t a school to learn the stroke from scratch.",
     "w1": "You have a goal: progress, triathlon, open water, or a certification.",
     "w2": "You already swim a few lengths, even modest ones.",
     "w3": "You want a readable plan, not improvising at the poolside.",
@@ -351,14 +351,14 @@
     "toPricing": "See pricing"
   },
   "faqPage": {
-    "metaTitle": "FAQ | MySWYM",
+    "metaTitle": "FAQ | ForSwim",
     "metaDescription": "Subscription, 25 m / 50 m pools, changing your goal: answers to start your swim plan.",
     "intro": "The questions we get most: trial, price, pool length, changing your goal.",
     "moreTitle": "Still have a question?",
     "moreCta": "Write to support"
   },
   "pricingPage": {
-    "metaTitle": "Pricing | MySWYM",
+    "metaTitle": "Pricing | ForSwim",
     "metaDescription": "7-day Premium trial with card, then €8.99/month with no commitment or €59.99/year. Personalised swim plans.",
     "eyebrow": "PRICING",
     "h1": "One trial. Two ways to continue.",
@@ -441,7 +441,7 @@
     "chooseAnnual": "Pay €59.99"
   },
   "contactPage": {
-    "metaTitle": "Contact | MySWYM",
+    "metaTitle": "Contact | ForSwim",
     "metaDescription": "A question about your swim plan? Write to us. We reply within 24-48 business hours.",
     "eyebrow": "CONTACT",
     "h1": "A question about your plan?",
@@ -465,8 +465,8 @@
     "allFaq": "All questions"
   },
   "reviewsPage": {
-    "metaTitle": "Reviews | MySWYM",
-    "metaDescription": "Swimmer reviews of MySWYM. Real feedback only, published after moderation.",
+    "metaTitle": "Reviews | ForSwim",
+    "metaDescription": "Swimmer reviews of ForSwim. Real feedback only, published after moderation.",
     "label": "REVIEWS",
     "title": "What swimmers say",
     "subtitle": "Real reviews only, published after moderation. No made-up testimonials.",

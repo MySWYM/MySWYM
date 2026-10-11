@@ -204,7 +204,7 @@ export const buildSupportNotifications = (conversations = [], seenAgentMessageId
   return [{
     id: `support:${withAgent.last_message_id}`,
     type: "update",
-    title: "Nouvelle réponse MySWYM",
+    title: "Nouvelle réponse ForSwim",
     body: preview || "Arthur t’a répondu dans le chat.",
     createdAt: parseNotificationTime(withAgent.updated_at || withAgent.created_at, Date.now()),
     action: "support",

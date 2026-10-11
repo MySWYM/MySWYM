@@ -199,7 +199,7 @@ export function formatSessionPlainText(session, opts = {}) {
     body.push("");
   }
 
-  if (withBrandFooter) body.push(",  MySWYM · myswym.app");
+  if (withBrandFooter) body.push(",  ForSwim · forswim.app");
   return [...head, ...body].join("\n").replace(/\n{3,}/g, "\n\n").trim();
 }
 
@@ -265,7 +265,7 @@ export async function buildSessionPrintPdf(session) {
     .filter(Boolean)
     .join(" · ");
 
-  writeWrapped("MySWYM", { size: 9, style: "bold", color: [37, 99, 235], gap: 3 });
+  writeWrapped("ForSwim", { size: 9, style: "bold", color: [37, 99, 235], gap: 3 });
   writeWrapped(title, { size: 16, style: "bold", color: [15, 23, 42], gap: 3 });
   if (meta) writeWrapped(meta, { size: 10, color: [71, 85, 105], gap: 3 });
 
@@ -350,7 +350,7 @@ export async function buildSessionPrintPdf(session) {
   doc.setDrawColor(226, 232, 240);
   doc.line(marginX, y, pageW - marginX, y);
   y += 5;
-  writeWrapped("MySWYM · myswym.app", { size: 8, color: [148, 163, 184], gap: 0 });
+  writeWrapped("ForSwim · forswim.app", { size: 8, color: [148, 163, 184], gap: 0 });
 
   return doc.output("blob");
 }
@@ -433,7 +433,7 @@ export function buildSessionPrintHtml(session, opts = {}) {
   const origin =
     (typeof window !== "undefined" && window.location?.origin)
       ? window.location.origin
-      : "https://www.myswym.app";
+      : "https://www.forswim.app";
   const wordUrl = `${origin}/logo-myswym-on-light.png`;
 
   return `<!DOCTYPE html>
@@ -441,7 +441,7 @@ export function buildSessionPrintHtml(session, opts = {}) {
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>${title}, MySWYM</title>
+<title>${title}, ForSwim</title>
 <style>
   @page { margin: 10mm 12mm; size: A4; }
   :root {
@@ -587,14 +587,14 @@ export function buildSessionPrintHtml(session, opts = {}) {
 </head>
 <body>
   <div class="head">
-    <span class="brand"><img src="${escapeHtml(wordUrl)}" alt="MySWYM" height="14" width="60"/></span>
+    <span class="brand"><img src="${escapeHtml(wordUrl)}" alt="ForSwim" height="14" width="60"/></span>
     <h1>${title}</h1>
   </div>
   ${meta ? `<div class="meta">${meta}</div>` : ""}
   ${bannerHtml}
   ${gearHtml}
   ${sectionsHtml || "<p>Détail de séance indisponible.</p>"}
-  <div class="foot">myswym.app</div>
+  <div class="foot">forswim.app</div>
   ${autoPrint ? `<script>
     window.addEventListener("load", () => {
       const imgs = Array.from(document.images || []);
@@ -649,8 +649,8 @@ export async function shareSessionPrint(session) {
     return { ok: false, reason: "unavailable" };
   }
   const filename = sessionPrintFilename(session, new Date(), "pdf");
-  const title = "Séance MySWYM";
-  const shareText = "Fiche bord de bassin MySWYM";
+  const title = "Séance ForSwim";
+  const shareText = "Fiche bord de bassin ForSwim";
 
   try {
     const pdfBlob = await buildSessionPrintPdf(session);

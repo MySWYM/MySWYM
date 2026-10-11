@@ -96,7 +96,7 @@ export default function VersionGate({ children }) {
 
     return (
       <AppStatusScreen
-        title={state.message || "Une nouvelle version de MySWYM est disponible."}
+        title={state.message || "Une nouvelle version de ForSwim est disponible."}
         body="Une mise à jour est nécessaire pour continuer à utiliser l’application."
         primaryLabel="Mettre à jour"
         primaryBusyLabel="Mise à jour…"

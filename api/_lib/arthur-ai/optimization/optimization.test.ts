@@ -25,7 +25,7 @@ test("qualité strong, conseil + question", () => {
 test("qualité pénalise spam + CTA trop tôt", () => {
   const r = scoreResponseQuality({
     message:
-      "Dernière chance ! Clique maintenant sur https://myswym.app/inscription offre limitée",
+      "Dernière chance ! Clique maintenant sur https://forswim.app/inscription offre limitée",
     lead_temperature: "cold",
     channel: "instagram",
   });
@@ -36,11 +36,11 @@ test("qualité pénalise spam + CTA trop tôt", () => {
 
 test("detect CTA types", () => {
   assert.equal(
-    detectCtaInMessage("Viens sur https://myswym.app/fr/tarifs").cta_type,
+    detectCtaInMessage("Viens sur https://forswim.app/fr/tarifs").cta_type,
     "tarifs",
   );
   assert.equal(
-    detectCtaInMessage("Compte : https://myswym.app/inscription").cta_type,
+    detectCtaInMessage("Compte : https://forswim.app/inscription").cta_type,
     "inscription",
   );
 });
@@ -59,7 +59,7 @@ test("analyse, engaged sans CTA = finding", () => {
 });
 
 test("analyse, CTA heavy", () => {
-  const link = "https://myswym.app/inscription";
+  const link = "https://forswim.app/inscription";
   const a = analyzeConversation([
     { role: "user", content: "hi" },
     { role: "assistant", content: `Va sur ${link}` },

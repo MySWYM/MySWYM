@@ -3537,7 +3537,7 @@ const ShareModal = ({ session, goalLabel, badge = null, onClose }) => {
         const file = new File([blob], "myswym-seance.png", { type: "image/png" });
         const payload = {
           files: [file],
-          title: "Ma séance MySWYM",
+          title: "Ma séance ForSwim",
           text: pack.caption,
         };
         if (navigator.canShare && !navigator.canShare(payload)) {
@@ -7962,7 +7962,7 @@ export default function App() {
 
   const openShare = (session, badgeId = null) => {
     const target = session || lastCompletedSessionRef.current || {
-      title: badgeId ? "Badge MySWYM" : "Séance MySWYM",
+      title: badgeId ? "Badge ForSwim" : "Séance ForSwim",
       type: "Partage",
       distance: null,
       duration: null,
@@ -8100,17 +8100,17 @@ export default function App() {
   useEffect(() => {
     if (screen === "onboarding") {
       const prev = document.title;
-      document.title = "Créer mon plan | MySWYM";
+      document.title = "Créer mon plan | ForSwim";
       return () => { document.title = prev; };
     }
     if (screen === "auth") {
       const prev = document.title;
       const mode = AUTH_PATHS[location.pathname] || "password";
       document.title = mode === "register"
-        ? "Inscription | MySWYM"
+        ? "Inscription | ForSwim"
         : mode === "reset"
-          ? "Mot de passe | MySWYM"
-          : "Connexion | MySWYM";
+          ? "Mot de passe | ForSwim"
+          : "Connexion | ForSwim";
       return () => { document.title = prev; };
     }
     return undefined;
@@ -8566,7 +8566,7 @@ export default function App() {
       track("signup_completed", {}, { onceKey: `signup_completed:${u?.id || "anon"}` });
     }
     // Appliquer le choix newsletter stashé (Apple/Google) puis rafraîchir le user React
-    // pour que le switch « Actus MySWYM » reflète l’opt-in tout de suite.
+    // pour que le switch « Actus ForSwim » reflète l’opt-in tout de suite.
     void flushPendingNewsletterOptIn().then((res) => {
       setUser(res?.user || u);
     });
@@ -12140,7 +12140,7 @@ export default function App() {
               completeLoveFunnel();
               setLoveReviewStep(null);
               const path = withLocalePrefix("/contact", siteLanguage());
-              const url = absoluteSiteUrl(path) || `https://www.myswym.app${path}`;
+              const url = absoluteSiteUrl(path) || `https://www.forswim.app${path}`;
               openInSystemBrowser(url);
             }}
             onRateStore={() => {

@@ -18,7 +18,7 @@ export function ShareProgressCard({
   weeksCompleted,
   streak,
   goalLabel,
-  shareUrl = 'https://myswym.app',
+  shareUrl = 'https://forswim.app',
   onShare,
 }: Props) {
   const km = (meters / 1000).toFixed(1)

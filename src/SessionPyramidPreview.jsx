@@ -38,7 +38,7 @@ export default function SessionPyramidPreview() {
     >
       <div style={{ width: "100%", maxWidth: 390 }}>
         <div style={{ fontSize: 12, fontWeight: 800, color: "#355da3", marginBottom: 12, letterSpacing: "0.04em" }}>
-          MYSWYM · LIVE PAGE SÉANCE
+          ForSwim · LIVE PAGE SÉANCE
         </div>
         <SessionLiveView
           session={DEMO_SESSION}

@@ -1,10 +1,10 @@
 # Arthur AI — documentation V1
 
-Assistant IA MySWYM (coaching + qualification + conversion).  
+Assistant IA ForSwim (coaching + qualification + conversion).  
 Backend uniquement : **Vercel `/api`** → OpenAI → tools sécurisés → Supabase / moteur existant.
 
 > OpenAI n’est **jamais** appelé depuis le frontend.  
-> Le moteur d’entraînement MySWYM reste la **seule** source de vérité sportive.
+> Le moteur d’entraînement ForSwim reste la **seule** source de vérité sportive.
 
 ---
 
@@ -26,7 +26,7 @@ Endpoints :
 - `POST /api/ai/chat` — test web
 - `GET|POST /api/instagram/webhook` — Meta
 - `POST /api/instagram/mock` — mock local
-- `POST /api/ai/identity-link` — lier IGSID ↔ user MySWYM (JWT)
+- `POST /api/ai/identity-link` — lier IGSID ↔ user ForSwim (JWT)
 - `GET|POST /api/admin/arthur-growth` — Growth Engine F1 (admin)
 - `GET|POST /api/admin/arthur-followups` — Conversion Engine F2 (admin)
 - `GET|POST /api/admin/arthur-optimize` — Optimization Loop F3 (admin)
@@ -91,7 +91,7 @@ Pas d’historique illimité.
 | `get_training_history` | feedback / planned_sessions / adaptations |
 | `get_subscription_status` | `user_access_state` |
 
-### Écriture (user MySWYM authentifié uniquement)
+### Écriture (user ForSwim authentifié uniquement)
 
 | Tool | Comportement |
 |------|----------------|
@@ -157,7 +157,7 @@ reply via Graph API (ou mock)
 
 | status | Effet |
 |--------|--------|
-| `pending` | IGSID vu en DM, pas de user MySWYM |
+| `pending` | IGSID vu en DM, pas de user ForSwim |
 | `verified` | Lien explicite via `POST /api/ai/identity-link` (JWT) |
 | `revoked` | Inutilisable |
 
@@ -166,7 +166,7 @@ reply via Graph API (ou mock)
 ### Écritures depuis Instagram
 
 Désactivées (même si lien verified) : `create_training_plan`, `update_user_profile`, `create_checkout`.  
-Arthur qualifie + renvoie vers MySWYM.
+Arthur qualifie + renvoie vers ForSwim.
 
 ### Attribution
 
@@ -319,7 +319,7 @@ Ce n’est **pas** le moteur de plan — conseils courts seulement.
 
 ### CTA Instagram
 
-- Détection liens `myswym.app` + `suggested_action=suggest_myswym`
+- Détection liens `forswim.app` + `suggested_action=suggest_myswym`
 - Events `cta_sent` / table `ai_cta_events`
 - Liens trackables : `buildTrackedCtaUrl` (`?ref=arthur_ig`)
 - Attribution signup/premium depuis identity-link / sync lifecycle
@@ -454,7 +454,7 @@ npm run test:arthur:shadow
 ### Credentials manquants
 
 Sans `META_*` / `INSTAGRAM_ACCESS_TOKEN` → mode mock automatique.  
-Documenter dans Meta App Dashboard : callback `https://myswym.app/api/instagram/webhook`.
+Documenter dans Meta App Dashboard : callback `https://forswim.app/api/instagram/webhook`.
 
 ### Tester Instagram mock
 

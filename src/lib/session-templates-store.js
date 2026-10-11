@@ -73,7 +73,7 @@ export function loadSessionTemplates(supabase) {
   return loadPromise;
 }
 
-/** Templates gold Arthur (coaché), filtrés par objectif MySWYM. */
+/** Templates gold Arthur (coaché), filtrés par objectif ForSwim. */
 export function getArthurGoldTemplates(objectif) {
   const obj = objectif === "eau_libre" || objectif === "mixte" ? objectif : null;
   if (!obj || !cache.length) return [];
@@ -91,7 +91,7 @@ export function getArthurGoldTemplates(objectif) {
     .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
 }
 
-export function templateToMySwymSession(t) {
+export function templateToForSwimSession(t) {
   const rawDetails = Array.isArray(t.details) ? t.details : [];
   // Même découpe que l'UI : lignes Arthur « A · B · C » → header + sous-séries
   const details = expandArthurDetailsForUi(rawDetails);
@@ -184,7 +184,7 @@ export function pickArthurBankSession(objectif, archeIdx, opts = {}) {
 
   const idx = ((archeIdx % list.length) + list.length) % list.length;
   const t = list[idx];
-  let session = templateToMySwymSession(t);
+  let session = templateToForSwimSession(t);
 
   // Scale volume vers cible (periodization parity)
   if (opts.scaleVolume && opts.volumeTarget > 0 && t.base_distance_m > 0) {

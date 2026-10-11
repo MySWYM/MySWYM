@@ -67,7 +67,7 @@ export interface ArthurAttribution {
 }
 
 export interface ProcessArthurMessageInput {
-  /** MySWYM auth.users.id, jamais un ID Instagram. */
+  /** ForSwim auth.users.id, jamais un ID Instagram. */
   userId?: string | null;
   /** Identifiant canal externe (ex. IGPSID). Jamais un substitute de userId. */
   externalUserId?: string | null;
@@ -134,7 +134,7 @@ export interface ProcessArthurMessageResult {
 }
 
 export interface AuthContext {
-  /** Compte MySWYM validé (JWT), jamais dérivé d'un ID Instagram. */
+  /** Compte ForSwim validé (JWT), jamais dérivé d'un ID Instagram. */
   userId: string | null;
   /** Identifiant externe (Instagram, etc.), distinct de userId. */
   externalUserId: string | null;

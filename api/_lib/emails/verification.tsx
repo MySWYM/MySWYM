@@ -9,7 +9,7 @@ export type VerificationEmailProps = {
 export function VerificationEmail({ confirmUrl }: VerificationEmailProps) {
   return (
     <EmailLayout
-      preview="1 clic pour activer ton compte MySWYM."
+      preview="1 clic pour activer ton compte ForSwim."
       eyebrow="Sécurité"
       ctaLabel="Confirmer mon email"
       ctaUrl={confirmUrl}

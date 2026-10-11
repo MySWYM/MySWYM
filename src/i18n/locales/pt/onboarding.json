@@ -192,8 +192,8 @@
     }
   },
   "health": {
-    "checkbox": "Aceito explicitamente que a MySWYM trate a minha frequência cardíaca e as minhas declarações de lesão / incómodo para adaptar as minhas sessões e ajudar a prevenir lesões. Posso recusar.",
-    "body": "Para adaptar as tuas sessões e reduzir o risco de lesão, a MySWYM pode tratar dados de saúde ao abrigo do RGPD: frequência cardíaca por sessão (p. ex. via Strava) e o histórico de lesões / incómodos que declarares. Base legal: o teu consentimento explícito (RGPD, art. 9.º, n.º 2, al. a)). É opcional: podes recusar e usar a aplicação na mesma. Podes retirar o consentimento quando quiseres (Definições ou contact@myswym.app). Estes dados não são enviados para ferramentas de análise de terceiros.",
+    "checkbox": "Aceito explicitamente que a ForSwim trate a minha frequência cardíaca e as minhas declarações de lesão / incómodo para adaptar as minhas sessões e ajudar a prevenir lesões. Posso recusar.",
+    "body": "Para adaptar as tuas sessões e reduzir o risco de lesão, a ForSwim pode tratar dados de saúde ao abrigo do RGPD: frequência cardíaca por sessão (p. ex. via Strava) e o histórico de lesões / incómodos que declarares. Base legal: o teu consentimento explícito (RGPD, art. 9.º, n.º 2, al. a)). É opcional: podes recusar e usar a aplicação na mesma. Podes retirar o consentimento quando quiseres (Definições ou contact@myswym.app). Estes dados não são enviados para ferramentas de análise de terceiros.",
     "medical": "Os planos gerados são indicativos e não substituem o conselho de um profissional de saúde. Confirma a tua aptidão (atestado médico se for preciso) antes de seguires o programa.",
     "declaration": "Declaro que a informação de saúde que dou é verdadeira.",
     "safety": "Treina de acordo com o que sentes. Interrompe se surgir um sintoma preocupante e consulta um profissional de saúde se for preciso. Águas abertas: nunca nades sozinho."
@@ -276,7 +276,7 @@
     "backLogin": "← Voltar a entrar",
     "age": "Confirmo que tenho 18 anos ou mais.",
     "terms": "Aceito os <cgu>termos de utilização</cgu> e a <privacy>política de privacidade</privacy>.",
-    "newsletter": "Aceito receber novidades da MySWYM por e-mail.",
+    "newsletter": "Aceito receber novidades da ForSwim por e-mail.",
     "trial": "Teste de 7 dias com cartão (Stripe ou App Store). Depois a cobrança começa salvo cancelamento antes do fim.",
     "google": "Continuar com a Google",
     "facebook": "Continuar com o Facebook",

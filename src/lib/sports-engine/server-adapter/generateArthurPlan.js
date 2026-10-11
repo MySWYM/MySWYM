@@ -1,5 +1,5 @@
 /**
- * Façade serveur Arthur AI → moteur MySWYM existant.
+ * Façade serveur Arthur AI → moteur ForSwim existant.
  *
  * NE CALCULE PAS volume / composer / readiness / périodisation interne.
  * Délègue le contenu des séances à buildCoachPlanWeeks (swim-plan-bridge).
@@ -41,7 +41,7 @@ const ALLOWED_LEVELS = new Set([
 /**
  * @param {object} input
  * @param {string} [input.userId]
- * @param {object} [input.profile], profil MySWYM (sessionsPerWeek, goal, level, …)
+ * @param {object} [input.profile], profil ForSwim (sessionsPerWeek, goal, level, …)
  * @param {string} [input.goal]
  * @param {string} [input.targetDate], ISO date → profile.eventDate
  * @param {number} [input.weeks]
@@ -60,7 +60,7 @@ export async function generateArthurPlan(input = {}) {
       success: false,
       error: "unsupported_goal",
       message:
-        "Les programmes en séance du jour (Nager & Progresser, triathlon, eau libre, diplôme) se génèrent dans l’app MySWYM, pas via Arthur AI pour l’instant.",
+        "Les programmes en séance du jour (Nager & Progresser, triathlon, eau libre, diplôme) se génèrent dans l’app ForSwim, pas via Arthur AI pour l’instant.",
     };
   }
 
@@ -69,7 +69,7 @@ export async function generateArthurPlan(input = {}) {
       success: false,
       error: "unsupported_goal",
       message:
-        "Cet objectif utilise encore le générateur App dédié. Crée le plan depuis MySWYM.",
+        "Cet objectif utilise encore le générateur App dédié. Crée le plan depuis ForSwim.",
     };
   }
 

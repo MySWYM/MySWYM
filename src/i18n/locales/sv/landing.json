@@ -1,20 +1,20 @@
 {
   "meta": {
-    "title": "MySWYM : Personlig simträningsplan",
+    "title": "ForSwim : Personlig simträningsplan",
     "description": "Simutveckling, triathlon, öppet vatten, examensförberedelse. Personlig simplan, klar på 2 minuter. 7 dagars Premium-prov.",
-    "howTitle": "Så funkar det | MySWYM",
-    "howDescription": "3 frågor, en strukturerad plan direkt. Så tränar MySWYM dig."
+    "howTitle": "Så funkar det | ForSwim",
+    "howDescription": "3 frågor, en strukturerad plan direkt. Så tränar ForSwim dig."
   },
   "hero": {
     "title": "Ditt nästa simpass, på 3 frågor.",
     "titleLine1": "Ditt nästa simpass,",
     "titleAccent": "på 3 frågor",
-    "subtitle": "Mål, nivå, frekvens. MySWYM bygger passen. Slut på att gissa vid bassängen.",
+    "subtitle": "Mål, nivå, frekvens. ForSwim bygger passen. Slut på att gissa vid bassängen.",
     "cta": "Skapa min plan",
     "ctaSecondary": "Se ett pass",
     "seeSession": "Se ett pass",
     "freeNote": "7 dagars prov · med kort · från 8,99 €/mån",
-    "mockupAlt": "MySWYM-förhandsvisning på två iPhones: pass och utveckling",
+    "mockupAlt": "ForSwim-förhandsvisning på två iPhones: pass och utveckling",
     "proof1Value": "+15",
     "proof1Label": "mål",
     "proof2Value": "4",
@@ -93,7 +93,7 @@
   },
   "features": {
     "f1Title": "Plan fram till tävlingsdagen",
-    "f1Desc": "Sätt ditt måldatum: MySWYM bygger en stegvis plan med bas, uppbyggnad, intensitet och taper.",
+    "f1Desc": "Sätt ditt måldatum: ForSwim bygger en stegvis plan med bas, uppbyggnad, intensitet och taper.",
     "f2Title": "Anpassad till din utrustning",
     "f2Desc": "Paddlar, pullbuoy, fenor, platta… vi använder bara det du faktiskt har.",
     "f3Title": "Alla simsätt",
@@ -106,7 +106,7 @@
     "eyebrow": "Byggd av en simmare, för simmare",
     "titleLine1": "Bli simmaren",
     "titleLine2": "du vill vara",
-    "body": "MySWYM strukturerar din träning som en coachs loggbok: mål, datum, nivå, frekvens, sedan tydliga pass innan du går i vattnet. Tekniktips finns också på Instagram.",
+    "body": "ForSwim strukturerar din träning som en coachs loggbok: mål, datum, nivå, frekvens, sedan tydliga pass innan du går i vattnet. Tekniktips finns också på Instagram.",
     "quote": "Utveckling är analys, repetition och drivet att ta sig dit. Inte att improvisera vid bassängkanten.",
     "cta": "Skapa min plan",
     "igCta": "Se @arthurnatation",
@@ -132,8 +132,8 @@
     "badgePrem": "PREMIUM"
   },
   "why": {
-    "label": "VARFÖR MYSWYM",
-    "title": "Varför använda MySWYM?",
+    "label": "VARFÖR ForSwim",
+    "title": "Varför använda ForSwim?",
     "subtitle": "Allt du behöver för att strukturera träningen, inget extra.",
     "uiPreview": "UI-förhandsvisning",
     "b1Title": "Anpassad till din utrustning",
@@ -163,8 +163,8 @@
     "label": "PASSFÖRHANDSVISNING",
     "title": "Tydligt innan du går i vattnet",
     "subtitle": "Varje pass har en coachstruktur: uppvärmning, huvudset, nedvarvning, plus ett konkret tips.",
-    "mockupAlt": "MySWYM-pass på iPhone: uppvärmning, huvudset och nedvarvning",
-    "detailMockupAlt": "MySWYM-pass i detalj: uppvärmning, huvudset och nedvarvning",
+    "mockupAlt": "ForSwim-pass på iPhone: uppvärmning, huvudset och nedvarvning",
+    "detailMockupAlt": "ForSwim-pass i detalj: uppvärmning, huvudset och nedvarvning",
     "cta": "Skapa min plan",
     "type": "Uthållighet",
     "heading": "Bekväma set",
@@ -181,7 +181,7 @@
     "label": "TROVÄRDIGHET",
     "titleLine1": "Strukturerad coaching,",
     "titleLine2": "inte improvisation",
-    "subtitle": "MySWYM bygger på tydliga träningsregler, inte slumpmässiga promptar.",
+    "subtitle": "ForSwim bygger på tydliga träningsregler, inte slumpmässiga promptar.",
     "p1Title": "Lokal, pålitlig generering",
     "p1Desc": "Din plan räknas ut i appen, ingen extern AI, ingen väntan. Direkta, reproducerbara resultat.",
     "p2Title": "Proffsstruktur",
@@ -227,14 +227,14 @@
     "title": "Vanliga frågor",
     "chatKicker": "Premium-support",
     "chatTitle": "Ett riktigt samtal, ingen bot",
-    "chatBody": "Premium-medlemmar skriver i MySWYM-chatten. Arthur läser och svarar själv, när han kan. Ingen AI som hittar på ett svar.",
+    "chatBody": "Premium-medlemmar skriver i ForSwim-chatten. Arthur läser och svarar själv, när han kan. Ingen AI som hittar på ett svar.",
     "chatPoint1": "Chatt för Premium",
     "chatPoint2": "Mänskligt svar, ingen bot",
     "chatPoint3": "Skriv när du vill",
     "chatCta": "Se Premium-planerna",
-    "mockupAlt": "MySWYM-chatt på iPhone: ställ en fråga till coachen",
+    "mockupAlt": "ForSwim-chatt på iPhone: ställ en fråga till coachen",
     "q1": "Jag har aldrig följt en strukturerad plan. Är den för mig?",
-    "a1": "Ja om du redan kan simma. Nybörjarnivån använder enkla volymer och tydligt språk. MySWYM strukturerar dina pass. Det är ingen simskola.",
+    "a1": "Ja om du redan kan simma. Nybörjarnivån använder enkla volymer och tydligt språk. ForSwim strukturerar dina pass. Det är ingen simskola.",
     "q2": "Kan jag byta mål längs vägen?",
     "a2": "Ja. Från din profil kan du starta om onboarding för ett nytt mål och generera en ny plan. Med Premium kan du också ha flera planer parallellt.",
     "q3": "Hur fungerar prenumerationen?",
@@ -331,7 +331,7 @@
     "t3Desc": "Utan prenumeration pausas passen: inget kvar att se. För att fortsätta: 8,99 €/mån eller 59,99 €/år.",
     "whoLabel": "Vem det är för",
     "whoTitle": "Om du redan kan simma.",
-    "whoLead": "MySWYM strukturerar dina pass. Det är ingen skola för att lära sig simsättet från noll.",
+    "whoLead": "ForSwim strukturerar dina pass. Det är ingen skola för att lära sig simsättet från noll.",
     "w1": "Du har ett mål: utveckling, triathlon, öppet vatten eller en examen.",
     "w2": "Du simmar redan några längder, även korta.",
     "w3": "Du vill ha en läsbar plan, inte improvisera vid bassängkanten.",
@@ -351,14 +351,14 @@
     "toPricing": "Se priser"
   },
   "faqPage": {
-    "metaTitle": "FAQ | MySWYM",
+    "metaTitle": "FAQ | ForSwim",
     "metaDescription": "Prenumeration, 25 m / 50 m-bassänger, byta mål: svar för att starta din simplan.",
     "intro": "Frågorna vi får mest: prov, pris, bassänglängd, byta mål.",
     "moreTitle": "Har du fortfarande en fråga?",
     "moreCta": "Skriv till support"
   },
   "pricingPage": {
-    "metaTitle": "Priser | MySWYM",
+    "metaTitle": "Priser | ForSwim",
     "metaDescription": "7 dagars Premium-prov med kort, sedan 8,99 €/mån utan bindningstid eller 59,99 €/år. Personliga simplaner.",
     "eyebrow": "PRISER",
     "h1": "En provperiod. Två sätt att fortsätta.",
@@ -441,7 +441,7 @@
     "chooseAnnual": "Betala 59,99 €"
   },
   "contactPage": {
-    "metaTitle": "Kontakt | MySWYM",
+    "metaTitle": "Kontakt | ForSwim",
     "metaDescription": "En fråga om din simplan? Skriv till oss. Vi svarar inom 24-48 arbetstimmar.",
     "eyebrow": "KONTAKT",
     "h1": "En fråga om din plan?",
@@ -465,8 +465,8 @@
     "allFaq": "Alla frågor"
   },
   "reviewsPage": {
-    "metaTitle": "Omdömen | MySWYM",
-    "metaDescription": "Simmarnas omdömen om MySWYM. Bara riktig feedback, publicerad efter granskning.",
+    "metaTitle": "Omdömen | ForSwim",
+    "metaDescription": "Simmarnas omdömen om ForSwim. Bara riktig feedback, publicerad efter granskning.",
     "label": "OMDÖMEN",
     "title": "Vad simmare säger",
     "subtitle": "Bara riktiga omdömen, publicerade efter granskning. Inga påhittade vittnesmål.",

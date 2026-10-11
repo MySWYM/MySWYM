@@ -203,7 +203,7 @@ export default function HomeBlogCarousel() {
           </div>
         </div>
         <p style={{ margin: "0 0 12px", fontSize: 13, color: colors.grey, lineHeight: 1.5 }}>
-          Les articles technique arrivent bientôt. En attendant, ouvre le blog MySWYM.
+          Les articles technique arrivent bientôt. En attendant, ouvre le blog ForSwim.
         </p>
         <a
           href={withLocalePrefix("/blog", siteLanguage())}

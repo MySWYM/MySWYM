@@ -92,7 +92,7 @@ export async function createCheckout(
         ? PRICE_MONTHLY_COMMIT
         : PRICE_MONTHLY_FLEX);
 
-  const appUrl = (process.env.APP_URL || "https://myswym.app").replace(/\/$/, "");
+  const appUrl = (process.env.APP_URL || "https://forswim.app").replace(/\/$/, "");
 
   try {
     const res = await fetch(`${supabaseUrl}/functions/v1/create-checkout`, {

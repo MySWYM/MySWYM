@@ -114,7 +114,7 @@ export async function getLocalNotificationPermission() {
 
 /**
  * Demande l’autorisation iOS si pas encore tranchée.
- * Après Autoriser ou Refuser, MySWYM apparaît dans Réglages → Notifications.
+ * Après Autoriser ou Refuser, ForSwim apparaît dans Réglages → Notifications.
  * @returns {Promise<"granted"|"denied"|"prompt">}
  */
 export async function ensureIosNotificationPermission(userId) {
@@ -160,7 +160,7 @@ export async function requestLocalNotificationPermission(userId) {
   return ensureIosNotificationPermission(userId);
 }
 
-export async function cancelMySwymLocalNotifications() {
+export async function cancelForSwimLocalNotifications() {
   const plugin = (await getPluginBox())?.plugin;
   if (!plugin) return;
   try {
@@ -229,9 +229,9 @@ export async function notifyBadgeEarned({ title, body }) {
 /**
  * Annule puis replanifie. No-op si pas iOS ou permission refusée.
  */
-export async function rescheduleMySwymLocalNotifications(planned = []) {
+export async function rescheduleForSwimLocalNotifications(planned = []) {
   if (!isNativeIos()) return { scheduled: 0 };
-  await cancelMySwymLocalNotifications();
+  await cancelForSwimLocalNotifications();
   const perm = await getLocalNotificationPermission();
   if (perm !== "granted") return { scheduled: 0 };
   return scheduleLocalNotifications(planned);

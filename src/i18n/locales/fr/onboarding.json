@@ -201,8 +201,8 @@
     }
   },
   "health": {
-    "checkbox": "J’accepte explicitement que MySWYM traite ma fréquence cardiaque et mes déclarations de blessure / gêne pour adapter mes séances et prévenir le risque de blessure. Je peux refuser.",
-    "body": "Pour adapter tes séances et limiter le risque de blessure, MySWYM peut traiter des données de santé au sens du RGPD : fréquence cardiaque par séance (ex. via Strava) et historique de blessures / gênes que tu déclares. Base légale : ton consentement explicite (art. 9.2.a RGPD). C’est facultatif : tu peux refuser et utiliser l’app sans ces données. Tu peux retirer ton consentement à tout moment (Paramètres ou contact@myswym.app). Ces données ne sont pas envoyées aux outils d’analytics tiers.",
+    "checkbox": "J’accepte explicitement que ForSwim traite ma fréquence cardiaque et mes déclarations de blessure / gêne pour adapter mes séances et prévenir le risque de blessure. Je peux refuser.",
+    "body": "Pour adapter tes séances et limiter le risque de blessure, ForSwim peut traiter des données de santé au sens du RGPD : fréquence cardiaque par séance (ex. via Strava) et historique de blessures / gênes que tu déclares. Base légale : ton consentement explicite (art. 9.2.a RGPD). C’est facultatif : tu peux refuser et utiliser l’app sans ces données. Tu peux retirer ton consentement à tout moment (Paramètres ou contact@myswym.app). Ces données ne sont pas envoyées aux outils d’analytics tiers.",
     "medical": "Les plans générés sont fournis à titre indicatif et ne remplacent pas l’avis d’un professionnel de santé. Vérifie ton aptitude physique (certificat médical si nécessaire) avant de suivre le programme.",
     "declaration": "Je certifie sur l’honneur l’exactitude des informations de santé que je fournis.",
     "safety": "Entraîne-toi selon ta forme. Arrête en cas de symptôme inquiétant et consulte un professionnel de santé si besoin. Eau libre : ne nage jamais seul."
@@ -285,7 +285,7 @@
     "backLogin": "← Retour à la connexion",
     "age": "Je confirme avoir 18 ans révolus.",
     "terms": "J’accepte les <cgu>CGU</cgu> et la <privacy>politique de confidentialité</privacy>.",
-    "newsletter": "J’accepte de recevoir les actus MySWYM par e-mail.",
+    "newsletter": "J’accepte de recevoir les actus ForSwim par e-mail.",
     "trial": "7 jours d’essai avec carte (Stripe ou App Store). Ensuite le prélèvement démarre, sauf résiliation avant la fin de l’essai.",
     "google": "Continuer avec Google",
     "facebook": "Continuer avec Facebook",

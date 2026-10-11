@@ -1,4 +1,4 @@
-# Moteur sportif MySWYM V1
+# Moteur sportif ForSwim V1
 
 Référence produit : spécification coach adaptatif (niveau × objectif × phase × historique).
 

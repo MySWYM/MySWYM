@@ -61,7 +61,7 @@ public class AppBadgePlugin: CAPPlugin, CAPBridgedPlugin {
         }
     }
 
-    /// Ouvre Réglages iPhone → MySWYM (notifications, etc.).
+    /// Ouvre Réglages iPhone → ForSwim (notifications, etc.).
     @objc func openAppSettings(_ call: CAPPluginCall) {
         DispatchQueue.main.async {
             guard let url = URL(string: UIApplication.openSettingsURLString) else {

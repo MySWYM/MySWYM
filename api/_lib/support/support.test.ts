@@ -159,9 +159,9 @@ test("notify carries the session ref when the app sends one", () => {
     displayName: "Marie",
     body: "Cette séance est trop dure",
     isNew: false,
-    context: "MySWYM séance | séance n°6 | réf. 01-42 | 1500m",
+    context: "ForSwim séance | séance n°6 | réf. 01-42 | 1500m",
   });
-  assert.match(text, /🏊 MySWYM séance \| séance n°6 \| réf\. 01-42/);
+  assert.match(text, /🏊 ForSwim séance \| séance n°6 \| réf\. 01-42/);
   assert.equal(parseSupportCodeFromText(text), "deadbeef", "le code reste parsable");
 
   // Une réf multi-lignes ou géante ne casse pas le format Telegram

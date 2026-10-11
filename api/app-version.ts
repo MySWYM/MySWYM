@@ -42,7 +42,7 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
     latestAppVersion,
     message:
       process.env.FORCE_UPDATE_MESSAGE ||
-      "Une nouvelle version de MySWYM est disponible.",
+      "Une nouvelle version de ForSwim est disponible.",
     checkedAt: new Date().toISOString(),
   };
 

@@ -10,8 +10,8 @@ export default function GoStoreRedirect() {
   const external = target.startsWith("http");
 
   usePageSeo({
-    title: "MySWYM",
-    description: "Ouvre MySWYM sur iPhone, ou l’essai dans le navigateur.",
+    title: "ForSwim",
+    description: "Ouvre ForSwim sur iPhone, ou l’essai dans le navigateur.",
     path: "/go",
     noIndex: true,
   });

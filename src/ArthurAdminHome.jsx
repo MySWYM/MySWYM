@@ -69,7 +69,7 @@ export default function ArthurAdminHome() {
     <main style={{ maxWidth: 1100, margin: "0 auto", padding: "28px 20px 72px" }}>
       <PageHead title="Cockpit" days={days} setDays={setDays} loading={loading} onReload={load} />
       <p style={{ color: "#5a6a7a", margin: "0 0 24px", fontSize: 16, lineHeight: 1.5 }}>
-        Est-ce que MySWYM va mieux ? Usage réel, conversion, alertes produit. Instagram est dans son onglet.
+        Est-ce que ForSwim va mieux ? Usage réel, conversion, alertes produit. Instagram est dans son onglet.
       </p>
       {offline ? <Banner>Les APIs ne répondent pas. Relance le serveur local.</Banner> : null}
       {error ? <Banner tone="error">{error}</Banner> : null}

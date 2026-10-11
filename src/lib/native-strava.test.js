@@ -27,11 +27,11 @@ assert(stravaRedirectUri().endsWith("/app"), "web redirect ends with /app");
 assert(!stravaRedirectUri().startsWith("capacitor:"), "web redirect is not capacitor");
 
 setNativePlatformForTests(true);
-assert(stravaRedirectUri() === "myswym://localhost/strava/callback", "ios redirect opens MySWYM");
+assert(stravaRedirectUri() === "myswym://localhost/strava/callback", "ios redirect opens ForSwim");
 {
   const url = buildStravaAuthorizeUrl("233278");
   assert(url.includes("redirect_uri=" + encodeURIComponent("myswym://localhost/strava/callback")), "authorize uses myswym");
-  assert(!url.includes("www.myswym.app"), "ios authorize skips the website");
+  assert(!url.includes("www.myswym.app") && !url.includes("www.forswim.app"), "ios authorize skips the website");
   assert(url.includes("state=strava_connect_ios."), "ios state has a nonce");
   assert(!url.includes("state=strava_connect_ios&"), "ios state is not the fixed prefix");
   assert(!url.includes("capacitor"), "authorize never uses capacitor");

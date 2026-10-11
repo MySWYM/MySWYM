@@ -69,19 +69,19 @@
     "nb": "Generelle bruksvilkår | {{1}}",
     "fi": "Yleiset käyttöehdot | {{1}}"
   },
-  "Conditions générales d'utilisation de l'application MySWYM.": {
-    "en": "Terms of Use of the MySWYM app.",
-    "de": "Allgemeine Nutzungsbedingungen der MySWYM-App.",
-    "es": "Condiciones generales de uso de la aplicación MySWYM.",
-    "ja": "MySWYMアプリの利用規約。",
-    "nl": "Algemene gebruiksvoorwaarden van de MySWYM-app.",
-    "it": "Condizioni generali d’uso dell’applicazione MySWYM.",
-    "pt": "Condições gerais de utilização da aplicação MySWYM.",
-    "pt-BR": "Termos de uso do aplicativo MySWYM.",
-    "sv": "Allmänna användarvillkor för appen MySWYM.",
-    "da": "Generelle brugsbetingelser for appen MySWYM.",
-    "nb": "Generelle bruksvilkår for appen MySWYM.",
-    "fi": "MySWYM-sovelluksen yleiset käyttöehdot."
+  "Conditions générales d'utilisation de l'application ForSwim.": {
+    "en": "Terms of Use of the ForSwim app.",
+    "de": "Allgemeine Nutzungsbedingungen der ForSwim-App.",
+    "es": "Condiciones generales de uso de la aplicación ForSwim.",
+    "ja": "ForSwimアプリの利用規約。",
+    "nl": "Algemene gebruiksvoorwaarden van de ForSwim-app.",
+    "it": "Condizioni generali d’uso dell’applicazione ForSwim.",
+    "pt": "Condições gerais de utilização da aplicação ForSwim.",
+    "pt-BR": "Termos de uso do aplicativo ForSwim.",
+    "sv": "Allmänna användarvillkor för appen ForSwim.",
+    "da": "Generelle brugsbetingelser for appen ForSwim.",
+    "nb": "Generelle bruksvilkår for appen ForSwim.",
+    "fi": "ForSwim-sovelluksen yleiset käyttöehdot."
   },
   "Les présentes Conditions générales d’utilisation (CGU) régissent l’accès et l’utilisation de": {
     "en": "These Terms of Use govern access to and use of",
@@ -615,19 +615,19 @@
     "nb": "Planene genereres automatisk ut fra opplysningene du oppgir (mål, nivå, frekvens, basseng, utstyr, eventuell skade/ubehag, tilbakemeldinger). Motoren tilpasser deretter enkelte økter etter interne regler (progresjon, restitusjon, sikkerhet ved smerte osv.).",
     "fi": "Ohjelmat luodaan automaattisesti antamiesi tietojen perusteella (tavoite, taso, harjoitustiheys, allas, välineet, mahdollinen vamma/vaiva, palaute). Moottori mukauttaa sen jälkeen joitakin harjoituksia sisäisten sääntöjen mukaan (progressio, palautuminen, kiputurvallisuus jne.)."
   },
-  "MySWYM ne régénère pas silencieusement les semaines déjà générées d’un plan existant": {
-    "en": "MySWYM does not silently regenerate weeks already generated in an existing plan",
-    "de": "MySWYM generiert bereits erstellte Wochen eines bestehenden Plans nicht stillschweigend neu",
-    "es": "MySWYM no regenera de forma silenciosa las semanas ya generadas de un plan existente",
-    "ja": "MySWYMは、既存プランですでに生成された週を無断で再生成しません",
-    "nl": "MySWYM genereert reeds gegenereerde weken van een bestaand plan niet stilzwijgend opnieuw",
-    "it": "MySWYM non rigenera silenziosamente le settimane già generate di un piano esistente",
-    "pt": "MySWYM não regenera silenciosamente as semanas já geradas de um plano existente",
-    "pt-BR": "MySWYM não regenera silenciosamente as semanas já geradas de um plano existente",
-    "sv": "MySWYM genererar inte i tysthet om redan genererade veckor i en befintlig plan",
-    "da": "MySWYM regenererer ikke i stilhed allerede genererede uger i en eksisterende plan",
-    "nb": "MySWYM regenererer ikke i det stille uker som allerede er generert i en eksisterende plan",
-    "fi": "MySWYM ei hiljaisesti luo uudelleen olemassa olevan ohjelman jo luotuja viikkoja"
+  "ForSwim ne régénère pas silencieusement les semaines déjà générées d’un plan existant": {
+    "en": "ForSwim does not silently regenerate weeks already generated in an existing plan",
+    "de": "ForSwim generiert bereits erstellte Wochen eines bestehenden Plans nicht stillschweigend neu",
+    "es": "ForSwim no regenera de forma silenciosa las semanas ya generadas de un plan existente",
+    "ja": "ForSwimは、既存プランですでに生成された週を無断で再生成しません",
+    "nl": "ForSwim genereert reeds gegenereerde weken van een bestaand plan niet stilzwijgend opnieuw",
+    "it": "ForSwim non rigenera silenziosamente le settimane già generate di un piano esistente",
+    "pt": "ForSwim não regenera silenciosamente as semanas já geradas de um plano existente",
+    "pt-BR": "ForSwim não regenera silenciosamente as semanas já geradas de um plano existente",
+    "sv": "ForSwim genererar inte i tysthet om redan genererade veckor i en befintlig plan",
+    "da": "ForSwim regenererer ikke i stilhed allerede genererede uger i en eksisterende plan",
+    "nb": "ForSwim regenererer ikke i det stille uker som allerede er generert i en eksisterende plan",
+    "fi": "ForSwim ei hiljaisesti luo uudelleen olemassa olevan ohjelman jo luotuja viikkoja"
   },
   "au détriment de votre progression, sauf action explicite de votre part ou migration technique nécessaire communiquée. Les métadonnées de version de plan ne remplacent pas cette règle de préservation.": {
     "en": "to the detriment of your progress, unless you take explicit action or a necessary technical migration is communicated. Plan version metadata does not override this preservation rule.",

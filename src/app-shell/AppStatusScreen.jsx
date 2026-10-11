@@ -36,7 +36,7 @@ export default function AppStatusScreen({
           <img
             className="ms-status-wordmark"
             src="/logo-myswym-on-light.png"
-            alt="MySWYM"
+            alt="ForSwim"
             height={20}
             width={86}
           />

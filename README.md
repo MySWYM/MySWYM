@@ -1,18 +1,18 @@
-# MySWYM : plan d'entraînement natation personnalisé
+# ForSwim : plan d'entraînement natation personnalisé
 
-**MySWYM** compose tes séances de natation à partir de 3 questions : objectif, niveau, fréquence.
+**ForSwim** compose tes séances de natation à partir de 3 questions : objectif, niveau, fréquence.
 
 Nager pour progresser, triathlon, eau libre, prépa diplôme (dont BNSSA). Plan structuré, prêt avant d'entrer dans l'eau. Essai Premium 7 jours avec carte.
 
-**Site :** [www.myswym.app](https://www.myswym.app) · **FR :** [www.myswym.app/fr](https://www.myswym.app/fr)
+**Site :** [www.forswim.app](https://www.forswim.app) · **FR :** [www.forswim.app/fr](https://www.forswim.app/fr)
 
-[Créer mon plan](https://www.myswym.app/fr) · [Tarifs](https://www.myswym.app/fr/tarifs) · [Comment ça marche](https://www.myswym.app/fr/comment-ca-marche) · [Blog natation](https://www.myswym.app/fr/blog) · [FAQ](https://www.myswym.app/fr/faq)
+[Créer mon plan](https://www.forswim.app/fr) · [Tarifs](https://www.forswim.app/fr/tarifs) · [Comment ça marche](https://www.forswim.app/fr/comment-ca-marche) · [Blog natation](https://www.forswim.app/fr/blog) · [FAQ](https://www.forswim.app/fr/faq)
 
 ---
 
 ## Pour qui
 
-MySWYM s'adresse aux nageurs qui savent déjà nager et veulent un **plan d'entraînement natation** clair, pas une séance au hasard.
+ForSwim s'adresse aux nageurs qui savent déjà nager et veulent un **plan d'entraînement natation** clair, pas une séance au hasard.
 
 | Objectif | Exemples |
 | --- | --- |
@@ -45,29 +45,29 @@ Essai Premium **7 jours avec carte**. Ensuite les séances se mettent en pause j
 - **8,99 €/mois** sans engagement
 - **59,99 €/an** en une fois
 
-Détail : [myswym.app/fr/tarifs](https://www.myswym.app/fr/tarifs)
+Détail : [forswim.app/fr/tarifs](https://www.forswim.app/fr/tarifs)
 
 ## Pages publiques
 
-Le produit se range sous [www.myswym.app](https://www.myswym.app) (EN) et [www.myswym.app/fr](https://www.myswym.app/fr).
+Le produit se range sous [www.forswim.app](https://www.forswim.app) (EN) et [www.forswim.app/fr](https://www.forswim.app/fr).
 
 | FR | EN |
 | --- | --- |
-| [Accueil](https://www.myswym.app/fr) | [Home](https://www.myswym.app/) |
-| [Comment ça marche](https://www.myswym.app/fr/comment-ca-marche) | [How it works](https://www.myswym.app/how-it-works) |
-| [Tarifs](https://www.myswym.app/fr/tarifs) | [Pricing](https://www.myswym.app/pricing) |
-| [FAQ](https://www.myswym.app/fr/faq) | [FAQ](https://www.myswym.app/faq) |
-| [Avis](https://www.myswym.app/fr/avis) | [Reviews](https://www.myswym.app/reviews) |
-| [Blog](https://www.myswym.app/fr/blog) | [Blog](https://www.myswym.app/blog) |
-| [Contact](https://www.myswym.app/fr/contact) | [Contact](https://www.myswym.app/contact) |
+| [Accueil](https://www.forswim.app/fr) | [Home](https://www.forswim.app/) |
+| [Comment ça marche](https://www.forswim.app/fr/comment-ca-marche) | [How it works](https://www.forswim.app/how-it-works) |
+| [Tarifs](https://www.forswim.app/fr/tarifs) | [Pricing](https://www.forswim.app/pricing) |
+| [FAQ](https://www.forswim.app/fr/faq) | [FAQ](https://www.forswim.app/faq) |
+| [Avis](https://www.forswim.app/fr/avis) | [Reviews](https://www.forswim.app/reviews) |
+| [Blog](https://www.forswim.app/fr/blog) | [Blog](https://www.forswim.app/blog) |
+| [Contact](https://www.forswim.app/fr/contact) | [Contact](https://www.forswim.app/contact) |
 
 Articles utiles :
 
-- [Plan natation débutant](https://www.myswym.app/fr/blog/plan-natation-debutant)
-- [Programme natation triathlon](https://www.myswym.app/fr/blog/programme-natation-triathlon)
-- [Comment réussir le BNSSA](https://www.myswym.app/fr/blog/comment-reussir-bnssa)
-- [Personnalisation 100 m](https://www.myswym.app/fr/blog/personnalisation-100m-natation)
-- [Glossaire natation](https://www.myswym.app/fr/blog/glossaire-natation)
+- [Plan natation débutant](https://www.forswim.app/fr/blog/plan-natation-debutant)
+- [Programme natation triathlon](https://www.forswim.app/fr/blog/programme-natation-triathlon)
+- [Comment réussir le BNSSA](https://www.forswim.app/fr/blog/comment-reussir-bnssa)
+- [Personnalisation 100 m](https://www.forswim.app/fr/blog/personnalisation-100m-natation)
+- [Glossaire natation](https://www.forswim.app/fr/blog/glossaire-natation)
 
 ## Stack
 

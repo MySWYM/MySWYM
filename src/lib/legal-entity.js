@@ -1,16 +1,23 @@
 /**
- * Identité éditeur MySWYM / A.Natation.
+ * Identité éditeur ForSwim / A.Natation.
  * Médiateur : laisser "[MÉDIATEUR À CONFIRMER]" jusqu’à inscription.
  */
+import {
+  BRAND_CONTACT_EMAIL,
+  BRAND_NAME,
+  BRAND_SITE_ORIGIN,
+  BRAND_SUPPORT_EMAIL,
+} from "./brand.js";
+
 export const LEGAL_ENTITY = {
-  tradeName: "MySWYM",
+  tradeName: BRAND_NAME,
   commercialName: "A.Natation",
   publisher: "Arthur Noël",
   legalForm: "Entrepreneur individuel",
-  email: "contact@myswym.app",
-  supportEmail: "support@myswym.app",
-  dpoEmail: "contact@myswym.app",
-  site: "https://www.myswym.app",
+  email: BRAND_CONTACT_EMAIL,
+  supportEmail: BRAND_SUPPORT_EMAIL,
+  dpoEmail: BRAND_CONTACT_EMAIL,
+  site: BRAND_SITE_ORIGIN,
   siret: "941 900 052 00015",
   address: "21 Rue du Cachon, 55000 Fains-Véel, France",
   apeCode: "4791A",
@@ -25,7 +32,7 @@ export const LEGAL_ENTITY = {
     { name: "Stripe", role: "Paiement et portail abonnement", dpa: "https://stripe.com/legal/dpa" },
     { name: "Vercel", role: "Hébergement et diffusion du front", dpa: "https://vercel.com/legal/dpa" },
   ],
-  lastUpdated: "11 août 2026",
+  lastUpdated: "11 octobre 2026",
 };
 
 export function legalMissingFields() {

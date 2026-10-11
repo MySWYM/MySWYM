@@ -34,7 +34,7 @@ export const IOS_IAP_MONTHLY_REASSURE =
   "Sans engagement. Annule à tout moment dans Réglages Apple. L’accès reste actif jusqu’à la fin du mois déjà payé.";
 
 export const IOS_IAP_ANNUAL_REASSURE =
-  "59,99 € pour 12 mois, reconduction tacite. Résilier dans Réglages Apple coupe le prochain cycle. La période déjà payée n’est pas remboursée au prorata par MySWYM.";
+  "59,99 € pour 12 mois, reconduction tacite. Résilier dans Réglages Apple coupe le prochain cycle. La période déjà payée n’est pas remboursée au prorata par ForSwim.";
 
 export const IOS_IAP_LEGAL_PREFIX =
   "Abonnement App Store à reconduction tacite (8,99 €/mois ou 59,99 €/an). Essai 7 jours avec carte. Paiement via ton Apple ID. Résiliation : Réglages → Apple ID → Abonnements. Remboursement ou rétractation : via Apple (reportaproblem.apple.com ou l’aide Apple ID). En continuant, tu acceptes les";
@@ -65,8 +65,8 @@ export const ACCOUNT_DELETE_BLOCKED_MESSAGE =
 
 /** @deprecated use HEALTH_CONSENT_* from health-data.js */
 export const INJURY_HEALTH_NOTICE =
-  "Ces informations peuvent concerner ta santé. Elles servent uniquement à adapter l’intensité des séances proposées. MySWYM n’est pas un professionnel de santé et ne pose aucun diagnostic. En cas de doute, consulte un médecin.";
+  "Ces informations peuvent concerner ta santé. Elles servent uniquement à adapter l’intensité des séances proposées. ForSwim n’est pas un professionnel de santé et ne pose aucun diagnostic. En cas de doute, consulte un médecin.";
 
 /** @deprecated */
 export const INJURY_CONSENT_LABEL =
-  "J’accepte que MySWYM traite ces informations (blessure / gêne / douleur) pour adapter mon plan. Je peux laisser « Aucune blessure » ou ne pas préciser.";
+  "J’accepte que ForSwim traite ces informations (blessure / gêne / douleur) pour adapter mon plan. Je peux laisser « Aucune blessure » ou ne pas préciser.";

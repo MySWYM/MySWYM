@@ -1,20 +1,20 @@
 {
   "meta": {
-    "title": "MySWYM : あなた用の泳ぎのプラン",
+    "title": "ForSwim : あなた用の泳ぎのプラン",
     "description": "泳力アップ、トライアスロン、オープンウォーター、資格対策。あなた用の泳ぎのプランが2分でできる。Premium 7日お試し。",
-    "howTitle": "使い方 | MySWYM",
-    "howDescription": "質問3つで、組み立てたプランがすぐできる。MySWYMの練習の仕方。"
+    "howTitle": "使い方 | ForSwim",
+    "howDescription": "質問3つで、組み立てたプランがすぐできる。ForSwimの練習の仕方。"
   },
   "hero": {
     "title": "次の練習は、質問3つ。",
     "titleLine1": "次の練習は、",
     "titleAccent": "質問3つ",
-    "subtitle": "目標、レベル、回数。MySWYMがメニューを組む。プールで迷わない。",
+    "subtitle": "目標、レベル、回数。ForSwimがメニューを組む。プールで迷わない。",
     "cta": "プランを作る",
     "ctaSecondary": "メニューを見る",
     "seeSession": "メニューを見る",
     "freeNote": "7日お試し · カード登録 · 月€8.99から",
-    "mockupAlt": "iPhone 2台のMySWYMプレビュー: メニューと進み具合",
+    "mockupAlt": "iPhone 2台のForSwimプレビュー: メニューと進み具合",
     "proof1Value": "+15",
     "proof1Label": "目標",
     "proof2Value": "4",
@@ -93,7 +93,7 @@
   },
   "features": {
     "f1Title": "大会日までのプラン",
-    "f1Desc": "目標日を入れると、MySWYMがベース、ビルド、強度、テーパーで段階的なプランを組む。",
+    "f1Desc": "目標日を入れると、ForSwimがベース、ビルド、強度、テーパーで段階的なプランを組む。",
     "f2Title": "持っているギアに合わせる",
     "f2Desc": "パドル、プルブイ、フィン、ビート板… 実際に持っているものだけ使う。",
     "f3Title": "全泳法",
@@ -106,7 +106,7 @@
     "eyebrow": "泳者が、泳者のために作った",
     "titleLine1": "なりたい泳者に",
     "titleLine2": "なる",
-    "body": "MySWYMはコーチのログのように練習を組む。目標、日付、レベル、回数。そして入水前に読めるメニュー。技術のヒントはInstagramにもある。",
+    "body": "ForSwimはコーチのログのように練習を組む。目標、日付、レベル、回数。そして入水前に読めるメニュー。技術のヒントはInstagramにもある。",
     "quote": "上達は分析、反復、そこに行きたい気持ち。プールサイドの即興じゃない。",
     "cta": "プランを作る",
     "igCta": "@arthurnatation を見る",
@@ -132,8 +132,8 @@
     "badgePrem": "PREMIUM"
   },
   "why": {
-    "label": "なぜ MYSWYM",
-    "title": "なぜ MySWYM?",
+    "label": "なぜ ForSwim",
+    "title": "なぜ ForSwim?",
     "subtitle": "練習を組むのに必要なものだけ。余分はない。",
     "uiPreview": "UIプレビュー",
     "b1Title": "持っているギアに合わせる",
@@ -163,8 +163,8 @@
     "label": "メニュー見本",
     "title": "入水前にわかる",
     "subtitle": "どのメニューもコーチの組み立て: アップ、メイン、ダウン。具体的なヒントつき。",
-    "mockupAlt": "iPhoneのMySWYMメニュー: アップ、メイン、ダウン",
-    "detailMockupAlt": "MySWYMのメニュー詳細: アップ、メイン、ダウン",
+    "mockupAlt": "iPhoneのForSwimメニュー: アップ、メイン、ダウン",
+    "detailMockupAlt": "ForSwimのメニュー詳細: アップ、メイン、ダウン",
     "cta": "プランを作る",
     "type": "持久",
     "heading": "楽に続くセット",
@@ -181,7 +181,7 @@
     "label": "信頼",
     "titleLine1": "組み立てたコーチング。",
     "titleLine2": "即興じゃない",
-    "subtitle": "MySWYMははっきりした練習ルールの上にある。適当なプロンプトじゃない。",
+    "subtitle": "ForSwimははっきりした練習ルールの上にある。適当なプロンプトじゃない。",
     "p1Title": "その場で、再現できる生成",
     "p1Desc": "プランはアプリ内で計算する。外部AIも待ち時間もなし。すぐ出て、再現できる。",
     "p2Title": "本格的な組み立て",
@@ -227,14 +227,14 @@
     "title": "よくある質問",
     "chatKicker": "Premiumサポート",
     "chatTitle": "ボットじゃなく、本人との会話",
-    "chatBody": "Premium会員はMySWYMのチャットに書く。Arthurが読んで、できるときに本人が返す。AIが答えを作ることはない。",
+    "chatBody": "Premium会員はForSwimのチャットに書く。Arthurが読んで、できるときに本人が返す。AIが答えを作ることはない。",
     "chatPoint1": "Premiumはチャットが使える",
     "chatPoint2": "返すのは人。ボットじゃない",
     "chatPoint3": "いつでも書ける",
     "chatCta": "Premiumプランを見る",
-    "mockupAlt": "iPhoneのMySWYMチャット: コーチに質問する",
+    "mockupAlt": "iPhoneのForSwimチャット: コーチに質問する",
     "q1": "組み立てたプランは初めて。自分向き?",
-    "a1": "泳げるなら、はい。初級は量を少なく、ことばをはっきり。MySWYMはメニューを組む。泳げるようになる教室じゃない。",
+    "a1": "泳げるなら、はい。初級は量を少なく、ことばをはっきり。ForSwimはメニューを組む。泳げるようになる教室じゃない。",
     "q2": "途中で目標は変えられる?",
     "a2": "変えられる。プロフィールからオンボーディングをやり直して、新しい目標のプランを作り直せる。Premiumなら、複数プランを並行でも管理できる。",
     "q3": "サブスクの仕組みは?",
@@ -331,7 +331,7 @@
     "t3Desc": "登録がなければ練習は一時停止。見るものは残らない。続けるなら: 月€8.99または年€59.99。",
     "whoLabel": "誰向け",
     "whoTitle": "すでに泳げる人へ。",
-    "whoLead": "MySWYMはメニューを組む。泳法をゼロから習う教室じゃない。",
+    "whoLead": "ForSwimはメニューを組む。泳法をゼロから習う教室じゃない。",
     "w1": "目標がある: 上達、トライアスロン、オープンウォーター、資格。",
     "w2": "すでに何本か泳げる。短くてもいい。",
     "w3": "読めるプランがほしい。プールサイドの即興は要らない。",
@@ -351,14 +351,14 @@
     "toPricing": "料金を見る"
   },
   "faqPage": {
-    "metaTitle": "FAQ | MySWYM",
+    "metaTitle": "FAQ | ForSwim",
     "metaDescription": "サブスク、25 m / 50 m プール、目標の変更。泳ぎのプランを始めるための答え。",
     "intro": "いちばん多い質問: お試し、料金、プールの長さ、目標の変更。",
     "moreTitle": "まだ質問がある?",
     "moreCta": "サポートに書く"
   },
   "pricingPage": {
-    "metaTitle": "料金 | MySWYM",
+    "metaTitle": "料金 | ForSwim",
     "metaDescription": "カード登録でPremium 7日お試し。そのあと縛りなし月€8.99、または年€59.99。あなた用の泳ぎのプラン。",
     "eyebrow": "料金",
     "h1": "お試しひとつ。続ける方法はふたつ。",
@@ -441,7 +441,7 @@
     "chooseAnnual": "€59.99を払う"
   },
   "contactPage": {
-    "metaTitle": "問い合わせ | MySWYM",
+    "metaTitle": "問い合わせ | ForSwim",
     "metaDescription": "泳ぎのプランについて質問? 書いて。営業日で24-48時間以内に返す。",
     "eyebrow": "問い合わせ",
     "h1": "プランについて質問?",
@@ -465,8 +465,8 @@
     "allFaq": "すべての質問"
   },
   "reviewsPage": {
-    "metaTitle": "レビュー | MySWYM",
-    "metaDescription": "泳者によるMySWYMのレビュー。本物の声だけ。確認のあと公開。",
+    "metaTitle": "レビュー | ForSwim",
+    "metaDescription": "泳者によるForSwimのレビュー。本物の声だけ。確認のあと公開。",
     "label": "レビュー",
     "title": "泳者の声",
     "subtitle": "本物のレビューだけ。確認のあと公開。作った体験談は出さない。",

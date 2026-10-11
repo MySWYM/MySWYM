@@ -192,8 +192,8 @@
     }
   },
   "health": {
-    "checkbox": "Mä suostun nimenomaisesti siihen, että MySWYM saa käsitellä mun sykettä ja mun ilmoituksia vammasta tai vaivasta, jotta treenit voidaan sovittaa ja vammoja ehkäistä. Mä voin kieltäytyä.",
-    "body": "Jotta treenit voidaan sovittaa ja vammautumisen riskiä pienentää, MySWYM voi käsitellä terveystietoja GDPR:n mukaan: syke per treeni (esim. Stravan kautta) ja vamma- tai vaivahistoria, jonka sä ilmoitat. Oikeusperuste: sun nimenomainen suostumus (GDPR art. 9.2.a). Se on vapaaehtoista: sä voit kieltäytyä ja käyttää appia silti. Sä voit perua suostumuksen milloin vaan (Asetukset tai contact@myswym.app). Näitä tietoja ei lähetetä kolmansien osapuolten analytiikkatyökaluihin.",
+    "checkbox": "Mä suostun nimenomaisesti siihen, että ForSwim saa käsitellä mun sykettä ja mun ilmoituksia vammasta tai vaivasta, jotta treenit voidaan sovittaa ja vammoja ehkäistä. Mä voin kieltäytyä.",
+    "body": "Jotta treenit voidaan sovittaa ja vammautumisen riskiä pienentää, ForSwim voi käsitellä terveystietoja GDPR:n mukaan: syke per treeni (esim. Stravan kautta) ja vamma- tai vaivahistoria, jonka sä ilmoitat. Oikeusperuste: sun nimenomainen suostumus (GDPR art. 9.2.a). Se on vapaaehtoista: sä voit kieltäytyä ja käyttää appia silti. Sä voit perua suostumuksen milloin vaan (Asetukset tai contact@myswym.app). Näitä tietoja ei lähetetä kolmansien osapuolten analytiikkatyökaluihin.",
     "medical": "Luodut suunnitelmat ovat suuntaa antavia, eivätkä ne korvaa terveydenhuollon ammattilaisen neuvoa. Tarkista kunto (lääkärintodistus tarvittaessa) ennen kuin seuraat ohjelmaa.",
     "declaration": "Vahvistan, että antamani terveystiedot pitävät paikkansa.",
     "safety": "Treenaa fiiliksen mukaan. Lopeta, jos tulee huolestuttavia oireita, ja mene tarvittaessa terveydenhuollon ammattilaiselle. Avovesi: älä ui koskaan yksin."
@@ -276,7 +276,7 @@
     "backLogin": "← Takaisin kirjautumiseen",
     "age": "Vahvistan, että oon 18 tai yli.",
     "terms": "Hyväksyn <cgu>käyttöehdot</cgu> ja <privacy>tietosuojakäytännön</privacy>.",
-    "newsletter": "Haluan saada MySWYM-uutisia sähköpostilla.",
+    "newsletter": "Haluan saada ForSwim-uutisia sähköpostilla.",
     "trial": "7 päivän kokeilu kortilla (Stripe tai App Store). Sitten veloitus alkaa, ellei irtisano ennen loppua.",
     "google": "Jatka Googlella",
     "facebook": "Jatka Facebookilla",

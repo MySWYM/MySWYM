@@ -1,20 +1,20 @@
 {
   "meta": {
-    "title": "MySWYM : Henkilökohtainen uintisuunnitelma",
+    "title": "ForSwim : Henkilökohtainen uintisuunnitelma",
     "description": "Uinnin kehitys, triathlon, avovesi, tutkintoihin valmistautuminen. Henkilökohtainen uintisuunnitelma, valmiina 2 minuutissa. 7 päivän Premium-kokeilu.",
-    "howTitle": "Näin se toimii | MySWYM",
-    "howDescription": "3 kysymystä, strukturoitu suunnitelma heti. Näin MySWYM valmentaa sua."
+    "howTitle": "Näin se toimii | ForSwim",
+    "howDescription": "3 kysymystä, strukturoitu suunnitelma heti. Näin ForSwim valmentaa sua."
   },
   "hero": {
     "title": "Sun seuraava uintitreeni, 3 kysymyksellä.",
     "titleLine1": "Sun seuraava uintitreeni,",
     "titleAccent": "3 kysymyksellä",
-    "subtitle": "Tavoite, taso, tiheys. MySWYM rakentaa treenit. Ei enää arvailua altaan laidalla.",
+    "subtitle": "Tavoite, taso, tiheys. ForSwim rakentaa treenit. Ei enää arvailua altaan laidalla.",
     "cta": "Luo mun suunnitelma",
     "ctaSecondary": "Katso treeni",
     "seeSession": "Katso treeni",
     "freeNote": "7 päivän kokeilu · kortilla · alkaen 8,99 €/kk",
-    "mockupAlt": "MySWYM-apin esikatselu kahdella iPhonella: treeni ja kehitys",
+    "mockupAlt": "ForSwim-apin esikatselu kahdella iPhonella: treeni ja kehitys",
     "proof1Value": "+15",
     "proof1Label": "tavoitetta",
     "proof2Value": "4",
@@ -93,7 +93,7 @@
   },
   "features": {
     "f1Title": "Suunnitelma kisapäivään asti",
-    "f1Desc": "Aseta tavoitepäivä: MySWYM rakentaa nousevan suunnitelman, jossa on peruskunto, kehittäminen, teho ja kevennys.",
+    "f1Desc": "Aseta tavoitepäivä: ForSwim rakentaa nousevan suunnitelman, jossa on peruskunto, kehittäminen, teho ja kevennys.",
     "f2Title": "Sovitettu sun välineisiin",
     "f2Desc": "Laput, pullari, räpylät, uimalauta… käytetään vain sitä, mitä sulla oikeasti on.",
     "f3Title": "Kaikki lajit",
@@ -106,7 +106,7 @@
     "eyebrow": "Uimarin tekemä, uimareille",
     "titleLine1": "Ryhdy uimariksi",
     "titleLine2": "joksi sä haluut",
-    "body": "MySWYM rakentaa sun treenin kuin valmentajan treenivihko: tavoite, päivä, taso, tiheys, sitten selvät treenit ennen kuin sä meet veteen. Tekniikkavinkkejä on myös Instagramissa.",
+    "body": "ForSwim rakentaa sun treenin kuin valmentajan treenivihko: tavoite, päivä, taso, tiheys, sitten selvät treenit ennen kuin sä meet veteen. Tekniikkavinkkejä on myös Instagramissa.",
     "quote": "Kehitys on analyysiä, toistoa ja halua päästä perille. Ei altaan laidalla improvisointia.",
     "cta": "Luo mun suunnitelma",
     "igCta": "Katso @arthurnatation",
@@ -132,8 +132,8 @@
     "badgePrem": "PREMIUM"
   },
   "why": {
-    "label": "MIKSI MYSWYM",
-    "title": "Miksi käyttää MySWYM:ää?",
+    "label": "MIKSI ForSwim",
+    "title": "Miksi käyttää ForSwim:ää?",
     "subtitle": "Kaikki, mitä sun treenin strukturointiin tarvitaan, ei mitään ylimääräistä.",
     "uiPreview": "Käyttöliittymän esikatselu",
     "b1Title": "Sovitettu sun välineisiin",
@@ -163,8 +163,8 @@
     "label": "TREENIN ESIKATSELU",
     "title": "Selvä ennen vettä",
     "subtitle": "Jokaisessa treenissä on valmentajan rakenne: alkuverryttely, pääsarja, loppuverryttely, ja konkreettinen vinkki.",
-    "mockupAlt": "MySWYM-treeni iPhonessa: alkuverryttely, pääsarja ja loppuverryttely",
-    "detailMockupAlt": "MySWYM-treenin tiedot: alkuverryttely, pääsarja ja loppuverryttely",
+    "mockupAlt": "ForSwim-treeni iPhonessa: alkuverryttely, pääsarja ja loppuverryttely",
+    "detailMockupAlt": "ForSwim-treenin tiedot: alkuverryttely, pääsarja ja loppuverryttely",
     "cta": "Luo mun suunnitelma",
     "type": "Kestävyys",
     "heading": "Mukavat sarjat",
@@ -181,7 +181,7 @@
     "label": "LUOTETTAVUUS",
     "titleLine1": "Strukturoitu valmennus,",
     "titleLine2": "ei improvisointia",
-    "subtitle": "MySWYM rakentuu selkeisiin treenisääntöihin, ei satunnaisiin kehotteisiin.",
+    "subtitle": "ForSwim rakentuu selkeisiin treenisääntöihin, ei satunnaisiin kehotteisiin.",
     "p1Title": "Paikallinen, luotettava luonti",
     "p1Desc": "Sun suunnitelma lasketaan apissa, ilman ulkoista tekoälyä ja ilman odotusta. Välitön, toistettava tulos.",
     "p2Title": "Ammattimainen rakenne",
@@ -227,14 +227,14 @@
     "title": "Usein kysytyt kysymykset",
     "chatKicker": "Premium-tuki",
     "chatTitle": "Oikea keskustelu, ei botti",
-    "chatBody": "Premium-jäsenet kirjoittavat MySWYM-chattiin. Arthur lukee ja vastaa itse, kun ehtii. Ei tekoälyä, joka keksii vastauksen.",
+    "chatBody": "Premium-jäsenet kirjoittavat ForSwim-chattiin. Arthur lukee ja vastaa itse, kun ehtii. Ei tekoälyä, joka keksii vastauksen.",
     "chatPoint1": "Chat Premiumille",
     "chatPoint2": "Ihmisen vastaus, ei botti",
     "chatPoint3": "Kirjoita milloin vaan",
     "chatCta": "Katso Premium-suunnitelmat",
-    "mockupAlt": "MySWYM-chat iPhonessa: kysy valmentajalta",
+    "mockupAlt": "ForSwim-chat iPhonessa: kysy valmentajalta",
     "q1": "Mä en oo koskaan seurannut strukturoitua suunnitelmaa. Onko tää mulle?",
-    "a1": "Joo, jos sä osaat jo uida. Aloittelijatason määrät on yksinkertaisia ja kieli selkeää. MySWYM rakentaa sun treenit. Tää ei ole uimakoulu.",
+    "a1": "Joo, jos sä osaat jo uida. Aloittelijatason määrät on yksinkertaisia ja kieli selkeää. ForSwim rakentaa sun treenit. Tää ei ole uimakoulu.",
     "q2": "Voinko vaihtaa tavoitetta matkan varrella?",
     "a2": "Joo. Profiilista sä voit aloittaa kyselyn uudestaan uudelle tavoitteelle ja luoda suunnitelman uudelleen. Premiumilla sä voit myös pitää useita suunnitelmia rinnakkain.",
     "q3": "Miten tilaus toimii?",
@@ -331,7 +331,7 @@
     "t3Desc": "Ilman tilausta treenit menevät pauselle: mitään ei jää nähtäväksi. Jatkaaksesi: 8,99 €/kk tai 59,99 €/v.",
     "whoLabel": "Kenelle tää on",
     "whoTitle": "Jos sä osaat jo uida.",
-    "whoLead": "MySWYM rakentaa sun treenit. Tää ei ole koulu, jossa laji opetellaan alusta.",
+    "whoLead": "ForSwim rakentaa sun treenit. Tää ei ole koulu, jossa laji opetellaan alusta.",
     "w1": "Sulla on tavoite: kehitys, triathlon, avovesi tai pätevyys.",
     "w2": "Sä uit jo muutaman pituuden, vaikka vaatimattoman.",
     "w3": "Sä haluut luettavan suunnitelman, et improvisointia altaan laidalla.",
@@ -351,14 +351,14 @@
     "toPricing": "Katso hinnat"
   },
   "faqPage": {
-    "metaTitle": "FAQ | MySWYM",
+    "metaTitle": "FAQ | ForSwim",
     "metaDescription": "Tilaus, 25 m / 50 m altaat, tavoitteen vaihto: vastauksia uintisuunnitelman aloitukseen.",
     "intro": "Kysymykset, joita tulee eniten: kokeilu, hinta, altaan pituus, tavoitteen vaihto.",
     "moreTitle": "Onko sulla vielä kysymys?",
     "moreCta": "Kirjoita tukeen"
   },
   "pricingPage": {
-    "metaTitle": "Hinnat | MySWYM",
+    "metaTitle": "Hinnat | ForSwim",
     "metaDescription": "7 päivän Premium-kokeilu kortilla, sitten 8,99 €/kk ilman sitoumusta tai 59,99 €/v. Henkilökohtaiset uintisuunnitelmat.",
     "eyebrow": "HINNAT",
     "h1": "Yksi kokeilu. Kaksi tapaa jatkaa.",
@@ -441,7 +441,7 @@
     "chooseAnnual": "Maksa 59,99 €"
   },
   "contactPage": {
-    "metaTitle": "Yhteys | MySWYM",
+    "metaTitle": "Yhteys | ForSwim",
     "metaDescription": "Kysymys sun uintisuunnitelmasta? Kirjoita meille. Vastataan 24-48 tunnin kuluessa arkipäivisin.",
     "eyebrow": "YHTEYS",
     "h1": "Kysymys sun suunnitelmasta?",
@@ -465,8 +465,8 @@
     "allFaq": "Kaikki kysymykset"
   },
   "reviewsPage": {
-    "metaTitle": "Arvostelut | MySWYM",
-    "metaDescription": "Uimareiden arvosteluja MySWYM:stä. Vain oikeaa palautetta, julkaistu moderoinnin jälkeen.",
+    "metaTitle": "Arvostelut | ForSwim",
+    "metaDescription": "Uimareiden arvosteluja ForSwim:stä. Vain oikeaa palautetta, julkaistu moderoinnin jälkeen.",
     "label": "ARVOSTELUT",
     "title": "Mitä uimarit sanovat",
     "subtitle": "Vain oikeita arvosteluja, julkaistu moderoinnin jälkeen. Ei keksittyjä lainauksia.",

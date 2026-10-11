@@ -1,7 +1,7 @@
-# Smoke staging MySWYM
+# Smoke staging ForSwim
 
 Checklist manuelle après chaque merge vers `staging` (téléphone réel + desktop).  
-Base : https://staging.myswym.app
+Base : https://staging.forswim.app
 
 ## Avant
 

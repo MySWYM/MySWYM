@@ -46,7 +46,7 @@ export const LIVE_SUB_STATUSES = new Set([
 const CLEANUP_STATUSES = new Set(["incomplete"]);
 
 export const DELETE_APPLE_NOTICE =
-  "Ton abonnement App Store continue jusqu’à ce que tu le résilies : Réglages, Apple ID, Abonnements. Supprimer le compte MySWYM ne l’arrête pas.";
+  "Ton abonnement App Store continue jusqu’à ce que tu le résilies : Réglages, Apple ID, Abonnements. Supprimer le compte ForSwim ne l’arrête pas.";
 
 export const DELETE_BLOCK = {
   unverified:

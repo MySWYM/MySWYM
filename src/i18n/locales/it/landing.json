@@ -1,20 +1,20 @@
 {
   "meta": {
-    "title": "MySWYM : Piano di allenamento nuoto personalizzato",
+    "title": "ForSwim : Piano di allenamento nuoto personalizzato",
     "description": "Progressione nel nuoto, triathlon, acque libere, preparazione diplomi. Piano di allenamento personalizzato, pronto in 2 minuti. Prova Premium di 7 giorni.",
-    "howTitle": "Come funziona | MySWYM",
-    "howDescription": "3 domande, un piano strutturato subito. Così ti allena MySWYM."
+    "howTitle": "Come funziona | ForSwim",
+    "howDescription": "3 domande, un piano strutturato subito. Così ti allena ForSwim."
   },
   "hero": {
     "title": "La tua prossima sessione di nuoto, in 3 domande.",
     "titleLine1": "La tua prossima sessione di nuoto,",
     "titleAccent": "in 3 domande",
-    "subtitle": "Obiettivo, livello, frequenza. MySWYM costruisce le sessioni. Basta improvvisare in piscina.",
+    "subtitle": "Obiettivo, livello, frequenza. ForSwim costruisce le sessioni. Basta improvvisare in piscina.",
     "cta": "Crea il mio piano",
     "ctaSecondary": "Vedi una sessione",
     "seeSession": "Vedi una sessione",
     "freeNote": "Prova 7 giorni · con carta · da 8,99 €/mese",
-    "mockupAlt": "Anteprima dell'app MySWYM su due iPhone: sessione e progressi",
+    "mockupAlt": "Anteprima dell'app ForSwim su due iPhone: sessione e progressi",
     "proof1Value": "+15",
     "proof1Label": "obiettivi",
     "proof2Value": "4",
@@ -93,7 +93,7 @@
   },
   "features": {
     "f1Title": "Piano fino al giorno di gara",
-    "f1Desc": "Indica la data del tuo obiettivo: MySWYM costruisce un piano progressivo con fasi di base, costruzione, intensità e scarico.",
+    "f1Desc": "Indica la data del tuo obiettivo: ForSwim costruisce un piano progressivo con fasi di base, costruzione, intensità e scarico.",
     "f2Title": "Adattato alla tua attrezzatura",
     "f2Desc": "Palette, pull buoy, pinne, tavoletta… usiamo solo quello che hai davvero.",
     "f3Title": "Tutti gli stili",
@@ -106,7 +106,7 @@
     "eyebrow": "Creato da un nuotatore, per i nuotatori",
     "titleLine1": "Diventa il nuotatore",
     "titleLine2": "che vuoi essere",
-    "body": "MySWYM struttura il tuo allenamento come il diario di un coach: obiettivo, data, livello, frequenza, poi sessioni chiare prima di entrare in acqua. I consigli di tecnica sono anche su Instagram.",
+    "body": "ForSwim struttura il tuo allenamento come il diario di un coach: obiettivo, data, livello, frequenza, poi sessioni chiare prima di entrare in acqua. I consigli di tecnica sono anche su Instagram.",
     "quote": "Progredire è analisi, ripetizione e la voglia di arrivarci. Non improvvisare a bordo vasca.",
     "cta": "Crea il mio piano",
     "igCta": "Vedi @arthurnatation",
@@ -132,8 +132,8 @@
     "badgePrem": "PREMIUM"
   },
   "why": {
-    "label": "PERCHÉ MYSWYM",
-    "title": "Perché usare MySWYM?",
+    "label": "PERCHÉ ForSwim",
+    "title": "Perché usare ForSwim?",
     "subtitle": "Tutto quello che ti serve per strutturare l'allenamento, nient'altro.",
     "uiPreview": "Anteprima",
     "b1Title": "Adattato alla tua attrezzatura",
@@ -163,8 +163,8 @@
     "label": "ANTEPRIMA SESSIONE",
     "title": "Chiaro prima di entrare in acqua",
     "subtitle": "Ogni sessione ha una struttura da coach: riscaldamento, serie principale, defaticamento, più un consiglio concreto.",
-    "mockupAlt": "Sessione MySWYM su iPhone: riscaldamento, serie principale e defaticamento",
-    "detailMockupAlt": "Dettaglio di una sessione MySWYM: riscaldamento, serie principale e defaticamento",
+    "mockupAlt": "Sessione ForSwim su iPhone: riscaldamento, serie principale e defaticamento",
+    "detailMockupAlt": "Dettaglio di una sessione ForSwim: riscaldamento, serie principale e defaticamento",
     "cta": "Crea il mio piano",
     "type": "Fondo",
     "heading": "Serie comode",
@@ -181,7 +181,7 @@
     "label": "CREDIBILITÀ",
     "titleLine1": "Coaching strutturato,",
     "titleLine2": "senza improvvisazione",
-    "subtitle": "MySWYM si appoggia a regole di allenamento chiare, non a prompt a caso.",
+    "subtitle": "ForSwim si appoggia a regole di allenamento chiare, non a prompt a caso.",
     "p1Title": "Generazione locale e affidabile",
     "p1Desc": "Il tuo piano si calcola nell'app, senza IA esterna e senza attesa. Risultato immediato e riproducibile.",
     "p2Title": "Struttura da pro",
@@ -227,14 +227,14 @@
     "title": "Domande frequenti",
     "chatKicker": "Supporto Premium",
     "chatTitle": "Una conversazione vera, non un bot",
-    "chatBody": "Chi ha Premium scrive nella chat di MySWYM. Arthur legge e risponde di persona, quando può. Nessuna IA si inventa la risposta.",
+    "chatBody": "Chi ha Premium scrive nella chat di ForSwim. Arthur legge e risponde di persona, quando può. Nessuna IA si inventa la risposta.",
     "chatPoint1": "Accesso alla chat con Premium",
     "chatPoint2": "Risposta umana, non un bot",
     "chatPoint3": "Scrivi quando vuoi",
     "chatCta": "Vedi i piani Premium",
-    "mockupAlt": "Chat di MySWYM su iPhone: fai una domanda al coach",
+    "mockupAlt": "Chat di ForSwim su iPhone: fai una domanda al coach",
     "q1": "Non ho mai seguito un piano strutturato. Fa per me?",
-    "a1": "Sì, se sai già nuotare. Il livello principiante usa volumi semplici e un linguaggio chiaro. MySWYM struttura le tue sessioni. Non è una scuola per imparare a nuotare.",
+    "a1": "Sì, se sai già nuotare. Il livello principiante usa volumi semplici e un linguaggio chiaro. ForSwim struttura le tue sessioni. Non è una scuola per imparare a nuotare.",
     "q2": "Posso cambiare obiettivo strada facendo?",
     "a2": "Sì. Dal profilo puoi rifare l'avvio per un obiettivo nuovo e rigenerare un piano. Con Premium puoi anche gestire più piani in parallelo.",
     "q3": "Come funziona l'abbonamento?",
@@ -331,7 +331,7 @@
     "t3Desc": "Senza abbonamento le sessioni vanno in pausa: non resta niente da vedere. Per continuare: 8,99 €/mese o 59,99 €/anno.",
     "whoLabel": "A chi è rivolto",
     "whoTitle": "Se sai già nuotare.",
-    "whoLead": "MySWYM struttura le tue sessioni. Non è una scuola per imparare lo stile da zero.",
+    "whoLead": "ForSwim struttura le tue sessioni. Non è una scuola per imparare lo stile da zero.",
     "w1": "Hai un obiettivo: progredire, triathlon, acque libere o una certificazione.",
     "w2": "Nuoti già qualche vasca, anche poche.",
     "w3": "Vuoi un piano leggibile, non improvvisare a bordo vasca.",
@@ -351,14 +351,14 @@
     "toPricing": "Vedi i prezzi"
   },
   "faqPage": {
-    "metaTitle": "FAQ | MySWYM",
+    "metaTitle": "FAQ | ForSwim",
     "metaDescription": "Abbonamento, piscine da 25 m / 50 m, cambiare obiettivo: risposte per iniziare il tuo piano di nuoto.",
     "intro": "Le domande che ci fanno di più: prova, prezzo, lunghezza della piscina, cambiare obiettivo.",
     "moreTitle": "Hai ancora una domanda?",
     "moreCta": "Scrivi al supporto"
   },
   "pricingPage": {
-    "metaTitle": "Prezzi | MySWYM",
+    "metaTitle": "Prezzi | ForSwim",
     "metaDescription": "Prova Premium 7 giorni con carta, poi 8,99 €/mese senza vincoli o 59,99 €/anno. Piani di nuoto personalizzati.",
     "eyebrow": "PREZZI",
     "h1": "Una prova. Due modi per continuare.",
@@ -441,7 +441,7 @@
     "chooseAnnual": "Paga 59,99 €"
   },
   "contactPage": {
-    "metaTitle": "Contatto | MySWYM",
+    "metaTitle": "Contatto | ForSwim",
     "metaDescription": "Una domanda sul tuo piano di nuoto? Scrivici. Rispondiamo entro 24-48 ore lavorative.",
     "eyebrow": "CONTATTO",
     "h1": "Una domanda sul tuo piano?",
@@ -465,8 +465,8 @@
     "allFaq": "Tutte le domande"
   },
   "reviewsPage": {
-    "metaTitle": "Recensioni | MySWYM",
-    "metaDescription": "Recensioni dei nuotatori su MySWYM. Solo pareri veri, pubblicati dopo la moderazione.",
+    "metaTitle": "Recensioni | ForSwim",
+    "metaDescription": "Recensioni dei nuotatori su ForSwim. Solo pareri veri, pubblicati dopo la moderazione.",
     "label": "RECENSIONI",
     "title": "Cosa dicono i nuotatori",
     "subtitle": "Solo recensioni vere, pubblicate dopo la moderazione. Niente testimonianze inventate.",

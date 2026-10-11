@@ -18,6 +18,7 @@
 
 | Date | Contexte | Correction | Statut |
 | --- | --- | --- | --- |
+| 2026-10-11 | Renommage MySWYM → ForSwim | Marque affichée ForSwim, domaine canonique forswim.app. Domaine myswym.app, schéma `myswym://`, bundle `app.myswym.ios`, clés storage `myswym_*`, IDs Stripe/IAP et e-mails `@myswym.app` conservés en transition. Source unique : `src/lib/brand.js`. AquaPlan CGU et Instagram `@myswym.app` non retouchés (attente validation). | ✅ active |
 | 2026-10-07 | Vocabulaire « respiration N temps » | « Respiration 3 temps » = respirer tous les 3 coups de bras. Traduction : es « respiración cada 3 brazadas », en « breathe every 3 strokes » (pas « 3 temps » mot à mot). `src/i18n/session-terms.js`. | ✅ active |
 | 2026-10-03 | Snapshot Sheet dans Supabase | Le Google Sheet reste l'atelier. `node scripts/import-natation-sheet.mjs` publie une version `is_live` (`sheet_sessions` + `sheet_educatifs`, clé onglet + `n°`, ajouts en bas). Le serveur lit cette version. Sans version live, repli Google. Les séances déjà validées dans le plan ne sont pas réécrites. | ✅ active |
 | 2026-09-12 | Soft `4 × (3 × 50) · 3 éducatifs` | Ligne crawl (ou mono-nage) : nested = N×M×D m ; jeton `{25m éducatif + 25m nage}` ; `· 3 éducatifs` = `pickN(3)` distincts **strict nage** (pas fiche nage vide / `toutes`). UI sheet éducatifs : layout `same-stroke` (pas pap→crawl). | ✅ active |

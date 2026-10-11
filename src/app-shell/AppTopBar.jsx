@@ -32,7 +32,7 @@ function readSupportSeenId(userId) {
   }
 }
 
-/** Barre haute Miracle : hamburger · picto MySWYM · notifs + avatar */
+/** Barre haute Miracle : hamburger · picto ForSwim · notifs + avatar */
 export default function AppTopBar({
   user,
   onOpenMenu,
@@ -304,7 +304,7 @@ export default function AppTopBar({
             <button
               type="button"
               onClick={handleLogoClick}
-              aria-label="MySWYM, accueil"
+              aria-label="ForSwim, accueil"
               style={{
                 appearance: "none",
                 border: "none",
@@ -320,7 +320,7 @@ export default function AppTopBar({
               <BrandLogo variant={logoVariant} height={logoHeight} alt="" />
             </button>
           ) : (
-            <BrandLogo variant={logoVariant} height={logoHeight} alt="MySWYM" />
+            <BrandLogo variant={logoVariant} height={logoHeight} alt="ForSwim" />
           )}
         </div>
 

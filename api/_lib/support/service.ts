@@ -648,7 +648,7 @@ export async function handleOperatorInbound(input: {
     const preview = String(cmd.text || "").trim().slice(0, 120);
     try {
       const pushResult = await pushToUser(conversation.user_id, {
-        title: "Nouvelle réponse MySWYM",
+        title: "Nouvelle réponse ForSwim",
         body: preview || "Arthur t’a répondu dans le chat.",
         badge: 1,
         data: { kind: "support", path: "/app" },

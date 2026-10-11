@@ -13,19 +13,19 @@
     "nb": "7 dagers prøve med kort, deretter {{1}}",
     "fi": "7 päivän kokeilu kortilla, sitten {{1}}"
   },
-  "Connecte-toi ou crée ton compte MySWYM. Essai Premium 7 jours avec carte.": {
-    "en": "Log in or create your MySWYM account. 7-day Premium trial with card.",
-    "de": "Melde dich an oder erstelle dein MySWYM-Konto. 7 Tage Premium mit Karte.",
-    "es": "Inicia sesión o crea tu cuenta MySWYM. Prueba Premium de 7 días con tarjeta.",
-    "ja": "ログインまたは MySWYM アカウントを作成。Premium 7日間お試し（カード登録）。",
-    "nl": "Log in of maak je MySWYM-account aan. 7 dagen Premium proberen met kaart.",
-    "it": "Accedi o crea il tuo account MySWYM. Prova Premium di 7 giorni con carta.",
-    "pt": "Inicia sessão ou cria a tua conta MySWYM. Teste Premium de 7 dias com cartão.",
-    "pt-BR": "Entre ou crie sua conta MySWYM. Teste Premium de 7 dias com cartão.",
-    "sv": "Logga in eller skapa ditt MySWYM-konto. 7 dagars Premium-prov med kort.",
-    "da": "Log ind, eller opret din MySWYM-konto. 7 dages Premium-prøve med kort.",
-    "nb": "Logg inn eller opprett MySWYM-kontoen din. 7 dagers Premium-prøve med kort.",
-    "fi": "Kirjaudu tai luo MySWYM-tili. 7 päivän Premium-kokeilu kortilla."
+  "Connecte-toi ou crée ton compte ForSwim. Essai Premium 7 jours avec carte.": {
+    "en": "Log in or create your ForSwim account. 7-day Premium trial with card.",
+    "de": "Melde dich an oder erstelle dein ForSwim-Konto. 7 Tage Premium mit Karte.",
+    "es": "Inicia sesión o crea tu cuenta ForSwim. Prueba Premium de 7 días con tarjeta.",
+    "ja": "ログインまたは ForSwim アカウントを作成。Premium 7日間お試し（カード登録）。",
+    "nl": "Log in of maak je ForSwim-account aan. 7 dagen Premium proberen met kaart.",
+    "it": "Accedi o crea il tuo account ForSwim. Prova Premium di 7 giorni con carta.",
+    "pt": "Inicia sessão ou cria a tua conta ForSwim. Teste Premium de 7 dias com cartão.",
+    "pt-BR": "Entre ou crie sua conta ForSwim. Teste Premium de 7 dias com cartão.",
+    "sv": "Logga in eller skapa ditt ForSwim-konto. 7 dagars Premium-prov med kort.",
+    "da": "Log ind, eller opret din ForSwim-konto. 7 dages Premium-prøve med kort.",
+    "nb": "Logg inn eller opprett ForSwim-kontoen din. 7 dagers Premium-prøve med kort.",
+    "fi": "Kirjaudu tai luo ForSwim-tili. 7 päivän Premium-kokeilu kortilla."
   },
   "Essai 7 jours : offert une seule fois par compte, avec carte enregistrée (Stripe Checkout sur le site, ou Apple ID sur iPhone). À son terme, le prélèvement démarre sauf résiliation avant la fin de l’essai. Sans essai ni abonnement actif, l’accès aux séances est en pause.": {
     "en": "7-day trial: once per account, with a card on file (Stripe Checkout on the site, or Apple ID on iPhone). When it ends, billing starts unless you cancel before the trial ends. Without an active trial or subscription, session access is paused.",

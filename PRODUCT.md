@@ -14,7 +14,7 @@ Secondary: Premium subscribers who may message Arthur via in-app chat for human 
 
 ## Product Purpose
 
-MySWYM delivers a personalized swim training plan from a short questionnaire (goal, level, frequency, and related preferences). Success: the swimmer opens a readable session (warm-up, main set, cool-down, coach tip), follows it in the lane, and can progress or adapt over weeks without guessing.
+ForSwim delivers a personalized swim training plan from a short questionnaire (goal, level, frequency, and related preferences). Success: the swimmer opens a readable session (warm-up, main set, cool-down, coach tip), follows it in the lane, and can progress or adapt over weeks without guessing.
 
 ## Positioning
 
@@ -46,7 +46,7 @@ Undecided / open:
 
 ## Brand Commitments
 
-- Name: **MySWYM**.
+- Name: **ForSwim**.
 - Voice: direct, coach-like French, second person “tu”, concrete pool language.
 - Personality assets: otter mascot (chat / empty states), coach Arthur Noël (photo, Instagram, human support).
 - Incumbent type pair used in product UI: Geist + Space Grotesk (do not treat as a redesign brief here).

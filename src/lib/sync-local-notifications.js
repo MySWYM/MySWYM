@@ -7,7 +7,7 @@ import { getAccessState } from "./access.js";
 import { buildLocalNotificationPlan } from "./session-reminder.js";
 import {
   getLocalNotificationPermission,
-  rescheduleMySwymLocalNotifications,
+  rescheduleForSwimLocalNotifications,
 } from "./native-local-notifications.js";
 import { isNativeIos } from "./native-platform.js";
 import { pushNotificationsWanted } from "./native-push.js";
@@ -73,5 +73,5 @@ export async function syncLocalNotificationsFromState({ user, plan } = {}) {
     }),
     prefs,
   );
-  return rescheduleMySwymLocalNotifications(planned);
+  return rescheduleForSwimLocalNotifications(planned);
 }

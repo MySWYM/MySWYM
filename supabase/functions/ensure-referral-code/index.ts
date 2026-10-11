@@ -79,7 +79,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const appUrl = Deno.env.get("APP_URL") || "https://myswym.app";
+    const appUrl = Deno.env.get("APP_URL") || "https://forswim.app";
     const shareUrl = `${appUrl.replace(/\/$/, "")}/inscription?ref=${code}`;
 
     return new Response(JSON.stringify({ code, shareUrl }), {

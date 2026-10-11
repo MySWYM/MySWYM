@@ -1,6 +1,6 @@
 /* English permission strings (developmentRegion = en). */
-"NSCameraUsageDescription" = "MySWYM uses the camera for your profile photo.";
-"NSPhotoLibraryUsageDescription" = "MySWYM accesses your photos so you can choose a profile picture.";
-"NSPhotoLibraryAddUsageDescription" = "MySWYM saves your session cards and stickers to Photos.";
-"NSHealthShareUsageDescription" = "MySWYM reads your swim workouts and heart rate from Apple Health to show your stats. Nothing is written to Health.";
-"NSHealthUpdateUsageDescription" = "MySWYM does not write to Apple Health. The app only reads your swim workouts and heart rate.";
+"NSCameraUsageDescription" = "ForSwim uses the camera for your profile photo.";
+"NSPhotoLibraryUsageDescription" = "ForSwim accesses your photos so you can choose a profile picture.";
+"NSPhotoLibraryAddUsageDescription" = "ForSwim saves your session cards and stickers to Photos.";
+"NSHealthShareUsageDescription" = "ForSwim reads your swim workouts and heart rate from Apple Health to show your stats. Nothing is written to Health.";
+"NSHealthUpdateUsageDescription" = "ForSwim does not write to Apple Health. The app only reads your swim workouts and heart rate.";

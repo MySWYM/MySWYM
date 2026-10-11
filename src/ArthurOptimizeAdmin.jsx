@@ -112,7 +112,7 @@ export default function ArthurOptimizeAdmin() {
             fontSize: 14,
           }}
         >
-          MySWYM · Admin
+          ForSwim · Admin
         </p>
         <h1
           style={{

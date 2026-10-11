@@ -93,7 +93,7 @@ export const ENTITLEMENT_KEYS = [
 ];
 
 export const TRIAL_LENGTH_DAYS = 7;
-/** Fenêtre minimale pour considérer qu’un essai MySWYM a vraiment été accordé. */
+/** Fenêtre minimale pour considérer qu’un essai ForSwim a vraiment été accordé. */
 const MIN_GRANTED_TRIAL_MS = (TRIAL_LENGTH_DAYS - 1) * 24 * 60 * 60 * 1000;
 
 /**
@@ -209,7 +209,7 @@ function parseIsoMs(iso: string | null | undefined) {
   return Number.isFinite(ms) ? ms : null;
 }
 
-/** Essai MySWYM réellement ouvert (≈ 7 jours), pas un leftover Stripe déjà périmé. */
+/** Essai ForSwim réellement ouvert (≈ 7 jours), pas un leftover Stripe déjà périmé. */
 export function hasConsumedValidTrialWindow(current?: Partial<AccessStateRow> | null) {
   if (!current || current.trial_used !== true) return false;
   const startMs = parseIsoMs(current.trial_started_at);

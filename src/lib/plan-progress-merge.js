@@ -114,7 +114,7 @@ export function mergePreservingProgress(oldWeeks, newWeeks) {
     const newSessions = week.sessions ?? [];
     if (oldSessions.length !== newSessions.length) {
       console.warn(
-        `[MySWYM] mergePreservingProgress: semaine ${i} structure incompatible (${oldSessions.length} vs ${newSessions.length} séances), fallback semaine entière`,
+        `[ForSwim] mergePreservingProgress: semaine ${i} structure incompatible (${oldSessions.length} vs ${newSessions.length} séances), fallback semaine entière`,
       );
       return shouldPreserveWeek(oldWeek) ? oldWeek : week;
     }

@@ -96,7 +96,7 @@ async function sendSubscriptionConfirmation(
     console.warn("[stripe-webhook] skip confirmation email: no user email");
     return;
   }
-  const appUrl = (Deno.env.get("APP_URL") || "https://myswym.app").replace(/\/$/, "");
+  const appUrl = (Deno.env.get("APP_URL") || "https://forswim.app").replace(/\/$/, "");
   const result = await sendEmailViaHttp("subscription_confirmation", {
     to: user.email,
     planLabel,
@@ -183,7 +183,7 @@ async function creditReferrer(
     await stripe.customers.createBalanceTransaction(parrainCustomerId, {
       amount: -REFERRAL_CREDIT_CENTS, // crédit = montant négatif
       currency: "eur",
-      description: `Parrainage MySWYM : filleul ${filleul.id.slice(0, 8)}`,
+      description: `Parrainage ForSwim : filleul ${filleul.id.slice(0, 8)}`,
       metadata: { filleul_id: filleul.id, type: "referral_reward" },
     });
   } catch (err) {
@@ -205,7 +205,7 @@ async function creditReferrer(
     inbox.unshift({
       id: `referral-joined:${filleul.id}`,
       type: "update",
-      title: `${first} a rejoint MySWYM`,
+      title: `${first} a rejoint ForSwim`,
       body: "Ton parrainage a converti, merci. Le crédit est appliqué sur ton prochain paiement.",
       createdAt: new Date().toISOString(),
     });

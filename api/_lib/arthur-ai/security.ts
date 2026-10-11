@@ -1,5 +1,5 @@
 /**
- * Sécurité Arthur AI, séparation stricte userId MySWYM / externalUserId.
+ * Sécurité Arthur AI, séparation stricte userId ForSwim / externalUserId.
  */
 import type { AuthContext, ArthurChannel, ProcessArthurMessageInput } from "./types.js";
 
@@ -19,7 +19,7 @@ export function asNonEmptyString(value: unknown, max = 500): string | null {
 
 /**
  * Construit un AuthContext sûr.
- * - userId : uniquement un UUID MySWYM (jamais un ID Instagram).
+ * - userId : uniquement un UUID ForSwim (jamais un ID Instagram).
  * - externalUserId : identifiant canal externe, distinct.
  */
 export function buildAuthContext(input: {
@@ -68,13 +68,13 @@ export function assertProcessInput(input: ProcessArthurMessageInput): {
   if (!auth.userId && !auth.externalUserId) {
     return {
       ok: false,
-      error: "Identité requise (userId MySWYM ou externalUserId canal)",
+      error: "Identité requise (userId ForSwim ou externalUserId canal)",
     };
   }
 
-  // Sur web, on exige un userId MySWYM (pas d'identité Instagram seule)
+  // Sur web, on exige un userId ForSwim (pas d'identité Instagram seule)
   if (input.channel === "web" && !auth.userId) {
-    return { ok: false, error: "Authentification MySWYM requise" };
+    return { ok: false, error: "Authentification ForSwim requise" };
   }
 
   const conversationId =
@@ -98,7 +98,7 @@ export function conversationBelongsToAuth(
     auth.externalUserId &&
     conversation.external_user_id === auth.externalUserId
   ) {
-    // Si la conversation est liée à un autre user MySWYM, exiger le même userId
+    // Si la conversation est liée à un autre user ForSwim, exiger le même userId
     if (conversation.user_id && auth.userId && conversation.user_id !== auth.userId) {
       return false;
     }

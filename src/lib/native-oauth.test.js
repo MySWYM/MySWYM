@@ -18,7 +18,7 @@ console.log("native-oauth");
 assert(NATIVE_OAUTH_REDIRECT === "myswym://auth/callback", "redirect");
 assert(isNativeOAuthCallback("myswym://auth/callback?code=abc"), "callback with code");
 assert(isNativeOAuthCallback("myswym://auth/callback#access_token=x"), "callback with hash");
-assert(!isNativeOAuthCallback("https://www.myswym.app/app?code=abc"), "https is not native callback");
+assert(!isNativeOAuthCallback("https://www.forswim.app/app?code=abc"), "https is not native callback");
 assert(!isNativeOAuthCallback("myswym://other"), "other path ignored");
 
 {

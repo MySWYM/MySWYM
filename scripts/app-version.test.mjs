@@ -20,7 +20,7 @@ function buildBody(env) {
     ),
     message:
       env.FORCE_UPDATE_MESSAGE ||
-      "Une nouvelle version de MySWYM est disponible.",
+      "Une nouvelle version de ForSwim est disponible.",
   };
 }
 

@@ -37,8 +37,8 @@ const B = {
   mutedOnDark: "#9bb0c8",
   border: "rgba(0, 107, 253, 0.18)",
   borderSoft: "rgba(10, 22, 44, 0.08)",
-  site: "https://www.myswym.app",
-  logoOnDark: "https://www.myswym.app/logo-myswym-banner-blanc.png",
+  site: "https://www.forswim.app",
+  logoOnDark: "https://www.forswim.app/logo-myswym-banner-blanc.png",
   pricingLine:
     "8,99 €/mois sans engagement · 59,99 €/an",
 } as const;
@@ -48,7 +48,7 @@ function isEmailKind(value: unknown): value is EmailKind {
 }
 
 function fromAddress(): string {
-  return process.env.EMAIL_FROM || "MySWYM <noreply@myswym.app>";
+  return process.env.EMAIL_FROM || "ForSwim <noreply@myswym.app>";
 }
 
 function replyToDefault(): string {
@@ -117,7 +117,7 @@ function layout(options: {
 <body style="margin:0;padding:24px 12px;background:${B.bg};font-family:Geist,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif">
   <div style="max-width:560px;margin:0 auto">
     <div style="background:linear-gradient(165deg,${B.headerBg} 0%,${B.headerBgEnd} 100%);border-radius:14px 14px 0 0;padding:28px 24px 24px;text-align:center;border-bottom:3px solid ${B.primary}">
-      <img src="${B.logoOnDark}" alt="MySWYM" width="140" height="36" style="display:block;margin:0 auto 8px;max-width:140px;height:auto" />
+      <img src="${B.logoOnDark}" alt="ForSwim" width="140" height="36" style="display:block;margin:0 auto 8px;max-width:140px;height:auto" />
       <p style="color:${B.mutedOnDark};font-size:12px;letter-spacing:0.04em;text-transform:uppercase;margin:0">ton coach natation</p>
     </div>
     <div style="background:${B.card};border-radius:0 0 14px 14px;border:1px solid ${B.borderSoft};border-top:none;padding:28px 24px 32px">
@@ -128,9 +128,9 @@ function layout(options: {
       ${secondaryBlock}
     </div>
     <div style="padding:24px 8px 8px;text-align:center">
-      <p style="color:${B.ink};font-size:12px;font-weight:600;margin:0 0 6px">MySWYM · ton coach natation</p>
+      <p style="color:${B.ink};font-size:12px;font-weight:600;margin:0 0 6px">ForSwim · ton coach natation</p>
       <p style="color:${B.muted};font-size:12px;margin:0 0 4px">contact@myswym.app · support@myswym.app</p>
-      <p style="color:${B.muted};font-size:12px;margin:0"><a href="${B.site}" style="color:${B.primary};text-decoration:underline">myswym.app</a></p>
+      <p style="color:${B.muted};font-size:12px;margin:0"><a href="${B.site}" style="color:${B.primary};text-decoration:underline">forswim.app</a></p>
       ${unsub}
     </div>
   </div>
@@ -158,7 +158,7 @@ function buildEmail(kind: EmailKind, payload: Record<string, unknown>): {
         subject:
           firstName !== "nageur"
             ? `${firstName}, ton bassin t’attend`
-            : "Ton bassin t’attend, MySWYM",
+            : "Ton bassin t’attend, ForSwim",
         category: "welcome",
         html: layout({
           preview: "Ouvre ton plan, la 1ʳᵉ séance est déjà là.",
@@ -166,7 +166,7 @@ function buildEmail(kind: EmailKind, payload: Record<string, unknown>): {
           title: titled,
           bodyHtml:
             p(
-              "Ton compte MySWYM est prêt. Ton plan est déjà structuré, clair, progressif, adapté à ton niveau.",
+              "Ton compte ForSwim est prêt. Ton plan est déjà structuré, clair, progressif, adapté à ton niveau.",
             ) +
             bullets([
               "Ouvre l’app et lance ta 1ʳᵉ séance",
@@ -183,10 +183,10 @@ function buildEmail(kind: EmailKind, payload: Record<string, unknown>): {
       if (!to.includes("@") || !confirmUrl) return { error: "to and confirmUrl required" };
       return {
         to,
-        subject: "1 clic pour activer MySWYM",
+        subject: "1 clic pour activer ForSwim",
         category: "verification",
         html: layout({
-          preview: "1 clic pour activer ton compte MySWYM.",
+          preview: "1 clic pour activer ton compte ForSwim.",
           eyebrow: "Sécurité",
           title: "Active ton compte",
           bodyHtml:
@@ -202,15 +202,15 @@ function buildEmail(kind: EmailKind, payload: Record<string, unknown>): {
       if (!to.includes("@") || !resetUrl) return { error: "to and resetUrl required" };
       return {
         to,
-        subject: "Réinitialise ton mot de passe MySWYM",
+        subject: "Réinitialise ton mot de passe ForSwim",
         category: "reset_password",
         html: layout({
-          preview: "Choisis un nouveau mot de passe MySWYM.",
+          preview: "Choisis un nouveau mot de passe ForSwim.",
           eyebrow: "Sécurité",
           title: "Nouveau mot de passe",
           bodyHtml:
             p(
-              "Tu as demandé à réinitialiser ton mot de passe MySWYM. Utilise le bouton ci-dessous pour en choisir un nouveau.",
+              "Tu as demandé à réinitialiser ton mot de passe ForSwim. Utilise le bouton ci-dessous pour en choisir un nouveau.",
             ) +
             p(
               "Si tu n’es pas à l’origine de cette demande, ignore cet email : ton compte reste inchangé.",
@@ -309,10 +309,10 @@ function buildEmail(kind: EmailKind, payload: Record<string, unknown>): {
         category: "newsletter",
         html: layout({
           preview: previewText || subject,
-          eyebrow: "MySWYM",
+          eyebrow: "ForSwim",
           bodyHtml: body,
           cta: {
-            label: str("ctaLabel") || "Ouvrir MySWYM",
+            label: str("ctaLabel") || "Ouvrir ForSwim",
             url: str("ctaUrl") || `${B.site}/app`,
           },
           showUnsubscribe: true,
@@ -322,7 +322,7 @@ function buildEmail(kind: EmailKind, payload: Record<string, unknown>): {
     case "contact": {
       const name = str("name");
       const email = str("email");
-      const subject = str("subject") || "Contact MySWYM";
+      const subject = str("subject") || "Contact ForSwim";
       const message = str("message");
       if (!name || !email.includes("@") || !message) {
         return { error: "name, email and message required" };
@@ -333,7 +333,7 @@ function buildEmail(kind: EmailKind, payload: Record<string, unknown>): {
         category: "contact",
         replyTo: email,
         html: layout({
-          preview: `Contact MySWYM : ${subject}`,
+          preview: `Contact ForSwim : ${subject}`,
           eyebrow: "Support",
           title: "Nouveau message contact",
           bodyHtml:
@@ -358,8 +358,8 @@ function buildEmail(kind: EmailKind, payload: Record<string, unknown>): {
       return {
         to,
         subject: firstName
-          ? `${firstName}, tes séances MySWYM ont changé`
-          : "Tes séances MySWYM ont changé",
+          ? `${firstName}, tes séances ForSwim ont changé`
+          : "Tes séances ForSwim ont changé",
         category: "reactivation",
         html: layout({
           preview: "Ouvre l'app : ta semaine se met à jour. 7 jours pour voir.",
@@ -375,7 +375,7 @@ function buildEmail(kind: EmailKind, payload: Record<string, unknown>): {
               "Le reste de la semaine se met à jour à l'ouverture",
               "7 jours pour tout voir, avec carte",
             ]),
-          cta: { label: "Rouvrir MySWYM", url: ctaUrl },
+          cta: { label: "Rouvrir ForSwim", url: ctaUrl },
           showUnsubscribe: true,
         }),
       };
@@ -388,8 +388,8 @@ function buildEmail(kind: EmailKind, payload: Record<string, unknown>): {
       return {
         to,
         subject: firstName
-          ? `${firstName}, ton compte MySWYM a été supprimé`
-          : "Ton compte MySWYM a été supprimé",
+          ? `${firstName}, ton compte ForSwim a été supprimé`
+          : "Ton compte ForSwim a été supprimé",
         category: "account_deleted",
         html: layout({
           preview:
@@ -397,7 +397,7 @@ function buildEmail(kind: EmailKind, payload: Record<string, unknown>): {
           eyebrow: "Compte supprimé",
           title,
           bodyHtml:
-            p("Ton compte MySWYM a bien été supprimé.") +
+            p("Ton compte ForSwim a bien été supprimé.") +
             bullets([
               "Profil, plans et données associées sont effacés",
               "S’il restait un abonnement sans engagement, il a été arrêté",

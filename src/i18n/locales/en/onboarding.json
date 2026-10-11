@@ -201,8 +201,8 @@
     }
   },
   "health": {
-    "checkbox": "I explicitly agree that MySWYM may process my heart rate and my injury / discomfort declarations to adapt my sessions and help prevent injury. I can refuse.",
-    "body": "To adapt your sessions and reduce injury risk, MySWYM may process health data under the GDPR: per-session heart rate (e.g. via Strava) and the injury / discomfort history you declare. Legal basis: your explicit consent (GDPR art. 9.2.a). It is optional: you can refuse and still use the app. You can withdraw consent at any time (Settings or contact@myswym.app). This data is not sent to third-party analytics tools.",
+    "checkbox": "I explicitly agree that ForSwim may process my heart rate and my injury / discomfort declarations to adapt my sessions and help prevent injury. I can refuse.",
+    "body": "To adapt your sessions and reduce injury risk, ForSwim may process health data under the GDPR: per-session heart rate (e.g. via Strava) and the injury / discomfort history you declare. Legal basis: your explicit consent (GDPR art. 9.2.a). It is optional: you can refuse and still use the app. You can withdraw consent at any time (Settings or contact@myswym.app). This data is not sent to third-party analytics tools.",
     "medical": "Generated plans are indicative and do not replace professional medical advice. Check your fitness (medical certificate if needed) before following the programme.",
     "declaration": "I certify that the health information I provide is accurate.",
     "safety": "Train according to how you feel. Stop if you have worrying symptoms and see a health professional if needed. Open water: never swim alone."
@@ -285,7 +285,7 @@
     "backLogin": "← Back to log in",
     "age": "I confirm I am 18 or over.",
     "terms": "I accept the <cgu>terms of use</cgu> and the <privacy>privacy policy</privacy>.",
-    "newsletter": "I agree to receive MySWYM news by email.",
+    "newsletter": "I agree to receive ForSwim news by email.",
     "trial": "7-day trial with card (Stripe or App Store). Then billing starts unless you cancel before the trial ends.",
     "google": "Continue with Google",
     "facebook": "Continue with Facebook",

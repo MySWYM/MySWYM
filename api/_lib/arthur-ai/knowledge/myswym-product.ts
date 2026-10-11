@@ -1,5 +1,5 @@
 /**
- * Base de connaissance produit MySWYM : disponible au runtime
+ * Base de connaissance produit ForSwim : disponible au runtime
  * (Cursor n’est pas une source de vérité en production).
  *
  * Alignée Tarifs.jsx / Legal / SupportBubble / landing.
@@ -7,10 +7,10 @@
 import type { KnowledgeSnippet } from "../optimization/knowledge.js";
 
 const APP = () =>
-  (process.env.APP_URL || "https://myswym.app").replace(/\/$/, "");
+  (process.env.APP_URL || "https://forswim.app").replace(/\/$/, "");
 
 export const MYSWYM_PRODUCT = {
-  name: "MySWYM",
+  name: "ForSwim",
   tagline: "Plans d’entraînement natation personnalisés",
   monthlyFlex: "8,99€",
   monthly: "8,99€",
@@ -33,7 +33,7 @@ export function getBuiltinMyswymKnowledge(): KnowledgeSnippet[] {
       topic: "myswym_how_it_works",
       title: "Fonctionnement de l’app",
       content:
-        `MySWYM génère un plan de natation personnalisé (bassin / eau libre / triathlon) via un moteur rule-based : tu renseignes objectif, niveau, fréquence et contraintes, puis tu suis des séances structurées (échauffement → technique → corps → retour calme). Essai Premium ${MYSWYM_PRODUCT.trialDays} jours avec carte (Stripe ou App Store). Ensuite le prélèvement démarre, sauf résiliation avant la fin de l’essai. Inscription : ${base}${MYSWYM_PRODUCT.paths.inscription}`,
+        `ForSwim génère un plan de natation personnalisé (bassin / eau libre / triathlon) via un moteur rule-based : tu renseignes objectif, niveau, fréquence et contraintes, puis tu suis des séances structurées (échauffement → technique → corps → retour calme). Essai Premium ${MYSWYM_PRODUCT.trialDays} jours avec carte (Stripe ou App Store). Ensuite le prélèvement démarre, sauf résiliation avant la fin de l’essai. Inscription : ${base}${MYSWYM_PRODUCT.paths.inscription}`,
       tags: [
         "fonctionne",
         "application",
@@ -59,7 +59,7 @@ export function getBuiltinMyswymKnowledge(): KnowledgeSnippet[] {
       topic: "myswym_cancel",
       title: "Résiliation",
       content:
-        "Sur le site : Profil, Modifier mon abonnement, puis le portail Stripe. Supprimer le compte arrête l’abonnement Stripe encore actif, sans remboursement de la période déjà payée. Sur iPhone : Réglages, Apple ID, Abonnements. Supprimer le compte MySWYM n’arrête pas un abonnement App Store. Pendant l’essai 7 jours avec carte : résilie avant la fin pour éviter le premier prélèvement.",
+        "Sur le site : Profil, Modifier mon abonnement, puis le portail Stripe. Supprimer le compte arrête l’abonnement Stripe encore actif, sans remboursement de la période déjà payée. Sur iPhone : Réglages, Apple ID, Abonnements. Supprimer le compte ForSwim n’arrête pas un abonnement App Store. Pendant l’essai 7 jours avec carte : résilie avant la fin pour éviter le premier prélèvement.",
       tags: ["résil", "annul", "résiliation", "annulation", "stripe"],
       intent_hints: ["subscription", "support"],
       priority: 90,

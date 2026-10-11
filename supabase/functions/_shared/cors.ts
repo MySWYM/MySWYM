@@ -1,10 +1,14 @@
 /**
  * CORS navigateur pour les Edge Functions appelées depuis l’app.
  * Pas de wildcard `*`, pas de `*.vercel.app` générique (n’importe quel projet Vercel).
+ * Dual-domaine : forswim.app (canonique) + myswym.app (transition).
  */
-export const FALLBACK_ORIGIN = "https://www.myswym.app";
+export const FALLBACK_ORIGIN = "https://www.forswim.app";
 
 const STATIC_ORIGINS = [
+  "https://forswim.app",
+  "https://www.forswim.app",
+  "https://staging.forswim.app",
   "https://myswym.app",
   "https://www.myswym.app",
   "https://staging.myswym.app",
@@ -36,8 +40,13 @@ function isLocalHost(host: string): boolean {
   return host === "localhost" || host === "127.0.0.1";
 }
 
-function isMyswymHost(host: string): boolean {
-  return host === "myswym.app" || host.endsWith(".myswym.app");
+function isBrandHost(host: string): boolean {
+  return (
+    host === "forswim.app" ||
+    host.endsWith(".forswim.app") ||
+    host === "myswym.app" ||
+    host.endsWith(".myswym.app")
+  );
 }
 
 export function isAllowedOrigin(origin: string, extra: readonly string[] = extraOrigins()): boolean {
@@ -52,7 +61,7 @@ export function isAllowedOrigin(origin: string, extra: readonly string[] = extra
       if (url.protocol === "capacitor:" || url.protocol === "ionic:") return true;
       return false;
     }
-    if (isMyswymHost(host)) return url.protocol === "https:";
+    if (isBrandHost(host)) return url.protocol === "https:";
     return false;
   } catch {
     return false;

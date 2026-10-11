@@ -14,7 +14,7 @@ import {
 } from "../shadow/reply-policy.js";
 
 const APP = () =>
-  (process.env.APP_URL || "https://myswym.app").replace(/\/$/, "");
+  (process.env.APP_URL || "https://forswim.app").replace(/\/$/, "");
 
 export type OfflineReason =
   | "flag_offline"
@@ -44,7 +44,7 @@ export function buildOfflineResponse(
   } else if (opts.reason === "cost_budget_hard") {
     structured = fallbackStructured(
       "Je suis en mode économie pour aujourd’hui. " +
-        (tip || "Reviens un peu plus tard pour continuer sur ta natation ou MySWYM."),
+        (tip || "Reviens un peu plus tard pour continuer sur ta natation ou ForSwim."),
     );
     structured.suggested_action = "continue";
   } else if (opts.reason === "channel_disabled") {
@@ -76,7 +76,7 @@ export function buildOfflineResponse(
     } else {
       structured = fallbackStructured(
         tip ||
-          "Dis-moi ton objectif natation ou ce que tu veux comprendre sur MySWYM : je t’oriente.",
+          "Dis-moi ton objectif natation ou ce que tu veux comprendre sur ForSwim : je t’oriente.",
       );
       structured.intent = intent;
       structured.suggested_action = "continue";

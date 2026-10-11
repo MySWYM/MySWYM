@@ -1,20 +1,20 @@
 {
   "meta": {
-    "title": "MySWYM : Plano de natação personalizado",
+    "title": "ForSwim : Plano de natação personalizado",
     "description": "Evolução na natação, triatlo, águas abertas, preparo de diploma. Plano de natação personalizado, pronto em 2 minutos. Teste Premium de 7 dias.",
-    "howTitle": "Como funciona | MySWYM",
-    "howDescription": "3 perguntas, um plano estruturado na hora. É assim que a MySWYM treina você."
+    "howTitle": "Como funciona | ForSwim",
+    "howDescription": "3 perguntas, um plano estruturado na hora. É assim que a ForSwim treina você."
   },
   "hero": {
     "title": "Seu próximo treino de natação, em 3 perguntas.",
     "titleLine1": "Seu próximo treino de natação,",
     "titleAccent": "em 3 perguntas",
-    "subtitle": "Objetivo, nível, frequência. A MySWYM monta os treinos. Chega de chute na piscina.",
+    "subtitle": "Objetivo, nível, frequência. A ForSwim monta os treinos. Chega de chute na piscina.",
     "cta": "Criar meu plano",
     "ctaSecondary": "Ver um treino",
     "seeSession": "Ver um treino",
     "freeNote": "Teste 7 dias · com cartão · a partir de 8,99 €/mês",
-    "mockupAlt": "Prévia do app MySWYM em dois iPhones: treino e evolução",
+    "mockupAlt": "Prévia do app ForSwim em dois iPhones: treino e evolução",
     "proof1Value": "+15",
     "proof1Label": "objetivos",
     "proof2Value": "4",
@@ -93,7 +93,7 @@
   },
   "features": {
     "f1Title": "Plano até o dia da prova",
-    "f1Desc": "Defina a data do objetivo: a MySWYM monta um plano progressivo com fases de base, de build, de intensidade e de polimento.",
+    "f1Desc": "Defina a data do objetivo: a ForSwim monta um plano progressivo com fases de base, de build, de intensidade e de polimento.",
     "f2Title": "Adaptado ao seu equipamento",
     "f2Desc": "Palmares, pull buoy, nadadeiras, prancha… a gente só usa o que você tem.",
     "f3Title": "Todos os nados",
@@ -106,7 +106,7 @@
     "eyebrow": "Feito por quem nada, para quem nada",
     "titleLine1": "Vire o nadador",
     "titleLine2": "que você quer ser",
-    "body": "A MySWYM estrutura seu treino como o caderno de um treinador: objetivo, data, nível, frequência, e depois treinos claros antes de você entrar na água. As dicas de técnica também estão no Instagram.",
+    "body": "A ForSwim estrutura seu treino como o caderno de um treinador: objetivo, data, nível, frequência, e depois treinos claros antes de você entrar na água. As dicas de técnica também estão no Instagram.",
     "quote": "Evoluir é análise, repetição e vontade de chegar lá. Não é improvisar na borda da piscina.",
     "cta": "Criar meu plano",
     "igCta": "Ver @arthurnatation",
@@ -132,8 +132,8 @@
     "badgePrem": "PREMIUM"
   },
   "why": {
-    "label": "POR QUE MYSWYM",
-    "title": "Por que usar a MySWYM?",
+    "label": "POR QUE ForSwim",
+    "title": "Por que usar a ForSwim?",
     "subtitle": "Tudo o que você precisa para estruturar o treino, nada além.",
     "uiPreview": "Prévia da interface",
     "b1Title": "Adaptado ao seu equipamento",
@@ -163,8 +163,8 @@
     "label": "PRÉVIA DO TREINO",
     "title": "Claro antes de você entrar na água",
     "subtitle": "Cada treino tem uma estrutura de treinador: aquecimento, série principal, desaquecimento, mais uma dica concreta.",
-    "mockupAlt": "Treino MySWYM no iPhone: aquecimento, série principal e desaquecimento",
-    "detailMockupAlt": "Detalhe de um treino MySWYM: aquecimento, série principal e desaquecimento",
+    "mockupAlt": "Treino ForSwim no iPhone: aquecimento, série principal e desaquecimento",
+    "detailMockupAlt": "Detalhe de um treino ForSwim: aquecimento, série principal e desaquecimento",
     "cta": "Criar meu plano",
     "type": "Resistência",
     "heading": "Séries confortáveis",
@@ -181,7 +181,7 @@
     "label": "CREDIBILIDADE",
     "titleLine1": "Um treino estruturado,",
     "titleLine2": "não improviso",
-    "subtitle": "A MySWYM se apoia em regras de treino claras, não em prompts aleatórios.",
+    "subtitle": "A ForSwim se apoia em regras de treino claras, não em prompts aleatórios.",
     "p1Title": "Geração local, confiável",
     "p1Desc": "Seu plano é calculado no app, sem IA externa, sem espera. Resultado na hora e repetível.",
     "p2Title": "Estrutura de profissional",
@@ -227,14 +227,14 @@
     "title": "Perguntas frequentes",
     "chatKicker": "Suporte Premium",
     "chatTitle": "Uma conversa de verdade, não um bot",
-    "chatBody": "Quem tem Premium escreve no chat da MySWYM. O Arthur lê e responde pessoalmente, quando pode. Nenhuma IA inventa a resposta.",
+    "chatBody": "Quem tem Premium escreve no chat da ForSwim. O Arthur lê e responde pessoalmente, quando pode. Nenhuma IA inventa a resposta.",
     "chatPoint1": "Acesso ao chat no Premium",
     "chatPoint2": "Resposta humana, não um bot",
     "chatPoint3": "Escreva quando quiser",
     "chatCta": "Ver os planos Premium",
-    "mockupAlt": "Chat MySWYM no iPhone: faça uma pergunta ao treinador",
+    "mockupAlt": "Chat ForSwim no iPhone: faça uma pergunta ao treinador",
     "q1": "Nunca segui um plano estruturado. É para mim?",
-    "a1": "Sim, se você já sabe nadar. O nível iniciante usa volumes simples e uma linguagem clara. A MySWYM organiza seus treinos. Não é uma escola de natação.",
+    "a1": "Sim, se você já sabe nadar. O nível iniciante usa volumes simples e uma linguagem clara. A ForSwim organiza seus treinos. Não é uma escola de natação.",
     "q2": "Posso mudar de objetivo no meio do caminho?",
     "a2": "Sim. No seu perfil, você pode refazer o questionário para um novo objetivo e gerar outro plano. No Premium, você também administra vários planos ao mesmo tempo.",
     "q3": "Como funciona a assinatura?",
@@ -331,7 +331,7 @@
     "t3Desc": "Sem assinatura, os treinos entram em pausa: não sobra o que ver. Para continuar: 8,99 €/mês ou 59,99 €/ano.",
     "whoLabel": "Para quem é",
     "whoTitle": "Se você já sabe nadar.",
-    "whoLead": "A MySWYM organiza seus treinos. Não é escola para aprender o nado do zero.",
+    "whoLead": "A ForSwim organiza seus treinos. Não é escola para aprender o nado do zero.",
     "w1": "Você tem um objetivo: evoluir, triatlo, águas abertas ou uma certificação.",
     "w2": "Você já nada algumas piscinas, mesmo curtas.",
     "w3": "Você quer um plano legível, não improvisar na borda da piscina.",
@@ -351,14 +351,14 @@
     "toPricing": "Ver preços"
   },
   "faqPage": {
-    "metaTitle": "FAQ | MySWYM",
+    "metaTitle": "FAQ | ForSwim",
     "metaDescription": "Assinatura, piscinas de 25 m / 50 m, mudar de objetivo: respostas para você começar seu plano de natação.",
     "intro": "As perguntas que mais chegam: teste, preço, tamanho da piscina, mudar de objetivo.",
     "moreTitle": "Ainda ficou uma dúvida?",
     "moreCta": "Escrever para o suporte"
   },
   "pricingPage": {
-    "metaTitle": "Preços | MySWYM",
+    "metaTitle": "Preços | ForSwim",
     "metaDescription": "Teste Premium 7 dias com cartão, depois 8,99 €/mês sem fidelidade ou 59,99 €/ano. Planos de natação personalizados.",
     "eyebrow": "PREÇOS",
     "h1": "Um teste. Duas formas de continuar.",
@@ -441,7 +441,7 @@
     "chooseAnnual": "Pagar 59,99 €"
   },
   "contactPage": {
-    "metaTitle": "Contato | MySWYM",
+    "metaTitle": "Contato | ForSwim",
     "metaDescription": "Uma dúvida sobre seu plano de natação? Escreva para a gente. Respondemos em 24-48 horas úteis.",
     "eyebrow": "CONTATO",
     "h1": "Uma dúvida sobre seu plano?",
@@ -465,8 +465,8 @@
     "allFaq": "Todas as perguntas"
   },
   "reviewsPage": {
-    "metaTitle": "Avaliações | MySWYM",
-    "metaDescription": "Avaliações de quem nada na MySWYM. Só feedback real, publicado depois da moderação.",
+    "metaTitle": "Avaliações | ForSwim",
+    "metaDescription": "Avaliações de quem nada na ForSwim. Só feedback real, publicado depois da moderação.",
     "label": "AVALIAÇÕES",
     "title": "O que quem nada diz",
     "subtitle": "Só avaliações reais, publicadas depois da moderação. Sem depoimento inventado.",

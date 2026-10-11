@@ -2,7 +2,7 @@
  * Bridge Edge Functions → Vercel email API (same React Email templates).
  * Not wired yet, import from stripe-webhook / Auth hooks when ready.
  *
- * Secrets (Supabase): INTERNAL_EMAIL_SECRET, APP_URL (e.g. https://myswym.app)
+ * Secrets (Supabase): INTERNAL_EMAIL_SECRET, APP_URL (e.g. https://forswim.app)
  */
 export type EmailHttpKind =
   | "welcome"
@@ -25,7 +25,7 @@ export async function sendEmailViaHttp(
   payload: Record<string, unknown>,
 ): Promise<EmailHttpResult> {
   const base =
-    Deno.env.get("APP_URL")?.replace(/\/$/, "") || "https://myswym.app";
+    Deno.env.get("APP_URL")?.replace(/\/$/, "") || "https://forswim.app";
   const secret = Deno.env.get("INTERNAL_EMAIL_SECRET");
   if (!secret) {
     console.error("[email-http] INTERNAL_EMAIL_SECRET missing");

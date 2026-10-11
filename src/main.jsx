@@ -17,7 +17,7 @@ import { supabase } from "./supabase.js";
 handoffStravaIosIfNeeded();
 if (!bounceRecoveryToNativeApp()) {
   void consumeRecoveryTokenHash(supabase).then((res) => {
-    if (res.error) console.warn("[MySWYM] lien reset invalide ou expiré", res.error.message);
+    if (res.error) console.warn("[ForSwim] lien reset invalide ou expiré", res.error.message);
   });
 }
 prepareNativeRuntime();

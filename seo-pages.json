@@ -1,122 +1,122 @@
 {
   "/": {
-    "title": "MySWYM : Personalized swim training plan",
+    "title": "ForSwim : Personalized swim training plan",
     "description": "Swim progression, triathlon, open water, diploma prep. Personalized swim training plan, ready in 2 minutes. 7-day Premium trial."
   },
   "/fr": {
-    "title": "MySWYM : Plan d'entraînement natation personnalisé",
+    "title": "ForSwim : Plan d'entraînement natation personnalisé",
     "description": "Nager, triathlon, eau libre, prépa diplôme. Plan d'entraînement natation personnalisé, prêt en 2 minutes. Essai Premium 7 jours."
   },
   "/how-it-works": {
-    "title": "How it works | MySWYM",
-    "description": "A few questions, a structured plan right away. That’s how MySWYM trains you."
+    "title": "How it works | ForSwim",
+    "description": "A few questions, a structured plan right away. That’s how ForSwim trains you."
   },
   "/fr/comment-ca-marche": {
-    "title": "Comment ça marche | MySWYM",
-    "description": "Quelques questions, un plan structuré tout de suite. Voilà comment MySWYM t’entraîne."
+    "title": "Comment ça marche | ForSwim",
+    "description": "Quelques questions, un plan structuré tout de suite. Voilà comment ForSwim t’entraîne."
   },
   "/faq": {
-    "title": "FAQ | MySWYM",
+    "title": "FAQ | ForSwim",
     "description": "Subscription, 25 m / 50 m pools, changing your goal: answers to start your swim plan."
   },
   "/fr/faq": {
-    "title": "FAQ | MySWYM",
+    "title": "FAQ | ForSwim",
     "description": "Abonnement, bassin 25 m / 50 m, changement d'objectif : les réponses pour démarrer ton plan natation."
   },
   "/pricing": {
-    "title": "Pricing | MySWYM",
+    "title": "Pricing | ForSwim",
     "description": "7-day Premium trial, then €9.99/month with no commitment, €4.99/month for 12 months, or €52.99/year. Personalized swim plans."
   },
   "/fr/tarifs": {
-    "title": "Tarifs | MySWYM",
+    "title": "Tarifs | ForSwim",
     "description": "Essai Premium 7 jours, puis 9,99€/mois sans engagement, 4,99€/mois sur 12 mois ou 52,99€/an. Plans natation personnalisés."
   },
   "/contact": {
-    "title": "Contact | MySWYM",
+    "title": "Contact | ForSwim",
     "description": "A question about your swim plan? Write to us. We reply within 24-48 business hours."
   },
   "/fr/contact": {
-    "title": "Contact | MySWYM",
+    "title": "Contact | ForSwim",
     "description": "Une question sur ton plan natation ? Écris-nous. Réponse sous 24-48 h ouvrées."
   },
   "/reviews": {
-    "title": "Reviews | MySWYM",
-    "description": "Swimmer reviews of MySWYM. Real feedback only, published after moderation."
+    "title": "Reviews | ForSwim",
+    "description": "Swimmer reviews of ForSwim. Real feedback only, published after moderation."
   },
   "/fr/avis": {
-    "title": "Avis | MySWYM",
-    "description": "Avis de nageurs sur MySWYM. Uniquement des retours réels, publiés après relecture."
+    "title": "Avis | ForSwim",
+    "description": "Avis de nageurs sur ForSwim. Uniquement des retours réels, publiés après relecture."
   },
   "/blog": {
-    "title": "MySWYM Blog | Swim training tips",
+    "title": "ForSwim Blog | Swim training tips",
     "description": "Swim articles: technique, plans, open water and pool vocabulary, without the jargon."
   },
   "/fr/blog": {
-    "title": "Blog MySWYM | Conseils natation et entraînement",
+    "title": "Blog ForSwim | Conseils natation et entraînement",
     "description": "Articles natation : technique, plans, eau libre et vocabulaire de bassin, sans jargon inutile."
   },
   "/legal-notice": {
-    "title": "Legal notice | MySWYM",
-    "description": "Publisher, host and legal notices for the MySWYM website."
+    "title": "Legal notice | ForSwim",
+    "description": "Publisher, host and legal notices for the ForSwim website."
   },
   "/fr/mentions-legales": {
-    "title": "Mentions légales | MySWYM",
-    "description": "Éditeur, hébergeur et mentions légales du site MySWYM."
+    "title": "Mentions légales | ForSwim",
+    "description": "Éditeur, hébergeur et mentions légales du site ForSwim."
   },
   "/privacy": {
-    "title": "Privacy policy | MySWYM",
-    "description": "Data collected, purposes, GDPR rights and contact for MySWYM."
+    "title": "Privacy policy | ForSwim",
+    "description": "Data collected, purposes, GDPR rights and contact for ForSwim."
   },
   "/fr/politique-confidentialite": {
-    "title": "Politique de confidentialité | MySWYM",
-    "description": "Données collectées, finalités, droits RGPD et contact pour MySWYM."
+    "title": "Politique de confidentialité | ForSwim",
+    "description": "Données collectées, finalités, droits RGPD et contact pour ForSwim."
   },
   "/cookies": {
-    "title": "Cookie policy | MySWYM",
-    "description": "Cookies, PostHog and consent management on MySWYM. No Google Analytics."
+    "title": "Cookie policy | ForSwim",
+    "description": "Cookies, PostHog and consent management on ForSwim. No Google Analytics."
   },
   "/fr/politique-cookies": {
-    "title": "Politique de cookies | MySWYM",
-    "description": "Cookies, PostHog et gestion du consentement sur MySWYM. Pas de Google Analytics."
+    "title": "Politique de cookies | ForSwim",
+    "description": "Cookies, PostHog et gestion du consentement sur ForSwim. Pas de Google Analytics."
   },
   "/terms": {
-    "title": "Terms of use | MySWYM",
-    "description": "Terms of use for the MySWYM application."
+    "title": "Terms of use | ForSwim",
+    "description": "Terms of use for the ForSwim application."
   },
   "/fr/cgu": {
-    "title": "CGU | MySWYM",
-    "description": "Conditions générales d'utilisation de l'application MySWYM."
+    "title": "CGU | ForSwim",
+    "description": "Conditions générales d'utilisation de l'application ForSwim."
   },
   "/terms-of-sale": {
-    "title": "Terms of sale | MySWYM",
-    "description": "Terms of sale for the MySWYM Premium offer."
+    "title": "Terms of sale | ForSwim",
+    "description": "Terms of sale for the ForSwim Premium offer."
   },
   "/fr/cgv": {
-    "title": "CGV | MySWYM",
-    "description": "Conditions générales de vente de l'offre Premium MySWYM."
+    "title": "CGV | ForSwim",
+    "description": "Conditions générales de vente de l'offre Premium ForSwim."
   },
   "/blog/personnalisation-100m-natation": {
-    "title": "Pourquoi ton meilleur 100m change tout à ton entraînement | MySWYM",
+    "title": "Pourquoi ton meilleur 100m change tout à ton entraînement | ForSwim",
     "description": "Un seul temps suffit pour que ton plan devienne vraiment le tien. Départs calculés à la seconde, zones d'intensité réelles, allures cibles."
   },
   "/blog/programme-natation-triathlon": {
-    "title": "Programme natation pour triathlon : comment vraiment progresser | MySWYM",
+    "title": "Programme natation pour triathlon : comment vraiment progresser | ForSwim",
     "description": "Découvre comment structurer ton entraînement natation pour le triathlon : phases de préparation, séances CSS, travail au seuil et open water."
   },
   "/blog/comment-reussir-bnssa": {
-    "title": "Comment réussir le BNSSA : le programme natation complet | MySWYM",
+    "title": "Comment réussir le BNSSA : le programme natation complet | ForSwim",
     "description": "Tout ce qu'il faut savoir pour préparer les épreuves de natation du BNSSA : 100m sauvetage, 250m palmes, apnée et remorquage."
   },
   "/blog/plan-natation-debutant": {
-    "title": "Plan natation débutant : 8 semaines pour nager sans s'arrêter | MySWYM",
+    "title": "Plan natation débutant : 8 semaines pour nager sans s'arrêter | ForSwim",
     "description": "Tu reprends la natation ou tu débutes ? Un plan progressif de 8 semaines pour nager 1 000m sans t'arrêter."
   },
   "/blog/depart-interval-natation": {
-    "title": "D1'45\" : c'est quoi un départ à la montre en natation ? | MySWYM",
+    "title": "D1'45\" : c'est quoi un départ à la montre en natation ? | ForSwim",
     "description": "Comment lire l'horloge de bassin, pourquoi on n'utilise pas la montre pour les récups, et comment nager les séries."
   },
   "/blog/glossaire-natation": {
-    "title": "Glossaire natation : tous les termes de l'app expliqués | MySWYM",
+    "title": "Glossaire natation : tous les termes de l'app expliqués | ForSwim",
     "description": "RAC, godilles, grand chien, Z2, D1'45\", rattrapé, flèche : le vocabulaire de bassin expliqué simplement."
   }
 }

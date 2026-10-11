@@ -1,12 +1,12 @@
 ---
 name: myswym-app-glass
 description: >-
-  Direction DA soft mist pour l’APP MySWYM : mix OPEN tennis (liquid glass) +
+  Direction DA soft mist pour l’APP ForSwim : mix OPEN tennis (liquid glass) +
   Miracle soft UI (ciel bleu→blanc, cartes blanches, air). Prefer CSS glass; avoid WebGL.
   Source de vérité : DESIGN.md à la racine du repo.
 ---
 
-# MySWYM App Glass (OPEN × Miracle)
+# ForSwim App Glass (OPEN × Miracle)
 
 **Source de vérité** : [`DESIGN.md`](../../../DESIGN.md) (racine repo). Toute modif UI app (et corrections landing) part de là. Ce skill est un rappel court.
 

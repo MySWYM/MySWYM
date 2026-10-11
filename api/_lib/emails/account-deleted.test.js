@@ -17,7 +17,7 @@ const job = readFileSync(
 
 const shared = [
   "c’est fait.",
-  "Ton compte MySWYM a bien été supprimé.",
+  "Ton compte ForSwim a bien été supprimé.",
   "Profil, plans et données associées sont effacés",
   "S’il restait un abonnement sans engagement, il a été arrêté",
   "Recréer un compte, c’est repartir de zéro",
@@ -30,7 +30,7 @@ for (const phrase of shared) {
 }
 
 assert.ok(
-  sendTs.includes("Ton compte MySWYM a été supprimé"),
+  sendTs.includes("Ton compte ForSwim a été supprimé"),
   "send.ts missing subject",
 );
 assert.ok(

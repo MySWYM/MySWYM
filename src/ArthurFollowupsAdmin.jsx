@@ -116,7 +116,7 @@ export default function ArthurFollowupsAdmin() {
             fontSize: 14,
           }}
         >
-          MySWYM · Admin
+          ForSwim · Admin
         </p>
         <h1
           style={{

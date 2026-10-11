@@ -1,7 +1,7 @@
 /**
  * Strava OAuth hors WebView iOS.
  * Le retour est myswym://localhost : Strava accepte localhost,
- * et seul MySWYM déclare le schéma myswym.
+ * et seul ForSwim déclare le schéma myswym.
  * Jamais capacitor://localhost (une autre app Capacitor peut s’ouvrir)
  * et jamais le site web (Safari n’a pas la session de l’app).
  */

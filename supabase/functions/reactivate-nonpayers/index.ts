@@ -227,7 +227,7 @@ Deno.serve(async (req) => {
       const result = await sendEmailViaHttp("reactivation", {
         to: email,
         firstName,
-        ctaUrl: "https://www.myswym.app/app",
+        ctaUrl: "https://www.forswim.app/app",
         userId: user.id,
       });
 

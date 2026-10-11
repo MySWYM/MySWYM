@@ -24,7 +24,7 @@ export function WelcomeEmail({ firstName = "nageur" }: WelcomeEmailProps) {
         {name !== "nageur" ? `${name}, on nage.` : "On nage."}
       </Text>
       <Text style={emailText.p}>
-        Ton compte MySWYM est prêt. Ton plan est déjà structuré, clair,
+        Ton compte ForSwim est prêt. Ton plan est déjà structuré, clair,
         progressif, adapté à ton niveau.
       </Text>
       <EmailBullets

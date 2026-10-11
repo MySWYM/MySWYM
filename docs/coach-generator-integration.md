@@ -1,7 +1,7 @@
 # Générateur coaching — branché dans l'app
 
 > Source : `generateur_seances.html` → `src/lib/swim-session-generator.js`  
-> Pont MySWYM : `src/lib/swim-plan-bridge.js` → `generatePlan()` dans `App.jsx`
+> Pont ForSwim : `src/lib/swim-plan-bridge.js` → `generatePlan()` dans `App.jsx`
 
 **Actif pour** : triathlon, eau libre, progression, bien-être, compétition maître.  
 **Exclu** (ancien moteur `SESSION_TEMPLATES`) : BNSSA, BPJEPS, tests pompiers.

@@ -1,9 +1,9 @@
 ---
-description: Couches MySWYM — local (dev) d’abord, puis GitHub, staging, main. Le live doit être dans le develop local.
+description: Couches ForSwim — local (dev) d’abord, puis GitHub, staging, main. Le live doit être dans le develop local.
 alwaysApply: true
 ---
 
-# Git flow MySWYM
+# Git flow ForSwim
 
 ## Couches (dans cet ordre)
 

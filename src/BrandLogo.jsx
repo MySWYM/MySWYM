@@ -1,5 +1,5 @@
 /**
- * Logos MySWYM (kit A–F).
+ * Logos ForSwim (kit A–F).
  * A icon-app · B picto bleu · C picto blanc · D wordmark bleu ·
  * E horizontal noir · F stack blanc.
  */
@@ -36,7 +36,7 @@ export default function BrandLogo({
   onDark = false,
   variant = "full",
   style,
-  alt = "MySWYM",
+  alt = "ForSwim",
 }) {
   const asset = ASSETS[variant] || ASSETS.full;
   const src = onDark ? asset.dark : asset.light;

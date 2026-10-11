@@ -195,7 +195,7 @@ function adaptTechBlockForPool(blk, pool) {
 
 /**
  * Volume relatif, même structure de séance, distances adaptées au niveau.
- * MySWYM = générateur de séances, pas école de natation.
+ * ForSwim = générateur de séances, pas école de natation.
  */
 const VOL_BY_NIVEAU_KEY = {
   debutant: 0.7,
@@ -227,7 +227,7 @@ function scaleDepartBlock(depart, volMult) {
 
 /**
  * Wording débutant : zones / repos lisibles. Pas un tutoriel technique
- * (MySWYM = générateur de séances).
+ * (ForSwim = générateur de séances).
  */
 function clarifyBeginnerLine(line) {
   if (!line) return line;
@@ -430,7 +430,7 @@ export function calcDetailsDistance(details = []) {
 }
 
 /**
- * Séance MySWYM depuis la banque confirmé.
+ * Séance ForSwim depuis la banque confirmé.
  * @param {number} archeIdx, typiquement wi*3+si
  * @param {25|50} pool
  * @param {string} level, profile.level (performance/advanced pour confirmé)

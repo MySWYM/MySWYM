@@ -4,7 +4,7 @@ import UserNotifications
 import Capacitor
 
 /// Sons UI : catégorie ambient, le bouton sonnerie / vibreur coupe le son.
-enum MySWYMAudio {
+enum ForSwimAudio {
     private static var observing = false
     private static var resetting = false
 
@@ -51,7 +51,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        MySWYMAudio.useAmbientSession()
+        ForSwimAudio.useAmbientSession()
         // Pas de popup au boot (refus massif). Si déjà autorisé, enregistre le jeton APNs.
         Self.registerForRemoteNotificationsIfAuthorized()
         return true
@@ -79,7 +79,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
         NotificationCenter.default.post(name: .capacitorDidFailToRegisterForRemoteNotifications, object: error)
-        print("[MySWYM] APNs registration failed:", error.localizedDescription)
+        print("[ForSwim] APNs registration failed:", error.localizedDescription)
     }
 
     func applicationWillResignActive(_ application: UIApplication) {
@@ -92,7 +92,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     func applicationDidBecomeActive(_ application: UIApplication) {
-        MySWYMAudio.useAmbientSession()
+        ForSwimAudio.useAmbientSession()
         // Rejoue le cache seulement si déjà autorisé (pas de popup ici).
         Self.registerForRemoteNotificationsIfAuthorized()
         Self.replayCachedApnsToken()

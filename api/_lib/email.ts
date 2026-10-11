@@ -100,7 +100,7 @@ export async function sendWelcomeEmail(
     to: input.to,
     subject: firstName
       ? `${firstName}, ton bassin t’attend`
-      : "Ton bassin t’attend, MySWYM",
+      : "Ton bassin t’attend, ForSwim",
     react: WelcomeEmail({ firstName }),
     userId: input.userId,
   });
@@ -112,7 +112,7 @@ export async function sendVerificationEmail(
   return sendReactEmail({
     category: "verification",
     to: input.to,
-    subject: "1 clic pour activer MySWYM",
+    subject: "1 clic pour activer ForSwim",
     react: VerificationEmail({ confirmUrl: input.confirmUrl }),
     userId: input.userId,
   });
@@ -124,7 +124,7 @@ export async function sendResetPasswordEmail(
   return sendReactEmail({
     category: "reset_password",
     to: input.to,
-    subject: "Réinitialise ton mot de passe MySWYM",
+    subject: "Réinitialise ton mot de passe ForSwim",
     react: ResetPasswordEmail({ resetUrl: input.resetUrl }),
     userId: input.userId,
   });
@@ -193,8 +193,8 @@ export async function sendReactivationEmail(
     category: "reactivation",
     to: input.to,
     subject: firstName
-      ? `${firstName}, tes séances MySWYM ont changé`
-      : "Tes séances MySWYM ont changé",
+      ? `${firstName}, tes séances ForSwim ont changé`
+      : "Tes séances ForSwim ont changé",
     react: ReactivationEmail({
       firstName,
       ctaUrl: input.ctaUrl || `${emailBrand.site}/app`,
@@ -211,8 +211,8 @@ export async function sendAccountDeletedEmail(
     category: "account_deleted",
     to: input.to,
     subject: firstName
-      ? `${firstName}, ton compte MySWYM a été supprimé`
-      : "Ton compte MySWYM a été supprimé",
+      ? `${firstName}, ton compte ForSwim a été supprimé`
+      : "Ton compte ForSwim a été supprimé",
     react: AccountDeletedEmail({ firstName }),
     userId: input.userId,
   });
@@ -223,7 +223,7 @@ export async function sendContactEmail(
 ): Promise<EmailSendResult> {
   const name = input.name.trim();
   const email = input.email.trim();
-  const subject = input.subject.trim() || "Contact MySWYM";
+  const subject = input.subject.trim() || "Contact ForSwim";
   const message = input.message.trim();
 
   if (!name || !email.includes("@") || !message) {

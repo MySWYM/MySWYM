@@ -1,20 +1,20 @@
 {
   "meta": {
-    "title": "MySWYM : Plan d'entraînement natation personnalisé",
+    "title": "ForSwim : Plan d'entraînement natation personnalisé",
     "description": "Nager, triathlon, eau libre, prépa diplôme. Plan d'entraînement natation personnalisé, prêt en 2 minutes. Essai Premium 7 jours.",
-    "howTitle": "Comment ça marche | MySWYM",
-    "howDescription": "3 questions, un plan structuré tout de suite. Voilà comment MySWYM t’entraîne."
+    "howTitle": "Comment ça marche | ForSwim",
+    "howDescription": "3 questions, un plan structuré tout de suite. Voilà comment ForSwim t’entraîne."
   },
   "hero": {
     "title": "Ta prochaine séance de natation, en 3 questions.",
     "titleLine1": "Ta prochaine séance de natation,",
     "titleAccent": "en 3 questions",
-    "subtitle": "Objectif, niveau, fréquence. MySWYM compose tes séances. Fini les séances au hasard.",
+    "subtitle": "Objectif, niveau, fréquence. ForSwim compose tes séances. Fini les séances au hasard.",
     "cta": "Créer mon plan",
     "ctaSecondary": "Voir une séance",
     "seeSession": "Voir une séance",
     "freeNote": "Essai 7 jours · avec carte · dès 8,99€/mois",
-    "mockupAlt": "Aperçu de l'app MySWYM sur deux iPhones : séance et progression",
+    "mockupAlt": "Aperçu de l'app ForSwim sur deux iPhones : séance et progression",
     "proof1Value": "+15",
     "proof1Label": "objectifs",
     "proof2Value": "4",
@@ -93,7 +93,7 @@
   },
   "features": {
     "f1Title": "Plan jusqu’au jour J",
-    "f1Desc": "Indique ta date d’objectif : MySWYM construit un plan progressif avec phases de base, de développement, d’intensité et d’affûtage.",
+    "f1Desc": "Indique ta date d’objectif : ForSwim construit un plan progressif avec phases de base, de développement, d’intensité et d’affûtage.",
     "f2Title": "Adapté à ton matériel",
     "f2Desc": "Plaquettes, pull-buoy, palmes, planche… on n’intègre que ce que tu as sous la main.",
     "f3Title": "Toutes les nages",
@@ -106,7 +106,7 @@
     "eyebrow": "Créé par un nageur, pour les nageurs",
     "titleLine1": "Deviens le nageur",
     "titleLine2": "que tu veux être",
-    "body": "MySWYM structure ton entraînement comme un carnet de coach : objectif, date, niveau, fréquence, puis des séances claires avant d'entrer dans l'eau. La technique et les tips, c'est aussi sur Instagram.",
+    "body": "ForSwim structure ton entraînement comme un carnet de coach : objectif, date, niveau, fréquence, puis des séances claires avant d'entrer dans l'eau. La technique et les tips, c'est aussi sur Instagram.",
     "quote": "La progression, c'est l'analyse, la répétition, et l'envie d'y arriver. Pas l'improvisation au bord du bassin.",
     "cta": "Créer mon plan",
     "igCta": "Voir @arthurnatation",
@@ -132,8 +132,8 @@
     "badgePrem": "PREMIUM"
   },
   "why": {
-    "label": "POURQUOI MYSWYM",
-    "title": "Pourquoi utiliser MySWYM ?",
+    "label": "POURQUOI ForSwim",
+    "title": "Pourquoi utiliser ForSwim ?",
     "subtitle": "Tout ce qu'il faut pour structurer ton entraînement, rien de superflu.",
     "uiPreview": "Aperçu UI",
     "b1Title": "Adapté à ton matériel",
@@ -163,8 +163,8 @@
     "label": "APERÇU DE SÉANCE",
     "title": "Clair avant d'entrer dans l'eau",
     "subtitle": "Chaque séance a une structure coach : échauffement, corps, retour au calme, plus un conseil concret.",
-    "mockupAlt": "Séance MySWYM sur iPhone : échauffement, corps de séance et retour au calme",
-    "detailMockupAlt": "Détail d'une séance MySWYM : échauffement, corps de séance et retour au calme",
+    "mockupAlt": "Séance ForSwim sur iPhone : échauffement, corps de séance et retour au calme",
+    "detailMockupAlt": "Détail d'une séance ForSwim : échauffement, corps de séance et retour au calme",
     "cta": "Créer mon plan",
     "type": "Endurance",
     "heading": "Séries confortables",
@@ -181,7 +181,7 @@
     "label": "CRÉDIBILITÉ",
     "titleLine1": "Un coaching structuré,",
     "titleLine2": "pas une improvisation",
-    "subtitle": "MySWYM s'appuie sur des règles d'entraînement claires, pas sur des prompts aléatoires.",
+    "subtitle": "ForSwim s'appuie sur des règles d'entraînement claires, pas sur des prompts aléatoires.",
     "p1Title": "Génération locale, fiable",
     "p1Desc": "Ton plan est calculé dans l'app, sans dépendre d'une IA externe ni d'un délai de réponse. Résultat immédiat, reproductible.",
     "p2Title": "Structure pro",
@@ -227,14 +227,14 @@
     "title": "Questions fréquentes",
     "chatKicker": "Support Premium",
     "chatTitle": "Une vraie discussion, pas un bot",
-    "chatBody": "Les abonnés Premium écrivent dans le chat MySWYM. Arthur lit et répond en personne, quand il peut. Pas d'IA qui invente une réponse.",
+    "chatBody": "Les abonnés Premium écrivent dans le chat ForSwim. Arthur lit et répond en personne, quand il peut. Pas d'IA qui invente une réponse.",
     "chatPoint1": "Accès chat réservé Premium",
     "chatPoint2": "Réponse humaine, pas un bot",
     "chatPoint3": "Tu peux écrire à tout moment",
     "chatCta": "Voir les offres Premium",
-    "mockupAlt": "Chatbox MySWYM sur iPhone : poser une question au coach",
+    "mockupAlt": "Chatbox ForSwim sur iPhone : poser une question au coach",
     "q1": "Je n'ai jamais fait de plan structuré, c'est adapté ?",
-    "a1": "Oui si tu sais déjà nager. Le niveau débutant propose des volumes simples et un langage clair. MySWYM structure tes séances. Ce n'est pas une école pour apprendre le geste de A à Z.",
+    "a1": "Oui si tu sais déjà nager. Le niveau débutant propose des volumes simples et un langage clair. ForSwim structure tes séances. Ce n'est pas une école pour apprendre le geste de A à Z.",
     "q2": "Puis-je changer mon objectif en cours de route ?",
     "a2": "Oui. Depuis le profil, tu peux relancer l'onboarding pour un nouvel objectif et régénérer un plan. Avec Premium, tu peux aussi gérer plusieurs plans en parallèle.",
     "q3": "Comment fonctionne l'abonnement ?",
@@ -331,7 +331,7 @@
     "t3Desc": "Sans abonnement, tes séances se mettent en pause : plus rien de visible. Pour continuer : 8,99€/mois ou 59,99€/an.",
     "whoLabel": "Pour qui",
     "whoTitle": "Si tu sais déjà nager.",
-    "whoLead": "MySWYM structure tes séances. Ce n’est pas une école pour apprendre le geste de A à Z.",
+    "whoLead": "ForSwim structure tes séances. Ce n’est pas une école pour apprendre le geste de A à Z.",
     "w1": "Tu as un objectif : progresser, triathlon, eau libre ou diplôme.",
     "w2": "Tu nages déjà quelques longueurs, même modestes.",
     "w3": "Tu veux un plan lisible, pas une improvisation au bord du bassin.",
@@ -351,14 +351,14 @@
     "toPricing": "Voir les tarifs"
   },
   "faqPage": {
-    "metaTitle": "FAQ | MySWYM",
+    "metaTitle": "FAQ | ForSwim",
     "metaDescription": "Abonnement, bassin 25 m / 50 m, changement d'objectif : les réponses pour démarrer ton plan natation.",
     "intro": "Les questions qu’on reçoit le plus : essai, prix, bassin, changement d’objectif.",
     "moreTitle": "Encore une question ?",
     "moreCta": "Écrire au support"
   },
   "pricingPage": {
-    "metaTitle": "Tarifs | MySWYM",
+    "metaTitle": "Tarifs | ForSwim",
     "metaDescription": "Essai Premium 7 jours avec carte, puis 8,99€/mois sans engagement ou 59,99€/an. Plans natation personnalisés.",
     "eyebrow": "TARIFS",
     "h1": "Un essai. Deux façons de continuer.",
@@ -441,7 +441,7 @@
     "chooseAnnual": "Payer 59,99€"
   },
   "contactPage": {
-    "metaTitle": "Contact | MySWYM",
+    "metaTitle": "Contact | ForSwim",
     "metaDescription": "Une question sur ton plan natation ? Écris-nous. Réponse sous 24-48 h ouvrées.",
     "eyebrow": "CONTACT",
     "h1": "Une question sur ton plan ?",
@@ -465,8 +465,8 @@
     "allFaq": "Toutes les questions"
   },
   "reviewsPage": {
-    "metaTitle": "Avis | MySWYM",
-    "metaDescription": "Avis de nageurs sur MySWYM. Uniquement des retours réels, publiés après relecture.",
+    "metaTitle": "Avis | ForSwim",
+    "metaDescription": "Avis de nageurs sur ForSwim. Uniquement des retours réels, publiés après relecture.",
     "label": "AVIS",
     "title": "Ce qu'en disent les nageurs",
     "subtitle": "Uniquement des avis réels, publiés après relecture. Pas de témoignages inventés.",

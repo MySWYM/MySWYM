@@ -1,10 +1,10 @@
 ---
-description: Règles pour le contenu des séances et programmes natation MySWYM
+description: Règles pour le contenu des séances et programmes natation ForSwim
 globs: src/App.jsx
 alwaysApply: false
 ---
 
-# Séances natation MySWYM
+# Séances natation ForSwim
 
 ## Avant toute modification
 

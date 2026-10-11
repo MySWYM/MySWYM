@@ -8,15 +8,15 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         guard let windowScene = scene as? UIWindowScene else { return }
 
         window = UIWindow(windowScene: windowScene)
-        window?.rootViewController = MySWYMBridgeViewController()
+        window?.rootViewController = ForSwimBridgeViewController()
         window?.makeKeyAndVisible()
-        MySWYMAudio.useAmbientSession()
+        ForSwimAudio.useAmbientSession()
 
         SceneDelegateProxy.shared.scene(scene, willConnectTo: session, options: connectionOptions)
     }
 
     func sceneDidBecomeActive(_ scene: UIScene) {
-        MySWYMAudio.useAmbientSession()
+        ForSwimAudio.useAmbientSession()
     }
 
     func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {

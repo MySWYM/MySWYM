@@ -191,7 +191,7 @@ function extractAttribution(
   };
 }
 
-const KEYWORD_RE = /\b(PLAN|COACH|MYSWYM|PREMIUM|ESSAI|TRIATHLON)\b/i;
+const KEYWORD_RE = /\b(PLAN|COACH|ForSwim|PREMIUM|ESSAI|TRIATHLON)\b/i;
 
 export function detectKeyword(text: string): string | null {
   const m = text.match(KEYWORD_RE);

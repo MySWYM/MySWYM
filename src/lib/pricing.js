@@ -1,5 +1,5 @@
 /**
- * Catalogue Stripe MySWYM : source de vérité des offres payantes.
+ * Catalogue Stripe ForSwim : source de vérité des offres payantes.
  *
  *   monthly_flex   8,99 € / mois · sans engagement
  *   annual         59,99 € / an  · paiement en 1 fois
@@ -11,9 +11,9 @@
  * Pour tester en mode Test Stripe : poser les IDs test + `sk_test_…`.
  */
 
-/** Live, MySWYM Premium Flexible 8,99 €/mois */
+/** Live, ForSwim Premium Flexible 8,99 €/mois */
 const FLEX_ID = "price_1UPMipAS4mfgF2Twd2eNOMyl";
-/** Live, MySWYM Premium Annuel 59,99 €/an */
+/** Live, ForSwim Premium Annuel 59,99 €/an */
 const ANNUAL_ID = "price_1UPMjIAS4mfgF2Tw3VYyFnaV";
 
 /** IDs mode Test (uniquement si clé sk_test), ne pas utiliser en prod. */

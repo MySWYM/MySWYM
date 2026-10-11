@@ -139,7 +139,7 @@ export function getUpgradeCopy(softContext, { weeks = 0, trialEligible = true } 
       };
     default:
       return {
-        headline: "MySWYM Premium",
+        headline: "ForSwim Premium",
         subtitle: trialEligible
           ? "7 jours offerts avec carte, puis 8,99 €/mois sans engagement ou 59,99 €/an."
           : "Continue à 8,99 €/mois sans engagement, ou 59,99 €/an.",

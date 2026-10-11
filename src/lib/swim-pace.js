@@ -1,5 +1,5 @@
 /**
- * Allures MySWYM : référence unique : T100 (temps 100 m crawl).
+ * Allures ForSwim : référence unique : T100 (temps 100 m crawl).
  * Pas de T400 : ni demandé, ni utilisé dans les formules.
  */
 

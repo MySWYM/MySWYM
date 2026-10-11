@@ -1,9 +1,9 @@
 ---
-description: Comportement agent sur le projet MySWYM (mémoire, produit, routes)
+description: Comportement agent sur le projet ForSwim (mémoire, produit, routes)
 alwaysApply: true
 ---
 
-# Agent MySWYM
+# Agent ForSwim
 
 ## Mémoire des corrections natation
 
