@@ -69,4 +69,4 @@ DMARC déjà OK : `v=DMARC1; p=none;` (ne pas mettre Stripe dans le TXT `_dmarc`
 
 - [ ] Instagram `@myswym.app` → nouveau handle (hors code)
 - [ ] staging.myswym.app : **pas** de 301 (reste dual)
-- [ ] Articles blog en base encore « MySWYM » (à migrer si tu veux : dis « blog ForSwim »)
+- [x] Articles blog PROD (+ DEV) : MySWYM → ForSwim dans `contenu`
