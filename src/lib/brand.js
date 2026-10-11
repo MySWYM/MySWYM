@@ -55,15 +55,19 @@ export function brandSiteUrl(path = "") {
 }
 
 /** Chemins publics kit S ondulé (noms `logo-myswym-*` conservés pour e-mails / compat). */
-export const LOGO_WORDMARK_LIGHT = "/logo-myswym-on-light.png";
-export const LOGO_WORDMARK_DARK = "/logo-myswym-banner-blanc.png";
+/** Wordmark seul (sans symbole S) : en-têtes app / site. */
+export const LOGO_WORDMARK_LIGHT = "/brand/wordmark-bleu-transparent.png";
+export const LOGO_WORDMARK_DARK = "/brand/wordmark-blanc-transparent.png";
+/** Logo complet S + nom : e-mails, OG, SEO. */
 export const LOGO_FULL_LIGHT = "/logo-full-on-light.png";
 export const LOGO_FULL_DARK = "/logo-full.png";
 export const LOGO_MARK_LIGHT = "/logo-mark.png";
 export const LOGO_MARK_DARK = "/logo-mark-on-dark.png";
 export const LOGO_ICON_APP = "/logo-icon-app.png";
 export const LOGO_BOOT_MARK = "/boot-mark-still.png";
-/** Ratio largeur/hauteur wordmark horizontal (1024×279). */
-export const LOGO_WORDMARK_RATIO = 1024 / 279;
+/** Ratio wordmark seul (1024×226), proche du MySWYM D (1200×279). */
+export const LOGO_WORDMARK_RATIO = 1024 / 226;
 /** Symbole paddé carré. */
 export const LOGO_MARK_RATIO = 1;
+/** Hauteur en-tête (parité visuelle MySWYM wordmark @ 26). */
+export const LOGO_HEADER_HEIGHT = 28;

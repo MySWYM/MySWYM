@@ -129,7 +129,7 @@ export default function Footer({ aboveBottomNav = false }) {
       <div className="ms-footer-inner">
         <div className="ms-footer-top">
           <LocalizedLink to="/" className="ms-footer-logo" aria-label={t("nav.homeAria")}>
-            <BrandLogo variant="wordmark" height={28} />
+            <BrandLogo variant="wordmark" height={28} alt="ForSwim" />
           </LocalizedLink>
         </div>
 

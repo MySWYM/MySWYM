@@ -68,7 +68,7 @@ export default function PlanRevealView({
         ) : (
           <div className="ms-plan-reveal-ready">
             <header className="ms-plan-reveal-head">
-              <BrandLogo variant="wordmark" height={22} onDark={onDark} />
+              <BrandLogo variant="wordmark" height={28} onDark={onDark} />
               <p className="ms-plan-reveal-kicker">{t("reveal.ready")}</p>
               <h1 className="ms-plan-reveal-title">{t("reveal.path")}</h1>
               <p className="ms-plan-reveal-sub">

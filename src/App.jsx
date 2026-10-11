@@ -2903,7 +2903,7 @@ const ResetPasswordScreen = ({ onDone, showBrandHeader = true }) => {
     <div style={{ maxWidth: 440, margin: "0 auto", padding: "0 20px", paddingTop: showBrandHeader ? 64 : 96, paddingBottom: 40 }}>
       {showBrandHeader && (
         <div style={{ display: "flex", alignItems: "center", marginBottom: 44 }}>
-          <BrandLogo variant="wordmark" height={22} />
+          <BrandLogo variant="wordmark" height={28} />
         </div>
       )}
       <div className="fade-up">
@@ -11847,7 +11847,7 @@ export default function App() {
             {!isNativeApp() && (
               <div style={{ display: "flex", alignItems: "center", marginBottom: 40 }}>
                 <div style={{ display: "flex", alignItems: "center" }}>
-                  <BrandLogo variant="wordmark" height={22} />
+                  <BrandLogo variant="wordmark" height={28} />
                 </div>
               </div>
             )}

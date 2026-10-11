@@ -4,8 +4,10 @@ Sources + dérivés pour l’app, le site et les e-mails. Kit validé 11 oct. 20
 
 | Runtime (chemins stables) | Source ForSwim | Notes |
 | --- | --- | --- |
-| `logo-myswym-on-light.png` | principal-horizontal-transparent | Wordmark couleur fond clair |
-| `logo-myswym-banner-blanc.png` | blanc-transparent | Wordmark blanc (boot / e-mails sombre) |
+| `brand/wordmark-bleu-transparent.png` | wordmark bleu seul | **En-têtes** site / app (sans S) |
+| `brand/wordmark-blanc-transparent.png` | wordmark blanc seul | En-têtes / boot sur fond sombre |
+| `logo-myswym-on-light.png` | principal-horizontal-transparent | S + nom (e-mails / compat) |
+| `logo-myswym-banner-blanc.png` | blanc-transparent | S + nom blanc (e-mails sombre) |
 | `logo-full-on-light.png` | monochrome-noir-transparent | SEO JSON-LD |
 | `logo-full.png` | blanc-transparent | Horizontal blanc |
 | `logo-mark.png` | symbole-transparent | Carré paddé, fond transparent |

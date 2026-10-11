@@ -3,6 +3,7 @@ import { Bell, Menu, ChevronLeft } from "lucide-react";
 import { isIosSimpleNav } from "../lib/ios-simple-nav.js";
 import { G } from "../theme/palette.js";
 import BrandLogo from "../BrandLogo.jsx";
+import { LOGO_HEADER_HEIGHT } from "../lib/brand.js";
 import { resolveAvatarUrl } from "../lib/avatar.js";
 import { resolveDisplayFirstName, avatarInitials } from "../lib/identity-cache.js";
 import {
@@ -65,9 +66,8 @@ export default function AppTopBar({
   const headerRef = useRef(null);
   const probeRef = useRef(null);
   const unreadCount = notificationItems.filter((item) => !seenMap[item.id]).length;
-  const iosChrome = isIosSimpleNav();
-  const logoVariant = iosChrome ? "wordmark" : "mark";
-  const logoHeight = iosChrome ? 20 : 26;
+  const logoVariant = "wordmark";
+  const logoHeight = LOGO_HEADER_HEIGHT;
 
   useEffect(() => {
     setSeenMap(readSeenNotifications(user));

@@ -626,7 +626,7 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, initialMode = "password", 
               </button>
             ) : showBrandHeader && !native ? (
               <div style={{ display: "flex", alignItems: "center" }}>
-                <BrandLogo variant="wordmark" height={24} />
+                <BrandLogo variant="wordmark" height={28} />
               </div>
             ) : showWebBack ? (
               <button
