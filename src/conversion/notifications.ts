@@ -60,7 +60,7 @@ export const RETENTION_NOTIFICATIONS: NotificationTemplate[] = [
   {
     id: 'soft_premium',
     title: 'Plus que {days} jour{s} d’essai',
-    body: 'Sans abonnement, tes séances se mettent en pause demain. Premium dès 4,99 € / mois (12 mois) ou 9,99 € / mois sans engagement.',
+    body: 'Sans abonnement, tes séances se mettent en pause demain. Premium : 8,99 € / mois sans engagement, ou 59,99 € / an.',
     when: 'Essai J-2 / J-1, une fois / user',
     why: 'Conversion au pic de valeur perçue',
   },

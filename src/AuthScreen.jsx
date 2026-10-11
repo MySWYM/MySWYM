@@ -393,7 +393,7 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, initialMode = "password", 
       ? (mode === "register" ? "Sign up | MySWYM" : mode === "reset" ? "Reset password | MySWYM" : "Log in | MySWYM")
       : (mode === "register" ? "Inscription | MySWYM" : mode === "reset" ? "Mot de passe oublié | MySWYM" : "Connexion | MySWYM"),
     description: locale === "en"
-      ? "Log in or create your MySWYM account. 7-day Premium trial, no card."
+      ? "Log in or create your MySWYM account. 7-day Premium trial with card, then €8.99/month or €59.99/year."
       : "Connecte-toi ou crée ton compte MySWYM. Essai Premium 7 jours avec carte.",
     path: authPath,
     noIndex: true,

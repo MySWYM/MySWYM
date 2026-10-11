@@ -178,7 +178,7 @@ Password: [À COLLER ICI]
 
 Sign in: open the app → Connexion (or /connexion). On iPhone, tick “18 or older” and the terms before Sign in with Apple or Google.
 
-Subscriptions: 6.99 EUR/month or 59.99 EUR/year via In-App Purchase only. The 7-day trial is MySWYM’s own trial (no Apple ID card). After trial, workouts pause until a subscription. There is no Stripe checkout in the iOS app.
+Subscriptions: 8.99 EUR/month or 59.99 EUR/year via In-App Purchase only (aligned with web). 7-day trial with Apple ID card (introductory offer). After trial, billing starts unless cancelled; without a subscription, workouts pause. There is no Stripe checkout in the iOS app.
 
 Account deletion: Profile → Settings → My data → Delete my account. Deleting the MySWYM account does not cancel an App Store subscription (Settings → Apple ID → Subscriptions).
 

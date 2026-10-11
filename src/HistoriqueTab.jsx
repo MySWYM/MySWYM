@@ -142,7 +142,7 @@ export default function HistoriqueTab({
                 onUpgrade?.("history");
               }}
             >
-              {isNativeApp() ? t("home.subscribe") : t("analyse.fromPrice", { price: PRICING.monthlyCommit.label })}
+              {isNativeApp() ? t("home.subscribe") : t("analyse.fromPrice", { price: PRICING.monthlyFlex.label })}
             </button>
           </div>
         ) : (

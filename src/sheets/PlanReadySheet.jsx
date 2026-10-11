@@ -74,7 +74,7 @@ export default function PlanReadySheet({ plan, profile, onContinue, onDismiss, l
       open
       eyebrow="Ton plan"
       title={title}
-      subtitle="Débloque les séances et l’adaptation coach, 7 jours offerts sans carte à l’inscription. Ensuite tes séances se mettent en pause."
+      subtitle="Débloque les séances et l’adaptation coach. Essai 7 jours avec carte au checkout, puis abonnement. Sans abo, tes séances se mettent en pause."
       onClose={onDismiss}
       zIndex={500}
       ariaLabel="Plan prêt"

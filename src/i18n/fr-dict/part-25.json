@@ -7293,19 +7293,19 @@
     "nb": "Premium månedlig",
     "fi": "Premium kuukausittain"
   },
-  "sans engagement · 9,99 € / mois": {
-    "en": "no commitment · €9.99 / month",
-    "de": "ohne Bindung · 9,99 € / Monat",
-    "es": "sin permanencia · 9,99 € / mes",
-    "ja": "縛りなし · 月額9,99 €",
-    "nl": "geen verplichting · € 9,99 / maand",
-    "it": "senza vincoli · 9,99 € / mese",
-    "pt": "sem fidelização · 9,99 € / mês",
-    "pt-BR": "sem fidelidade · 9,99 € / mês",
-    "sv": "ingen bindningstid · 9,99 € / mån",
-    "da": "ingen binding · 9,99 € / md.",
-    "nb": "ingen binding · 9,99 € / mnd.",
-    "fi": "ei sitoutumista · 9,99 € / kk"
+  "sans engagement · 8,99 € / mois": {
+    "en": "no commitment · €8.99 / month",
+    "de": "ohne Bindung · 8,99 € / Monat",
+    "es": "sin permanencia · 8,99 € / mes",
+    "ja": "縛りなし · 月額8,99 €",
+    "nl": "zonder verplichting · € 8,99 / maand",
+    "it": "senza vincoli · 8,99 € / mese",
+    "pt": "sem fidelização · 8,99 € / mês",
+    "pt-BR": "sem fidelidade · 8,99 € / mês",
+    "sv": "utan bindningstid · 8,99 € / månad",
+    "da": "uden binding · 8,99 € / måned",
+    "nb": "uten binding · 8,99 € / måned",
+    "fi": "ilman sitoutumista · 8,99 € / kk"
   },
   "Continuer,": {
     "en": "Continue,",

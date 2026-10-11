@@ -24,8 +24,8 @@ Structured coaching from explicit training rules, catalogues, Soft Sheet plans (
 
 - Pool training (25 m / 50 m), optional equipment, French-first product copy.
 - Onboarding questionnaire → plan → week sessions → feedback / adaptation for future weeks.
-- Access: one-time 7-day Premium trial without card; then sessions pause until a paid subscription.
-- Pricing (product fact): ~€9.99/mo flex, ~€4.99/mo 12-month commit, ~€52.99/year prepaid (Stripe).
+- Access: 7-day Premium trial with card (Stripe / App Store); then billing starts unless cancelled; without a paid sub, sessions pause.
+- Pricing (product fact): €8.99/mo flex, €59.99/year prepaid (Stripe = App Store).
 - Support: Premium chat answered by Arthur in person when available; landing must not claim AI bot support for that channel.
 - Staging at staging.myswym.app; production merge is human-owned (`staging` → `main`).
 

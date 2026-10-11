@@ -6,31 +6,31 @@ Module code : `src/conversion/`
 
 ---
 
-## Modèle live (août 2026) : essai 7j sans carte, puis gel
+## Modèle live (octobre 2026) : essai 7j avec carte, puis prélèvement
 
 ```
-Création de compte
-  → essai Premium 7 jours (sans carte, 1× par compte)
+Checkout Stripe / App Store
+  → essai Premium 7 jours (avec carte, 1× par compte)
   → accès complet (plans, séances, adaptation)
-  → J+7 : app gelée (rien de visible) jusqu’à abonnement Stripe payant
+  → fin d’essai : prélèvement sauf résiliation ; sans abo = app gelée
 ```
 
 **Pendant l’essai / Premium :** séances complètes, allures, `adjustPlan`, multi-plans, coach card.  
-**Après l’essai sans abo :** overlay de gel — aucun plan, aucune séance.
+**Sans abo (essai annulé / expiré) :** overlay de gel — aucun plan, aucune séance.
 
 Entitlements : `src/lib/access.js` (`subscription_status` trial/active/canceled/expired).  
-Grant essai : `sync-subscription` → `resolveAccessWithoutStripeSub`.  
-Campagne pré-lancement (`isRetrialCampaignActive` / `RETRIAL_UNTIL_ISO` dans `access-policy.ts`) : à la **prochaine connexion**, nouveau 7j si plus d’accès (essai brûlé, gelé, désabo hors période), **jusqu’au lundi 7 septembre 2026 23:59 heure de Paris**. Après cette date, plus de re-essai au login. Abo Stripe actifs / période payée restante = intacts.  
+Essai sans carte : désactivé (`shouldGrantCardlessTrial` → false).  
 Insights paywall : `src/lib/coach-insights.js`.
 
 ### Pricing
 
 | Offre | Prix |
 |-------|------|
-| Essai | 7 jours · sans carte · puis gel |
-| Mensuel sans engagement | 9,99€ / mois |
-| Mensuel engagement 12 mois | 4,99€ / mois |
-| Annuel | 52,99€ / an · paiement en 1 fois · pas de remboursement |
+| Essai | 7 jours · avec carte · puis prélèvement |
+| Mensuel sans engagement | 8,99€ / mois |
+| Annuel | 59,99€ / an · paiement en 1 fois · pas de remboursement au prorata (hors cas légaux) |
+
+Offre engagement 12 mois (4,99€) retirée (legacy Stripe uniquement).
 
 ### Paywalls contextuels (`UpgradeModal` softContext)
 
@@ -46,7 +46,7 @@ Insights paywall : `src/lib/coach-insights.js`.
 
 ## Prototype `/prototype/conversion`
 
-Tokens alignés essai sans carte (`trialRequiresCard: false`, `freeWeeks: 0`).  
+Tokens alignés essai avec carte (`trialRequiresCard: true`, `freeWeeks: 0`).  
 Écrans Soft/Hard paywall, celebration, habit home — **pas** le shell production (`App.jsx`).
 
 ---
@@ -56,6 +56,7 @@ Tokens alignés essai sans carte (`trialRequiresCard: false`, `freeWeeks: 0`).
 | Ancien freemium | Live |
 |-----------------|------|
 | 4 semaines gratuites | 0 semaine utilisable sans essai |
+| Essai sans carte | Essai avec carte (Stripe / Apple) |
 | Soft après 1ʳᵉ séance | PlanReady + skeleton lock |
 | Hard gate semaine 5 | Supprimé |
 | Freq free ≤ 3 | 1–5 sélectionnables ; exécution = Premium |
@@ -79,7 +80,7 @@ Voir `tokens.ts` + `conversion.css`.
 1. ~~Tester le prototype `/prototype/conversion`~~
 2. ✅ Remplacé l’ouverture auto du paywall post-génération
 3. ✅ Soft paywall legacy (code présent, flux live = trial)
-4. ✅ **Essai 7j sans carte** + gel total après expiration
+4. ✅ **Essai 7j avec carte** + gel si pas d’abo
 5. ✅ Insights coach pré-checkout + CoachCard monté (Premium)
 6. ✅ Paywalls contextuels (`getUpgradeCopy`)
 7. ✅ Emails essai J1/J3/J6 (`scripts/setup-resend-automations-v3-trial-drip.mjs` → `npm run email:setup-trial-drip`)
@@ -98,6 +99,6 @@ Voir `tokens.ts` + `conversion.css`.
 
 DA emails : header dark `#000514` + CTA `#006bfd` (aligné `public.css`). Republish templates Resend : `npm run email:republish`.
 
-Prix dans les mails : `9,99 €/mois sans engagement · 4,99 €/mois sur 12 mois · 52,99 €/an` (`src/lib/pricing.js`).
+Prix dans les mails : `8,99 €/mois sans engagement · 59,99 €/an` (`src/lib/pricing.js`).
 
 Si l’utilisateur annule pendant le délai → `subscription.canceled` stoppe le drip (timeout only).

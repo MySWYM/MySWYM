@@ -4961,7 +4961,7 @@ function LoopPaywallScreen({ reason = "cap", onUpgrade, onClose }) {
   const priceSummary = premiumPriceSummary();
   const ctaLabel = isNativeIos()
     ? t("loopPaywall.ctaNative")
-    : t("loopPaywall.ctaWeb", { price: PRICING.monthlyCommit.label });
+    : t("loopPaywall.ctaWeb", { price: PRICING.monthlyFlex.label });
   const bullets = [
     t("loopPaywall.b1"),
     t("loopPaywall.b2"),
