@@ -20,9 +20,9 @@ export const emailBrand = {
   contact: "contact@myswym.app",
   support: "support@myswym.app",
   logoText: "ForSwim",
-  /** Absolute URLs : assets encore servis sur le domaine legacy. */
-  logoOnDark: "https://www.myswym.app/logo-myswym-banner-blanc.png",
-  logoOnLight: "https://www.myswym.app/logo-myswym-on-light.png",
+  /** Absolute URLs (canonique forswim ; legacy myswym encore OK via 301). */
+  logoOnDark: "https://www.forswim.app/logo-myswym-banner-blanc.png",
+  logoOnLight: "https://www.forswim.app/logo-myswym-on-light.png",
   tagline: "ton coach natation",
   /** Pricing, source: src/lib/pricing.js */
   pricingLine:

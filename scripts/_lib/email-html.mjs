@@ -17,9 +17,8 @@ export const EMAIL_BRAND = {
   mutedOnDark: "#9bb0c8",
   border: "rgba(0, 107, 253, 0.18)",
   borderSoft: "rgba(10, 22, 44, 0.08)",
-  /** Liens e-mail encore sur le domaine legacy jusqu’au cutover DNS. */
-  site: "https://www.myswym.app",
-  logoOnDark: "https://www.myswym.app/logo-myswym-banner-blanc.png",
+  site: "https://www.forswim.app",
+  logoOnDark: "https://www.forswim.app/logo-myswym-banner-blanc.png",
   pricingLine:
     "9,99 €/mois sans engagement · 4,99 €/mois sur 12 mois · 52,99 €/an",
   pricingShort: "dès 4,99 €/mois",
