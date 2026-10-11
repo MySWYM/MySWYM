@@ -4,6 +4,9 @@ import Foundation
 import ImageIO
 import UniformTypeIdentifiers
 
+/// Compose AppIcon 1024 RGB : fond #006BFD + symbole blanc centré (~59 % largeur).
+/// Usage: swift scripts/ios-app-icon.swift <symbole-blanc.png> <dest.png>
+
 let srcPath = CommandLine.arguments[1]
 let destPath = CommandLine.arguments[2]
 guard let overlay = NSImage(contentsOfFile: srcPath) else {
@@ -13,6 +16,7 @@ guard let overlay = NSImage(contentsOfFile: srcPath) else {
 
 let width = 1024
 let height = 1024
+let scale: CGFloat = 0.59
 let colorSpace = CGColorSpaceCreateDeviceRGB()
 guard let ctx = CGContext(
   data: nil,
@@ -29,8 +33,15 @@ guard let ctx = CGContext(
 
 ctx.setFillColor(CGColor(srgbRed: 0, green: 107.0 / 255.0, blue: 253.0 / 255.0, alpha: 1))
 ctx.fill(CGRect(x: 0, y: 0, width: width, height: height))
+
 if let cgOverlay = overlay.cgImage(forProposedRect: nil, context: nil, hints: nil) {
-  ctx.draw(cgOverlay, in: CGRect(x: 0, y: 0, width: width, height: height))
+  let ow = CGFloat(cgOverlay.width)
+  let oh = CGFloat(cgOverlay.height)
+  let targetW = CGFloat(width) * scale
+  let targetH = oh * (targetW / ow)
+  let x = (CGFloat(width) - targetW) / 2
+  let y = (CGFloat(height) - targetH) / 2
+  ctx.draw(cgOverlay, in: CGRect(x: x, y: y, width: targetW, height: targetH))
 }
 
 guard let image = ctx.makeImage() else {

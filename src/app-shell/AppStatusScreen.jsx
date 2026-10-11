@@ -1,3 +1,5 @@
+import { LOGO_WORDMARK_LIGHT, LOGO_WORDMARK_RATIO } from "../lib/brand.js";
+
 /**
  * Écrans système soft mist : erreur, mise à jour, crash module.
  */
@@ -35,10 +37,10 @@ export default function AppStatusScreen({
         {brand ? (
           <img
             className="ms-status-wordmark"
-            src="/logo-myswym-on-light.png"
+            src={LOGO_WORDMARK_LIGHT}
             alt="ForSwim"
             height={20}
-            width={86}
+            width={Math.round(20 * LOGO_WORDMARK_RATIO)}
           />
         ) : null}
         <h1 id={titleId} className="ms-status-title">

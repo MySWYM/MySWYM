@@ -53,3 +53,17 @@ export function brandSiteUrl(path = "") {
   if (!p) return BRAND_SITE_ORIGIN;
   return `${BRAND_SITE_ORIGIN}${p.startsWith("/") ? p : `/${p}`}`;
 }
+
+/** Chemins publics kit S ondulé (noms `logo-myswym-*` conservés pour e-mails / compat). */
+export const LOGO_WORDMARK_LIGHT = "/logo-myswym-on-light.png";
+export const LOGO_WORDMARK_DARK = "/logo-myswym-banner-blanc.png";
+export const LOGO_FULL_LIGHT = "/logo-full-on-light.png";
+export const LOGO_FULL_DARK = "/logo-full.png";
+export const LOGO_MARK_LIGHT = "/logo-mark.png";
+export const LOGO_MARK_DARK = "/logo-mark-on-dark.png";
+export const LOGO_ICON_APP = "/logo-icon-app.png";
+export const LOGO_BOOT_MARK = "/boot-mark-still.png";
+/** Ratio largeur/hauteur wordmark horizontal (1024×279). */
+export const LOGO_WORDMARK_RATIO = 1024 / 279;
+/** Symbole paddé carré. */
+export const LOGO_MARK_RATIO = 1;

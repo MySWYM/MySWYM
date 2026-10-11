@@ -46,7 +46,7 @@
     "cap:sync": "node scripts/cap-web-build.mjs && node scripts/patch-capacitor-keyboard.mjs && npx cap sync ios",
     "cap:sync:ios-prod": "CAP_ENV_FILE=.env.ios-prod.local npm run cap:sync",
     "cap:ios": "npm run cap:sync && npx cap open ios",
-    "cap:icon": "swift scripts/ios-app-icon.swift public/A_ForSwim_icone-app_bleue.png ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png",
+    "cap:icon": "swift scripts/ios-app-icon.swift public/brand/symbole-blanc-transparent.png ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png && cp ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png public/logo-icon-app.png",
     "test:e2e": "playwright test",
     "test:e2e:staging": "BASE_URL=https://staging.myswym.app playwright test",
     "email": "email dev --dir api/_lib/emails",

@@ -1,17 +1,31 @@
-# ForSwim brand kit
+# ForSwim brand kit (S ondulé)
 
-Sources + dérivés pour l’app, le site et les e-mails.
+Sources + dérivés pour l’app, le site et les e-mails. Kit validé 11 oct. 2026.
 
-| Code | Fichier source | Usage runtime |
+| Runtime (chemins stables) | Source ForSwim | Notes |
 | --- | --- | --- |
-| A | `A_ForSwim_icone-app_bleue.png` | Icône app / `logo-icon-app.png` / apple-touch / favicon |
-| B | `B_ForSwim_picto_bleu.png` | `logo-mark.png` (clair) |
-| C | `C_ForSwim_picto_blanc.png` | `logo-mark-on-dark.png` (sombre) |
-| D | `D_ForSwim_wordmark_color.png` | `logo-myswym-on-light.png` (chemins legacy) |
-| E | `E_ForSwim_horizontal_noir.png` | `logo-full-on-light.png` |
-| F | `F_ForSwim_horizontal_blanc.png` | `logo-full.png` / `logo-myswym-banner-blanc.png` |
+| `logo-myswym-on-light.png` | principal-horizontal-transparent | Wordmark couleur fond clair |
+| `logo-myswym-banner-blanc.png` | blanc-transparent | Wordmark blanc (boot / e-mails sombre) |
+| `logo-full-on-light.png` | monochrome-noir-transparent | SEO JSON-LD |
+| `logo-full.png` | blanc-transparent | Horizontal blanc |
+| `logo-mark.png` | symbole-transparent | Carré paddé, fond transparent |
+| `logo-mark-on-dark.png` | symbole-blanc-transparent | Carré paddé |
+| `logo-icon-app.png` / favicons / AppIcon | composition | Fond plein `#006BFD`, S blanc ~59 %, sans alpha |
+| `og-share.png` | composition 1200×630 | Fond `#006BFD` + logo blanc centré |
+| `boot-mark-still.png` | symbole paddé | Carré |
 
-Dérivés WebP : `public/brand/*.webp`.  
-Les anciens noms `A_MySWYM_*` … `F_MySWYM_*` sont des alias binaires (compat scripts).
+Wordmarks seuls (usage futur, non branchés UI) :
 
-ALT conseillés : voir `docs/forswim-assets-alt.md`.
+- `wordmark-noir-transparent.png`
+- `wordmark-bleu-transparent.png`
+- `wordmark-blanc-transparent.png`
+
+Copies sources sous `public/brand/` (`symbole-*`, `principal-*`, etc.).
+
+Constantes code : `src/lib/brand.js` (`LOGO_*`). Composant : `src/BrandLogo.jsx`.
+
+Archive kit F / anciens PNG : `assets/legacy-myswym/`.
+
+ALT : `docs/forswim-assets-alt.md` (toujours **ForSwim**, jamais MySWYM dans `alt`).
+
+Régénérer l’AppIcon iOS : `npm run cap:icon`.

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { LOGO_BOOT_MARK } from "../lib/brand.js";
 
 /** GIF de préparation de plan. Pas le boot marketing. */
 export default function BootMark() {
@@ -12,7 +13,7 @@ export default function BootMark() {
       {reduce ? (
         <img
           className="myswym-boot-still"
-          src="/boot-mark-still.png"
+          src={LOGO_BOOT_MARK}
           alt=""
           width={200}
           height={200}

@@ -4,6 +4,7 @@ import { CalendarDays, Target, Waves } from "lucide-react";
 import BrandLogo from "./BrandLogo.jsx";
 import BootMark from "./app-shell/BootMark.jsx";
 import { FONT, FONT_DISPLAY } from "./theme/brand.js";
+import { LOGO_WORDMARK_DARK, LOGO_WORDMARK_RATIO } from "./lib/brand.js";
 import { buildPlanRevealModel } from "./lib/plan-reveal.js";
 import { markBootWarm } from "./lib/boot-warm.js";
 import SessionHeroCard from "./SessionHeroCard.jsx";
@@ -54,10 +55,10 @@ export default function PlanRevealView({
             <BootMark />
             <img
               className="myswym-boot-wordmark myswym-boot-wordmark--static"
-              src="/logo-myswym-banner-blanc.png"
+              src={LOGO_WORDMARK_DARK}
               alt=""
               height={22}
-              width={95}
+              width={Math.round(22 * LOGO_WORDMARK_RATIO)}
             />
             <h1 id="ms-plan-reveal-build-title" className="ms-plan-reveal-title">{t("reveal.title")}</h1>
             <p className="ms-plan-reveal-sub">
