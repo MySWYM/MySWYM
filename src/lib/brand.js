@@ -26,10 +26,10 @@ export const BRAND_NOREPLY_EMAIL = `noreply@${BRAND_DOMAIN}`;
 export const BRAND_EMAIL_FROM = `${BRAND_NAME} <${BRAND_NOREPLY_EMAIL}>`;
 
 /**
- * Redirects OAuth / reset encore ancrés sur le domaine legacy tant que
- * Supabase / Apple / Google n’ont pas forswim en allowlist (Phase 5 Arthur).
+ * Origine auth canonique (Site URL Supabase PROD à aligner sur www.forswim.app).
+ * Legacy myswym reste en Redirect URLs / 301.
  */
-export const AUTH_SITE_ORIGIN = LEGACY_SITE_ORIGIN;
+export const AUTH_SITE_ORIGIN = BRAND_SITE_ORIGIN;
 
 export const BRAND_HOSTS = new Set([
   `www.${BRAND_DOMAIN}`,
