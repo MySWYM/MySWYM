@@ -127,7 +127,7 @@ async function alertSupportStripeFollowup(opts: {
   try {
     const result = await sendEmailViaHttp("contact", {
       name: "Suppression de compte (auto)",
-      email: opts.email && opts.email.includes("@") ? opts.email : "support@myswym.app",
+      email: opts.email && opts.email.includes("@") ? opts.email : "contact@forswim.app",
       subject: "À FAIRE : annuler un abonnement Stripe après suppression de compte",
       message: [
         `Compte supprimé : ${opts.uid} (${opts.email || "sans e-mail"})`,

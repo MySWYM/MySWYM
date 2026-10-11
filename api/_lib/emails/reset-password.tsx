@@ -25,7 +25,7 @@ export function ResetPasswordEmail({ resetUrl }: ResetPasswordEmailProps) {
       </Text>
       <Text style={emailText.muted}>
         Pour ta sécurité, ce lien expire rapidement. Besoin d’aide ?
-        support@myswym.app
+        contact@forswim.app
       </Text>
     </EmailLayout>
   );

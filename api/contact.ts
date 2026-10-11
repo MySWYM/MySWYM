@@ -121,7 +121,7 @@ function resetPasswordHtml(resetUrl: string): string {
           <p style="color:#3d4f63;font-size:15px;line-height:24px;margin:0 0 12px">Tu as demandé à réinitialiser ton mot de passe ForSwim. Utilise le bouton ci-dessous pour en choisir un nouveau.</p>
           <p style="color:#3d4f63;font-size:15px;line-height:24px;margin:0 0 22px">Si tu n’es pas à l’origine de cette demande, ignore cet email : ton compte reste inchangé.</p>
           <a href="${safeUrl}" style="display:inline-block;background:#006bfd;color:#ffffff;font-size:15px;font-weight:700;text-decoration:none;padding:14px 22px;border-radius:999px">Choisir un nouveau mot de passe</a>
-          <p style="color:#5a6b7d;font-size:13px;line-height:20px;margin:22px 0 0">Pour ta sécurité, ce lien expire rapidement. Besoin d’aide ? support@myswym.app</p>
+          <p style="color:#5a6b7d;font-size:13px;line-height:20px;margin:22px 0 0">Pour ta sécurité, ce lien expire rapidement. Besoin d’aide ? contact@forswim.app</p>
         </td></tr>
       </table>
     </td></tr>
@@ -194,7 +194,7 @@ async function handlePasswordReset(
       console.error("[api/contact] reset send:", sendErr.message);
       return res.status(502).json({
         ok: false,
-        error: "Envoi impossible pour le moment. Réessaie ou écris à support@myswym.app.",
+        error: "Envoi impossible pour le moment. Réessaie ou écris à contact@forswim.app.",
       });
     }
 
@@ -206,7 +206,7 @@ async function handlePasswordReset(
     );
     return res.status(500).json({
       ok: false,
-      error: "Erreur serveur. Réessaie plus tard ou support@myswym.app.",
+      error: "Erreur serveur. Réessaie plus tard ou contact@forswim.app.",
     });
   }
 }

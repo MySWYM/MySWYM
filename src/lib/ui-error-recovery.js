@@ -23,7 +23,7 @@ export function isNavigatorOffline() {
  * @param {{ code: string, message?: string, path?: string, appVersion?: string }} opts
  */
 export function buildSupportMailto({ code, message = "", path = "", appVersion = "" }) {
-  const email = LEGAL_ENTITY.supportEmail || "support@myswym.app";
+  const email = LEGAL_ENTITY.supportEmail || "contact@forswim.app";
   const subject = `ForSwim bug ${code}`;
   const lines = [
     `Code: ${code}`,

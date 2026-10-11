@@ -181,8 +181,8 @@ export default function TrialExpiredFreeze({ onSubscribe, onSignOut, preview = n
       ) : (
         <p style={{ fontSize: 12, color: MUTED, marginTop: 16, lineHeight: 1.45, textAlign: "center" }}>
           {t("trialFreeze.helpWeb", { defaultValue: "Need help?" })}{" "}
-          <a href="mailto:support@myswym.app" style={{ color: G.blue, fontWeight: 700, textDecoration: "none" }}>
-            support@myswym.app
+          <a href="mailto:contact@forswim.app" style={{ color: G.blue, fontWeight: 700, textDecoration: "none" }}>
+            contact@forswim.app
           </a>
         </p>
       )}

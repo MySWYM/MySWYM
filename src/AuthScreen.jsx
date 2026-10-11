@@ -134,7 +134,7 @@ function mapAuthError(raw, t) {
   }
   if (/EMAIL_INVALID|Email invalide/i.test(msg)) return t("auth.errEmail", { defaultValue: "Email invalide." });
   if (/\[object Object\]|RESET_FAIL|Envoi impossible|not_found|NOT_FOUND/i.test(msg)) {
-    return t("auth.errReset", { defaultValue: "Envoi impossible pour le moment. Réessaie ou écris à support@myswym.app." });
+    return t("auth.errReset", { defaultValue: "Envoi impossible pour le moment. Réessaie ou écris à contact@forswim.app." });
   }
   if (/network|fetch/i.test(msg)) return t("auth.errNetwork", { defaultValue: "Connexion impossible. Vérifie ton réseau et réessaie." });
   return msg || t("auth.errGeneric", { defaultValue: "Une erreur est survenue. Réessaie." });
