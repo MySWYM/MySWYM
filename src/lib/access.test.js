@@ -164,7 +164,7 @@ const nowSec = Math.floor(Date.now() / 1000);
   const pendingExpiredUnused = isAccessMetadataPending(userWith({
     subscription_status: ACCESS_STATUS.EXPIRED,
   }));
-  assert.equal(pendingExpiredUnused, true, "expired without trial_used can still receive cardless trial");
+  assert.equal(pendingExpiredUnused, true, "expired without trial_used = metadata incomplete (no auto grant)");
 }
 
 {
@@ -353,8 +353,8 @@ const nowSec = Math.floor(Date.now() / 1000);
     false,
     "anonymous fresh signup no freeze yet",
   );
-  assert.equal(shouldAwaitCardlessTrial(anon), true, "anonymous awaits 7j before lock");
-  assert.equal(hasUnlockedPremiumAccess(anon), true, "anonymous unlocked while awaiting trial");
+  assert.equal(shouldAwaitCardlessTrial(anon), false, "no cardless await");
+  assert.equal(hasUnlockedPremiumAccess(anon), false, "anonymous locked until Stripe/Apple trial");
 }
 
 {

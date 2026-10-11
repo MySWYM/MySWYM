@@ -36,8 +36,8 @@ assert.ok(Number.isFinite(untilMs), "RETRIAL_UNTIL_ISO must parse");
 }
 
 {
-  assert.equal(shouldGrantCardlessTrial(null), true);
-  assert.equal(shouldGrantCardlessTrial({ trial_used: false }), true);
+  assert.equal(shouldGrantCardlessTrial(null), false, "cardless trial disabled");
+  assert.equal(shouldGrantCardlessTrial({ trial_used: false }), false, "cardless trial disabled");
 }
 
 {
@@ -58,8 +58,8 @@ assert.ok(Number.isFinite(untilMs), "RETRIAL_UNTIL_ISO must parse");
       userCreatedAt: iso(now - 30 * 86400000),
       nowMs: untilMs,
     }),
-    true,
-    "pendant la campagne : essai brûlé → nouveau grant au login",
+    false,
+    "cardless disabled même pendant campagne",
   );
   assert.equal(
     shouldGrantCardlessTrial(consumed, {
@@ -67,7 +67,7 @@ assert.ok(Number.isFinite(untilMs), "RETRIAL_UNTIL_ISO must parse");
       nowMs: untilMs + 1,
     }),
     false,
-    "après cutoff : compte gelé ne reprend pas 7j",
+    "cardless disabled après cutoff",
   );
 }
 
@@ -96,8 +96,8 @@ assert.ok(Number.isFinite(untilMs), "RETRIAL_UNTIL_ISO must parse");
   };
   assert.equal(
     shouldGrantCardlessTrial(canceledLapsed, { nowMs: untilMs }),
-    true,
-    "désabo hors période → re-essai campagne",
+    false,
+    "cardless disabled : pas de re-essai",
   );
   assert.equal(
     shouldGrantCardlessTrial(canceledLapsed, { nowMs: untilMs + 1 }),
@@ -118,8 +118,8 @@ assert.ok(Number.isFinite(untilMs), "RETRIAL_UNTIL_ISO must parse");
       userCreatedAt: iso(now - 60_000),
       nowMs: untilMs + 1,
     }),
-    true,
-    "Stripe leftover that ended before this Auth user existed must re-grant (même hors campagne)",
+    false,
+    "cardless disabled : pas de re-grant leftover",
   );
 }
 
@@ -131,13 +131,13 @@ assert.ok(Number.isFinite(untilMs), "RETRIAL_UNTIL_ISO must parse");
     trial_ends_at: iso(now - 1000),
   };
   assert.equal(hasConsumedValidTrialWindow(instantExpire), false);
-  assert.equal(shouldGrantCardlessTrial(instantExpire, { nowMs: untilMs + 1 }), true);
+  assert.equal(shouldGrantCardlessTrial(instantExpire, { nowMs: untilMs + 1 }), false);
 }
 
 {
   const next = resolveAccessWithoutStripeSub(userId, null, null);
-  assert.equal(next.access_status, ACCESS_STATUS.trial);
-  assert.ok(hasEntitlement(next));
+  assert.equal(next.access_status, ACCESS_STATUS.expired, "no cardless grant on empty state");
+  assert.equal(hasEntitlement(next), false);
 }
 
 {
@@ -155,8 +155,8 @@ assert.ok(Number.isFinite(untilMs), "RETRIAL_UNTIL_ISO must parse");
   const recovered = resolveAccessWithoutStripeSub(userId, leftoverRow, "cus_old", {
     userCreatedAt: iso(now - 1000),
   });
-  assert.equal(recovered.access_status, ACCESS_STATUS.trial);
-  assert.ok(hasEntitlement(recovered));
+  assert.equal(recovered.access_status, ACCESS_STATUS.expired, "no cardless re-grant");
+  assert.equal(hasEntitlement(recovered), false);
   assert.equal(recovered.stripe_customer_id, "cus_old");
 }
 

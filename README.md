@@ -2,7 +2,7 @@
 
 **MySWYM** compose tes séances de natation à partir de 3 questions : objectif, niveau, fréquence.
 
-Nager pour progresser, triathlon, eau libre, prépa diplôme (dont BNSSA). Plan structuré, prêt avant d'entrer dans l'eau. Essai Premium 7 jours, sans carte.
+Nager pour progresser, triathlon, eau libre, prépa diplôme (dont BNSSA). Plan structuré, prêt avant d'entrer dans l'eau. Essai Premium 7 jours avec carte.
 
 **Site :** [www.myswym.app](https://www.myswym.app) · **FR :** [www.myswym.app/fr](https://www.myswym.app/fr)
 
@@ -40,11 +40,10 @@ Bassin 25 m ou 50 m. Matériel optionnel (pull-buoy, planche, palmes, tuba). Jus
 
 ## Tarifs
 
-Essai Premium **7 jours, sans carte**. Ensuite les séances se mettent en pause jusqu'à un abonnement.
+Essai Premium **7 jours avec carte**. Ensuite les séances se mettent en pause jusqu'à un abonnement.
 
-- **9,99 €/mois** sans engagement
-- **4,99 €/mois** sur 12 mois
-- **52,99 €/an** en une fois
+- **8,99 €/mois** sans engagement
+- **59,99 €/an** en une fois
 
 Détail : [myswym.app/fr/tarifs](https://www.myswym.app/fr/tarifs)
 

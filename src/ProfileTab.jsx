@@ -1102,7 +1102,7 @@ export default function ProfileTab({
                   className={isNativeIos() ? "ms-pill-cta ms-pill-cta-gold" : "ms-pill-cta"}
                   style={{ minHeight: 44 }}
                 >
-                  {isNativeIos() ? "Devenir Premium" : `S’abonner : dès ${PRICING.monthlyCommit.label}/mois`}
+                  {isNativeIos() ? "Devenir Premium" : `S’abonner : dès ${PRICING.monthlyFlex.label}/mois`}
                 </button>
               )}
               {canManageSubscription ? referralSlot : null}

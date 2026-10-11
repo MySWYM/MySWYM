@@ -63,7 +63,6 @@ export default function UpgradeModal({
   }, [legalReady]);
 
   const hasReferral = Boolean(resolveReferralCode(user));
-  const showTrialOffer = false;
   const isAnnual = period === "annual";
   const isCommit = period === "monthly_commit";
   const selectedPriceId = priceIdForPlan(period);
@@ -322,28 +321,26 @@ export default function UpgradeModal({
 
       <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
         {planBtn("monthly_flex", t("upgrade.monthly"), PRICING.monthlyFlex.commitmentFr, PRICING.monthlyFlex.label, t("upgrade.perMonth"))}
-        {planBtn("monthly_commit", "Mensuel 12 mois", PRICING.monthlyCommit.commitmentFr, PRICING.monthlyCommit.label, " /mois")}
         {planBtn("annual", "Annuel", PRICING.annual.commitmentFr, PRICING.annual.label, " /an")}
       </div>
 
-      {showTrialOffer ? (
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            background: G.blueLight,
-            border: `1px solid ${G.greyLight}`,
-            borderRadius: 12,
-            padding: "10px 14px",
-            marginBottom: 16,
-          }}
-        >
-          <span style={{ fontSize: 12, fontWeight: 600, color: G.blue, lineHeight: 1.4, textAlign: "center" }}>
-            7 jours offerts sans carte à l’inscription · ensuite tes séances se mettent en pause
-          </span>
-        </div>
-      ) : null}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background: G.blueLight,
+          border: `1px solid ${G.greyLight}`,
+          borderRadius: 12,
+          padding: "10px 14px",
+          marginBottom: 16,
+        }}
+      >
+        <span style={{ fontSize: 12, fontWeight: 600, color: G.blue, lineHeight: 1.4, textAlign: "center" }}>
+          7 jours offerts avec carte · puis {isAnnual ? PRICING.annual.label : PRICING.monthlyFlex.label}
+          {isAnnual ? "/an" : "/mois"}
+        </span>
+      </div>
 
       {isCommit ? (
         <div

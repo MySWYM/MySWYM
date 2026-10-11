@@ -157,7 +157,7 @@ export function softwareApplicationJsonLd(reviews = []) {
       "Plan d'entraînement natation personnalisé : nager, triathlon, eau libre, prépa diplôme, prêt en 2 minutes.",
     offers: {
       "@type": "Offer",
-      price: "4.99",
+      price: "8.99",
       priceCurrency: "EUR",
     },
     publisher: { "@type": "Organization", name: LEGAL_ENTITY.tradeName },

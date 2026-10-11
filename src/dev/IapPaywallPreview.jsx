@@ -18,7 +18,7 @@ function Preview() {
       <IosIapPaywall
         period={period}
         onPeriodChange={setPeriod}
-        monthlyPrice="6,99€"
+        monthlyPrice="8,99€"
         annualPrice="59,99€"
       />
     </SoftMistSheet>

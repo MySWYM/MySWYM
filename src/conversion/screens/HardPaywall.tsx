@@ -29,7 +29,7 @@ export function HardPaywall({ weekReached, totalWeeks, onSubscribe, onRestore }:
           Ton essai est terminé
         </motion.h1>
         <motion.p variants={fadeUp} className="cv:mt-3 cv:text-[15px] cv:leading-relaxed cv:text-cv-ink-secondary">
-          Tes séances sont en pause. Abonne-toi pour tout revoir, 9,99 €/mois sans engagement, 4,99 €/mois sur 12 mois, ou 52,99 €/an
+          Tes séances sont en pause. Abonne-toi pour tout revoir : 8,99 €/mois sans engagement, ou 59,99 €/an
           {remaining > 0 ? ` · encore ${remaining} semaine${remaining > 1 ? 's' : ''} de plan` : ''}.
         </motion.p>
 
@@ -41,7 +41,7 @@ export function HardPaywall({ weekReached, totalWeeks, onSubscribe, onRestore }:
             {monthly.label}
             <span className="cv:text-[16px] cv:font-cv-body cv:font-medium cv:text-cv-ink-secondary"> / mois</span>
           </p>
-          <p className="cv:mt-1 cv:text-[13px] cv:text-cv-ink-secondary">sans engagement · 9,99 € / mois</p>
+          <p className="cv:mt-1 cv:text-[13px] cv:text-cv-ink-secondary">sans engagement · 8,99 € / mois</p>
 
           <ul className="cv:mt-5 cv:space-y-2.5">
             {PREMIUM_FEATURES.map((f) => (

@@ -46,14 +46,15 @@ export const tokens = {
     freeFreqMax: 5,
     softPaywallAfterSessions: 1,
     hardPaywallAtWeek: 0,
-    trialRequiresCard: false,
+    trialRequiresCard: true,
   },
   pricing: {
-    monthlyFlex: { label: '9,99 €', period: '/ mois', trialNote: '7 jours offerts · sans carte' },
+    monthlyFlex: { label: '8,99 €', period: '/ mois', trialNote: '7 jours offerts avec carte' },
+    /** Legacy : plus commercialisé. */
     monthlyCommit: { label: '4,99 €', period: '/ mois', commitment: '12 mois' },
-    /** Alias : mensuel sans engagement (9,99 €). */
-    monthly: { label: '9,99 €', period: '/ mois', trialNote: '7 jours offerts · sans carte' },
-    annual: { label: '52,99 €', period: '/ an' },
+    /** Alias : mensuel sans engagement (8,99 €). */
+    monthly: { label: '8,99 €', period: '/ mois', trialNote: '7 jours offerts avec carte' },
+    annual: { label: '59,99 €', period: '/ an' },
   },
 } as const
 
@@ -86,8 +87,8 @@ export const LEVELS: { id: LevelId; title: string; subtitle: string }[] = [
 ]
 
 export const FREE_FEATURES = [
-  'Après 7 jours, tes séances se mettent en pause',
-  'Plus aucun plan ni séance visible',
+  'Essai 7 jours avec carte, puis prélèvement',
+  'Sans abo : plus aucun plan ni séance visible',
   'Abonnement requis pour tout revoir',
 ] as const
 

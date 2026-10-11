@@ -36,7 +36,7 @@ export default function TrialCountdownBanner({
   const locale = intlLocaleFor(normalizeAppLanguage(i18n.language));
   const endLabel = formatTrialEndDate(view.trialEndsAt, locale);
   const native = isNativeApp();
-  const priceFrom = native ? "" : PRICING.monthlyCommit.label;
+  const priceFrom = native ? "" : PRICING.monthlyFlex.label;
 
   let title;
   let body;
