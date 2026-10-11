@@ -1,11 +1,18 @@
 #!/bin/sh
-# ForSwim : bloque un commit qui ajoute du français visible sans traduction.
-# Branches sans le catalogue i18n (avant merge de feat/i18n-catalog-check) : pas de contrôle.
+# ForSwim : i18n + no-undef (évite un ReferenceError prod type showTrialOffer).
+# Branches sans le catalogue i18n (avant merge de feat/i18n-catalog-check) : pas de contrôle i18n.
 [ -f scripts/i18n-check.mjs ] || exit 0
 if git diff --cached --name-only | grep -qE '^src/'; then
   node scripts/i18n-check.mjs || {
     echo ""
     echo "Commit bloqué : traduis les phrases ci-dessus dans src/i18n/fr-dict/ (ou demande à l'agent)."
+    exit 1
+  }
+fi
+if git diff --cached --name-only | grep -qE '\.(js|jsx|mjs|cjs)$'; then
+  node scripts/eslint-no-undef.mjs src || {
+    echo ""
+    echo "Commit bloqué : no-undef (variable non définie) dans src/."
     exit 1
   }
 fi

@@ -1,6 +1,6 @@
 # Checklist Arthur — ForSwim (max autonomie)
 
-Mis à jour : 11 oct. 2026 (soir).
+Mis à jour : 11 oct. 2026 (correctifs post-renommage P0).
 
 ## Fait
 
@@ -13,6 +13,9 @@ Mis à jour : 11 oct. 2026 (soir).
 - [x] `contact@forswim.app` = support / reply-to
 - [x] Apple / Google redirect forswim
 - [x] Supabase Redirect URLs forswim (Arthur)
+- [x] P0-1 paywall `showTrialOffer` / `trialEligible` (branche `fix/post-renommage-p0`)
+- [x] P0-2 `vercel.json` : `/api/` exclu des 308 hôte myswym (à merger puis tester curl)
+- [x] P0-3 Edge Functions redéployées à la main (CORS `www.forswim.app` OK) ; CI encore sans secret
 
 ## Com (plus tard, pas maintenant)
 
@@ -70,3 +73,23 @@ Redirect URLs à garder : forswim + myswym + `myswym://auth/callback`.
 - [ ] Instagram `@myswym.app` → nouveau handle (hors code)
 - [ ] staging.myswym.app : **pas** de 301 (reste dual)
 - [x] Articles blog PROD (+ DEV) : MySWYM → ForSwim dans `contenu`
+
+---
+
+## À faire toi (hors code) — post-renommage 11 oct.
+
+1. [ ] **Vercel → Domains** : sur `www.myswym.app` / `myswym.app`, retirer toute redirection dashboard (302 globale) si encore présente ; laisser le projet servir les domaines pour que les 308 `vercel.json` (hors `/api/`) s’appliquent. **Après** merge P0-2.
+2. [ ] **GitHub → Secrets → Actions** : ajouter `SUPABASE_ACCESS_TOKEN` (sinon la CI `supabase-deploy.yml` skip).
+3. [ ] **Telegram** : webhook → `https://www.forswim.app/api/telegram/webhook`.
+4. [ ] **Meta (Instagram)** : webhook → `https://www.forswim.app/api/instagram/webhook`.
+5. [ ] **Strava** : Authorization Callback Domain = `www.forswim.app`.
+6. [ ] **Vercel env + Supabase secrets** : `EMAIL_FROM`, `EMAIL_REPLY_TO`, `EMAIL_CONTACT_TO`, `APP_URL`, `LATEST_APP_VERSION`, `FORCE_UPDATE_MESSAGE` (P1-2).
+7. [ ] **App Store Connect** : prix 8,99 / 59,99 + intro 7 j, puis soumettre build forswim.
+
+## Reste code (lot P1, pas encore mergé)
+
+- [ ] P1-1 regex IA Instagram (forswim + myswym)
+- [ ] P1-2 `.env.local` / `.env.production.local` EMAIL_* (local seulement)
+- [ ] P1-3 versions iOS / `APP_VERSION` / `LATEST_APP_VERSION` (attente décision Arthur)
+- [ ] P1-4 sitemap statique périmé
+- [ ] P1-6 supprimer `.audit-src.tar.gz`

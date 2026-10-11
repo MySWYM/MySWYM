@@ -129,15 +129,15 @@
   ],
   "redirects": [
     {
-      "source": "/:path*",
+      "source": "/((?!api/).*)",
       "has": [{ "type": "host", "value": "www.myswym.app" }],
-      "destination": "https://www.forswim.app/:path*",
+      "destination": "https://www.forswim.app/$1",
       "permanent": true
     },
     {
-      "source": "/:path*",
+      "source": "/((?!api/).*)",
       "has": [{ "type": "host", "value": "myswym.app" }],
-      "destination": "https://www.forswim.app/:path*",
+      "destination": "https://www.forswim.app/$1",
       "permanent": true
     },
     {

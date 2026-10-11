@@ -63,6 +63,8 @@ export default function UpgradeModal({
   }, [legalReady]);
 
   const hasReferral = Boolean(resolveReferralCode(user));
+  // Essai 7j avec carte : une fois par compte (`trial_used` → trialEligible=false via App).
+  const showTrialOffer = trialEligible;
   const isAnnual = period === "annual";
   const isCommit = period === "monthly_commit";
   const selectedPriceId = priceIdForPlan(period);
@@ -203,14 +205,14 @@ export default function UpgradeModal({
   };
 
   const ctaLabel = isAnnual
-    ? `Démarrer : ${PRICING.annual.label}/an`
+    ? t("upgrade.ctaAnnual", { price: PRICING.annual.label })
     : isCommit
-      ? `Démarrer : ${PRICING.monthlyCommit.label}/mois · 12 mois`
+      ? t("upgrade.ctaCommit", { price: PRICING.monthlyCommit.label })
       : showTrialOffer
-        ? `Essai 7 jours, puis ${PRICING.monthlyFlex.label}/mois`
+        ? t("upgrade.ctaTrialMonthly", { price: PRICING.monthlyFlex.label })
         : hasReferral
-          ? "Démarrer : −20% parrainage"
-          : `Démarrer : ${PRICING.monthlyFlex.label}/mois`;
+          ? t("upgrade.referral")
+          : t("upgrade.ctaMonthly", { price: PRICING.monthlyFlex.label });
 
   if (native) {
     return (
@@ -321,26 +323,30 @@ export default function UpgradeModal({
 
       <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
         {planBtn("monthly_flex", t("upgrade.monthly"), PRICING.monthlyFlex.commitmentFr, PRICING.monthlyFlex.label, t("upgrade.perMonth"))}
-        {planBtn("annual", "Annuel", PRICING.annual.commitmentFr, PRICING.annual.label, " /an")}
+        {planBtn("annual", t("upgrade.annual"), PRICING.annual.commitmentFr, PRICING.annual.label, t("upgrade.perYear"))}
       </div>
 
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          background: G.blueLight,
-          border: `1px solid ${G.greyLight}`,
-          borderRadius: 12,
-          padding: "10px 14px",
-          marginBottom: 16,
-        }}
-      >
-        <span style={{ fontSize: 12, fontWeight: 600, color: G.blue, lineHeight: 1.4, textAlign: "center" }}>
-          7 jours offerts avec carte · puis {isAnnual ? PRICING.annual.label : PRICING.monthlyFlex.label}
-          {isAnnual ? "/an" : "/mois"}
-        </span>
-      </div>
+      {showTrialOffer ? (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: G.blueLight,
+            border: `1px solid ${G.greyLight}`,
+            borderRadius: 12,
+            padding: "10px 14px",
+            marginBottom: 16,
+          }}
+        >
+          <span style={{ fontSize: 12, fontWeight: 600, color: G.blue, lineHeight: 1.4, textAlign: "center" }}>
+            {t("upgrade.bannerTrial", {
+              price: isAnnual ? PRICING.annual.label : PRICING.monthlyFlex.label,
+              period: isAnnual ? t("upgrade.perYear") : t("upgrade.perMonth"),
+            })}
+          </span>
+        </div>
+      ) : null}
 
       {isCommit ? (
         <div
@@ -459,7 +465,7 @@ export default function UpgradeModal({
         </div>
       ) : null}
       <Btn variant="blue" onClick={handleCheckout} disabled={loading}>
-        {loading ? "Redirection…" : ctaLabel}
+        {loading ? t("upgrade.redirecting") : ctaLabel}
       </Btn>
       {canDismiss ? (
         <button
