@@ -42,6 +42,7 @@ import {
   confirmBuddyPhoneOtp,
   upsertBuddyProfile,
 } from "./lib/buddy-profiles.js";
+import { G } from "./theme/palette.js";
 import {
   BUDDY_REPORT_REASONS,
   BUDDY_REPORT_THRESHOLD,
@@ -62,28 +63,6 @@ import {
   respondBuddyConnection,
   revokePhoneShare,
 } from "./lib/buddy-connections.js";
-
-const G = {
-  bg: "var(--myswym-bg, #000514)",
-  surface: "var(--myswym-surface, #06101f)",
-  ink: "var(--myswym-ink, #f4f8fa)",
-  grey: "var(--myswym-grey, #9bb0c8)",
-  greyMid: "var(--myswym-grey-mid, #6b7c90)",
-  greyLight: "var(--myswym-grey-light, rgba(0, 107, 253, 0.22))",
-  greyXLight: "var(--myswym-grey-xlight, #0a162c)",
-  blue: "var(--myswym-blue, #006bfd)",
-  blueLight: "var(--myswym-blue-light, #0a162c)",
-  blueMid: "var(--myswym-blue-mid, #3d8fff)",
-  blueDeep: "var(--myswym-blue-deep, #3d8fff)",
-  water: "#22c3e0",
-  waterLight: "#0c2a32",
-  coral: "#FF6B78",
-  coralLight: "#3a151a",
-  mint: "#2dd4a0",
-  mintLight: "#0c2a20",
-  white: "#FFFFFF",
-  glass: "var(--myswym-glass, rgba(0, 5, 20, 0.92))",
-};
 
 const inp = {
   width: "100%",
@@ -230,7 +209,7 @@ function BuddyCard({ buddy, connection, onRequest, onOpenConnection }) {
         if (!avail) return null;
         return (
           <div style={{ fontSize: 13, color: G.ink, marginBottom: 8, lineHeight: 1.45 }}>
-            <strong style={{ color: G.grey, fontWeight: 700, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em" }}>Dispo · </strong>
+            <strong style={{ color: G.grey, fontWeight: 700, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em" }}>{t("buddy.availShort")} · </strong>
             {avail}
           </div>
         );
@@ -243,35 +222,37 @@ function BuddyCard({ buddy, connection, onRequest, onOpenConnection }) {
         <button
           type="button"
           onClick={() => onOpenConnection(connection)}
+          className="ms-pill-cta"
           style={{
             display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-            width: "100%", padding: "13px 16px", borderRadius: 14, border: "none",
+            width: "100%", padding: "13px 16px", border: "none",
             background: G.mint, color: G.white, fontWeight: 700, fontSize: 14, cursor: "pointer", minHeight: 48,
           }}
         >
           <CheckCircle2 size={18} />
-          Mise en relation active
+          {t("buddy.relationActive")}
         </button>
       ) : status === "pending" ? (
         <div style={{
           textAlign: "center", padding: "12px", borderRadius: 14, background: G.blueLight,
           color: G.blueDeep, fontWeight: 700, fontSize: 13,
         }}>
-          Demande en attente
+          {t("buddy.requestPending")}
         </div>
       ) : (
         <button
           type="button"
           onClick={() => onRequest(buddy)}
+          className="ms-pill-cta"
           style={{
             display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-            width: "100%", padding: "13px 16px", borderRadius: 14, border: "none",
+            width: "100%", padding: "13px 16px", border: "none",
             background: `linear-gradient(135deg, ${G.blue}, ${G.blueDeep})`,
             color: G.white, fontWeight: 700, fontSize: 14, cursor: "pointer", minHeight: 48,
           }}
         >
           <UserPlus size={18} />
-          Demander une mise en relation
+          {t("buddy.requestRelation")}
         </button>
       )}
     </article>
@@ -328,6 +309,7 @@ function buddyShellPad(extra = 24) {
 }
 
 function BuddyLockedScreen({ user, onOpenMenu, onTabChange, onUpgrade }) {
+  const { t } = useTranslation("app");
   return (
     <AppTabShell style={{ paddingBottom: buddyShellPad(32) }}>
       <BuddyChrome user={user} onOpenMenu={onOpenMenu} onTabChange={onTabChange} onUpgrade={onUpgrade} />
@@ -343,11 +325,10 @@ function BuddyLockedScreen({ user, onOpenMenu, onTabChange, onUpgrade }) {
             <Lock size={22} color={G.blue} />
           </div>
           <h2 style={{ margin: 0, fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif", fontSize: 22, fontWeight: 700, letterSpacing: "-0.03em", color: G.ink }}>
-            Matching entre abonnés
+            {t("buddy.lockedTitle")}
           </h2>
           <p style={{ margin: "10px 0 20px", fontSize: 14, lineHeight: 1.5, color: G.grey }}>
-            Uniquement entre nageurs qui ont un abonnement.
-            <br></br>L’essai 7 jours n’ouvre pas cette partie.
+            {t("buddy.lockedBody")}
           </p>
           <button
             type="button"
@@ -361,7 +342,7 @@ function BuddyLockedScreen({ user, onOpenMenu, onTabChange, onUpgrade }) {
               color: "#fff", fontWeight: 700, fontSize: 15,
             }}
           >
-            Voir l’abonnement
+            {t("buddy.seeSubscription")}
           </button>
           <button
             type="button"
@@ -371,7 +352,7 @@ function BuddyLockedScreen({ user, onOpenMenu, onTabChange, onUpgrade }) {
               color: G.grey, fontSize: 14, fontWeight: 600, cursor: "pointer",
             }}
           >
-            Retour à l’accueil
+            {t("buddy.backHome")}
           </button>
         </div>
       </div>
@@ -1485,7 +1466,7 @@ function BuddyMatchingPaid({ user, profile, onOpenMenu, onTabChange, onUpgrade }
       </div>
 
       {requestTarget && (
-        <Modal title="Demander une mise en relation" onClose={() => setRequestTarget(null)}>
+        <Modal title={t("buddy.requestRelation")} onClose={() => setRequestTarget(null)}>
           <p style={{ fontSize: 14, color: G.ink, lineHeight: 1.5, marginTop: 0 }}>
             Avec <strong>{requestTarget.display_name}</strong>. Les numéros ne seront visibles qu’après acceptation mutuelle.
           </p>
@@ -1752,11 +1733,12 @@ function BuddyMatchingPaid({ user, profile, onOpenMenu, onTabChange, onUpgrade }
 }
 
 function BuddyCrashFallback({ onOpenMenu, onTabChange }) {
+  const { t } = useTranslation("app");
   return (
     <AppStatusScreen
       title="Binômes indisponible"
       body="Impossible d’ouvrir cet écran. Reviens à l’accueil et réessaie."
-      primaryLabel="Retour à l’accueil"
+      primaryLabel={t("buddy.backHome")}
       onPrimary={() => {
         playUiSound("tap");
         onTabChange?.("home");

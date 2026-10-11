@@ -168,7 +168,7 @@ Coller dans « Notes de révision » (anglais, les reviewers le lisent) :
 ```
 Demo accounts (same backend as the iPhone app):
 
-1) Trial (7-day cardless trial, created just before submission)
+1) Trial (7-day intro offer with Apple ID card, or fresh account just before submission)
 Email: [ESSAI]
 Password: [À COLLER ICI]
 

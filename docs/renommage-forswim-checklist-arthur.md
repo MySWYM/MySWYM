@@ -60,10 +60,12 @@ Redirect URLs à garder : forswim + myswym + `myswym://auth/callback`.
 - [x] DNS collés (Arthur, 11 oct. 2026) ; validation Stripe en cours (jusqu’à ~72 h)
 - [ ] Badge Verified dans Stripe → mails reçus / factures depuis `@forswim.app`
 
-### iOS Store
+### iOS Store / prochain TestFlight
 
 - [x] Fichier prêt : `public/brand/app-store-icon-1024.png`
-- [ ] Upload App Store Connect + « push TestFlight » quand tu veux
+- [x] `Products.storekit` : 8,99 + intro 7 j ; paywall save 44 % ; cartes binôme soft mist + i18n
+- [ ] **Toi ASC** : prix 8,99 / 59,99 + offre intro 7 j sur les SKUs `app.myswym.ios.premium.*`
+- [ ] « push TestFlight » quand tu veux (build + WhatToTest déjà prêts)
 
 ### Autre
 
