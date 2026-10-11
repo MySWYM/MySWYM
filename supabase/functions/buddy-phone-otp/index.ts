@@ -51,7 +51,7 @@ async function sendTwilioSms(toE164: string, body: string): Promise<boolean> {
 
 async function sendResendEmail(to: string, code: string): Promise<boolean> {
   const key = Deno.env.get("RESEND_API_KEY");
-  const from = Deno.env.get("EMAIL_FROM") || "ForSwim <noreply@myswym.app>";
+  const from = Deno.env.get("EMAIL_FROM") || "ForSwim <noreply@forswim.app>";
   if (!key || !to) return false;
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",

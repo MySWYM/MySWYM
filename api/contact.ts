@@ -64,7 +64,7 @@ function contactInbox(): string {
 }
 
 function fromAddress(): string {
-  return process.env.EMAIL_FROM || "ForSwim <noreply@myswym.app>";
+  return process.env.EMAIL_FROM || "ForSwim <noreply@forswim.app>";
 }
 
 function isLandingReview(body: Record<string, unknown>): boolean {

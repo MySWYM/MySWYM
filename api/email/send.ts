@@ -48,7 +48,7 @@ function isEmailKind(value: unknown): value is EmailKind {
 }
 
 function fromAddress(): string {
-  return process.env.EMAIL_FROM || "ForSwim <noreply@myswym.app>";
+  return process.env.EMAIL_FROM || "ForSwim <noreply@forswim.app>";
 }
 
 function replyToDefault(): string {

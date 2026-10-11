@@ -85,9 +85,10 @@ https://staging.forswim.app
 
 ---
 
-## Toi — Resend (quand tu as 10 min)
+## Resend
 
-Add domain `forswim.app` → coller les DNS Resend dans OVH → Verified → dire « Resend OK » → l’agent bascule `EMAIL_FROM`.
+- [x] Domaine `forswim.app` vérifié (Arthur, 11 oct. 2026)
+- [x] Défauts code `EMAIL_FROM` → `ForSwim <noreply@forswim.app>`
 
 ---
 
@@ -122,7 +123,7 @@ Arthur
 - [x] `vercel.json` : host `www.myswym.app` + `myswym.app` → `https://www.forswim.app/:path*` (301)
 - [x] API iOS + reset mail → `www.forswim.app`
 - [ ] **Déployer en prod** (merge staging → main / deploy) pour activer le 301
-- [ ] `EMAIL_FROM` @forswim.app après Resend OK
+- [x] `EMAIL_FROM` @forswim.app (défauts code ; vérifier aussi Vercel env)
 - [ ] staging.myswym.app : **pas** de 301 (reste en dual)
 
 Google : tu as forswim en origins. Optionnel : rajouter `https://www.myswym.app` jusqu’au deploy du 301.
