@@ -1,6 +1,6 @@
 # Checklist Arthur — ForSwim (max autonomie)
 
-Mis à jour : 11 oct. 2026 (soir).
+Mis à jour : 11 oct. 2026 (correctifs post-renommage P0).
 
 ## Fait
 
@@ -13,6 +13,9 @@ Mis à jour : 11 oct. 2026 (soir).
 - [x] `contact@forswim.app` = support / reply-to
 - [x] Apple / Google redirect forswim
 - [x] Supabase Redirect URLs forswim (Arthur)
+- [x] P0-1 paywall `showTrialOffer` / `trialEligible` (branche `fix/post-renommage-p0`)
+- [x] P0-2 `vercel.json` : `/api/` exclu des 308 hôte myswym (à merger puis tester curl)
+- [x] P0-3 Edge Functions redéployées à la main (CORS `www.forswim.app` OK) ; CI encore sans secret
 
 ## Com (plus tard, pas maintenant)
 
@@ -82,3 +85,13 @@ Redirect URLs à garder : forswim + myswym + `myswym://auth/callback`.
 - [x] `MIN_SUPPORTED_APP_VERSION` inchangé (`1.0.0`)
 - [ ] Toi Vercel : `LATEST_APP_VERSION=1.1` au déploiement de la 1.1
 - [ ] « push TestFlight » quand tu veux la build 41
+
+## À faire toi (hors code) — post-renommage 11 oct.
+
+1. [ ] **Vercel → Domains** : retirer redirect dashboard myswym si encore là (après deploy P0-2).
+2. [ ] **GitHub → Secrets** : `SUPABASE_ACCESS_TOKEN`
+3. [ ] **Telegram** : webhook → `https://www.forswim.app/api/telegram/webhook`
+4. [ ] **Meta** : webhook → `https://www.forswim.app/api/instagram/webhook`
+5. [ ] **Strava** : callback domain = `www.forswim.app`
+6. [ ] **Vercel + Supabase** : `EMAIL_FROM`, `EMAIL_REPLY_TO`, `APP_URL`, `LATEST_APP_VERSION=1.1`
+7. [ ] **ASC** : prix 8,99 / 59,99 + intro 7 j, puis build forswim

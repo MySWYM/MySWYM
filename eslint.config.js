@@ -1,4 +1,4 @@
- import js from '@eslint/js'
+import js from '@eslint/js'
 import globals from 'globals'
 import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
@@ -15,7 +15,8 @@ export default defineConfig([
     ],
     languageOptions: {
       ecmaVersion: 2020,
-      globals: globals.browser,
+      // Vite injecte process.env.* au build ; lisible en src sans globals.node partout.
+      globals: { ...globals.browser, process: 'readonly' },
       parserOptions: {
         ecmaVersion: 'latest',
         ecmaFeatures: { jsx: true },
@@ -23,6 +24,7 @@ export default defineConfig([
       },
     },
     rules: {
+      'no-undef': 'error',
       'no-unused-vars': 'off',
       'no-empty': 'off',
       'no-useless-escape': 'off',
@@ -30,6 +32,12 @@ export default defineConfig([
       'react-hooks/immutability': 'off',
       'react-hooks/set-state-in-effect': 'off',
       'react-hooks/purity': 'off',
+    },
+  },
+  {
+    files: ['vite.config.js', 'scripts/**/*.{js,mjs,cjs}', 'eslint.config.js'],
+    languageOptions: {
+      globals: globals.node,
     },
   },
 ])
