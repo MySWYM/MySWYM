@@ -3841,7 +3841,7 @@ const WeekProjectionCard = ({ plan, profile, onOpenPlan }) => {
 };
 
 // ── ACCÈS ──────────────────────────────────────────────────────────────────
-// Modèle live = essai 7j sans carte à l'inscription, puis pause (abonnement pour continuer).
+// Modèle live = essai 7j avec carte (Stripe / App Store), puis prélèvement ou pause.
 // FREE_* ci-dessous : remnants / helpers legacy, ne gate plus l’UX (voir access.js).
 const FREE_WEEKS_LIMIT = 4;
 const FREE_FREQ_LIMIT = 3;
@@ -3919,7 +3919,7 @@ function premiumPriceSummary() {
 }
 
 const PREMIUM_TIER_LINES = () => [
-  `Essai 7 jours sans carte, puis ${premiumPriceSummary()}`,
+  `Essai 7 jours avec carte, puis ${premiumPriceSummary()}`,
   "Séances complètes + allures à la seconde (T100)",
   "Adaptation coach après feedback séance / semaine",
   "Plan jusqu’à ton événement · jusqu’à 5× / semaine",
@@ -9957,7 +9957,7 @@ export default function App() {
     } else {
       userRef.current = liveUser;
     }
-    // Essai 7j sans carte avant génération (anonyme + compte neuf) : pas de cadenas avant.
+    // Avant abo / essai CB : pas de cadenas pendant l’onboarding anonyme.
     const applySyncedUser = (synced) => {
       if (!synced) return;
       liveUser = synced;

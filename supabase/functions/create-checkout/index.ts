@@ -6,7 +6,7 @@ import { getAccessState, isLiveAppleEntitlement } from "../_shared/access-state.
 
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, { apiVersion: "2024-04-10" });
 
-/** IDs retirés / test, ne pas les préférer aux defaults Live via secrets périmés. */
+/** IDs retirés / test / anciens live, ne pas les préférer aux defaults via secrets périmés. */
 const RETIRED_PRICE_IDS = new Set([
   "price_1U67kYAS4mfgF2Twaw269yaU",
   "price_1U67kZAS4mfgF2Twi5Px8ZvG",
@@ -16,6 +16,10 @@ const RETIRED_PRICE_IDS = new Set([
   "price_1TPjyeAS4mfgF2TwmSjSiidD",
   "price_1TP5yOAVxucD4jHaRYk2cbHC",
   "price_1TPKQfAVxucD4jHaUDssY5cs",
+  /** Anciens live 9,99 / 4,99 / 52,99 */
+  "price_1U3N2tAS4mfgF2TwyaI2hf22",
+  "price_1TPjyPAS4mfgF2Twx3Zh4zrJ",
+  "price_1U7E38AS4mfgF2TwpJGYoMpE",
 ]);
 
 function envPrice(name: string, fallback: string) {
@@ -24,20 +28,23 @@ function envPrice(name: string, fallback: string) {
   return fallback;
 }
 
-// Defaults = Live (acct_1TP5ueAS4mfgF2Tw). Override secrets uniquement avec d’autres IDs live.
-const PRICE_MONTHLY_FLEX = envPrice("STRIPE_PRICE_MONTHLY_FLEX", "price_1U3N2tAS4mfgF2TwyaI2hf22");
+// Defaults = Live 8,99 € / 59,99 € (acct_1TP5ueAS4mfgF2Tw).
+const PRICE_MONTHLY_FLEX = envPrice("STRIPE_PRICE_MONTHLY_FLEX", "price_1UPMipAS4mfgF2Twd2eNOMyl");
+/** Legacy engagement 12 mois : plus vendu ; gardé pour abonnés historiques. */
 const PRICE_MONTHLY_COMMIT = envPrice(
   "STRIPE_PRICE_MONTHLY_COMMIT",
   envPrice("STRIPE_PRICE_MONTHLY", "price_1TPjyPAS4mfgF2Twx3Zh4zrJ"),
 );
-const PRICE_ANNUAL = envPrice("STRIPE_PRICE_ANNUAL", "price_1U7E38AS4mfgF2TwpJGYoMpE");
+const PRICE_ANNUAL = envPrice("STRIPE_PRICE_ANNUAL", "price_1UPMjIAS4mfgF2Tw3VYyFnaV");
 /** Legacy biennal (24 mois) : plus vendu sur Tarifs ; gardé pour abonnés historiques. */
 const PRICE_BIENNIAL = Deno.env.get("STRIPE_PRICE_BIENNIAL") ?? "price_1Tue7cAS4mfgF2TwP53wZ7qn";
 const COUPON_REFERRAL = Deno.env.get("STRIPE_COUPON_REFERRAL") ?? "REFERRAL20";
+const TRIAL_LENGTH_DAYS = 7;
 
 function planTierFromPrice(price: string): string | undefined {
   if (
     price === PRICE_MONTHLY_FLEX ||
+    price === "price_1UPMipAS4mfgF2Twd2eNOMyl" ||
     price === "price_1U3N2tAS4mfgF2TwyaI2hf22" ||
     price === "price_1U67kYAS4mfgF2Twaw269yaU"
   ) return "monthly_flex";
@@ -48,6 +55,7 @@ function planTierFromPrice(price: string): string | undefined {
   ) return "monthly_commit";
   if (
     price === PRICE_ANNUAL ||
+    price === "price_1UPMjIAS4mfgF2Tw3VYyFnaV" ||
     price === "price_1U7E38AS4mfgF2TwpJGYoMpE" ||
     price === "price_1U67kaAS4mfgF2TwvUsVQ3vE"
   ) return "annual";
@@ -62,6 +70,8 @@ const ALLOWED_PRICE_IDS = new Set([
   PRICE_ANNUAL,
   PRICE_BIENNIAL,
   Deno.env.get("STRIPE_PRICE_ID") ?? "",
+  "price_1UPMipAS4mfgF2Twd2eNOMyl",
+  "price_1UPMjIAS4mfgF2Tw3VYyFnaV",
   "price_1U3N2tAS4mfgF2TwyaI2hf22",
   "price_1TPjyPAS4mfgF2Twx3Zh4zrJ",
   "price_1U7E38AS4mfgF2TwpJGYoMpE",
@@ -309,11 +319,14 @@ Deno.serve(async (req) => {
       }
     }
 
-    // L'essai 7j est sans carte (à l'inscription). Checkout = paiement immédiat.
+    // Essai 7j avec CB : trial Stripe si le compte n’a pas déjà consommé un essai.
     // Fenêtre 2 min : double-clic / refresh ne créent pas 2 sessions Stripe.
     const idempotencyKey = `checkout:${user.id}:${price}:${Math.floor(Date.now() / 120_000)}`;
     const planTier = planTierFromPrice(price);
     const commitMeta = planTier === "monthly_commit" ? commitmentMetadataForCheckout() : null;
+    const trialAlreadyUsed = accessState?.trial_used === true
+      || accessState?.access_status === "trial";
+    const grantStripeTrial = !trialAlreadyUsed;
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
@@ -330,8 +343,10 @@ Deno.serve(async (req) => {
         ...(planTier ? { plan_tier: planTier } : {}),
         ...(commitMeta ?? {}),
         ...(referredByUserId ? { referred_by: referredByUserId } : {}),
+        trial_granted: grantStripeTrial ? "1" : "0",
       },
       subscription_data: {
+        ...(grantStripeTrial ? { trial_period_days: TRIAL_LENGTH_DAYS } : {}),
         metadata: {
           supabase_user_id: user.id,
           ...(planTier ? { plan_tier: planTier } : {}),
@@ -353,7 +368,7 @@ Deno.serve(async (req) => {
       properties: {
         price_id: price,
         has_referral: !!couponId || !!referredByUserId,
-        trial_granted: false,
+        trial_granted: grantStripeTrial,
         session_id: session.id,
       },
       created_at: new Date().toISOString(),

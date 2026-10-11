@@ -1,6 +1,6 @@
 /**
- * Offres App Store (iOS). Stripe web inchangé :
- * 9,99 € flex, 4,99 €/12 mois, 52,99 €/an.
+ * Offres App Store (iOS), alignées web :
+ * 8,99 €/mois, 59,99 €/an. Essai 7 jours via introductory offer Apple (CB).
  */
 export const APPLE_BUNDLE_ID = "app.myswym.ios";
 
@@ -11,7 +11,7 @@ export const APPLE_IAP_PRODUCTS = {
   monthly: {
     id: APPLE_IAP_MONTHLY_ID,
     plan: "monthly_flex",
-    fallbackPrice: "6,99€",
+    fallbackPrice: "8,99€",
     period: "/mois",
     commitmentFr: "sans engagement",
     label: "Mensuel",
@@ -32,12 +32,12 @@ export const APPLE_IAP_PRODUCT_IDS = [
 ];
 
 export const APPLE_IAP_SUMMARY_FR =
-  "6,99€/mois sans engagement, ou 59,99€/an";
+  "8,99€/mois sans engagement, ou 59,99€/an";
 
-/** 12 × 6,99 €, pour montrer que l’annuel est moins cher. */
-export const APPLE_IAP_MONTHLY_YEAR_EQUIV = "83,88 €";
-export const APPLE_IAP_ANNUAL_SAVE_PCT = "28 %";
-export const APPLE_IAP_ANNUAL_SAVE_FR = "28 % moins cher que 12 mois au mensuel";
+/** 12 × 8,99 €, pour montrer que l’annuel est moins cher. */
+export const APPLE_IAP_MONTHLY_YEAR_EQUIV = "107,88 €";
+export const APPLE_IAP_ANNUAL_SAVE_PCT = "44 %";
+export const APPLE_IAP_ANNUAL_SAVE_FR = "44 % moins cher que 12 mois au mensuel";
 export const APPLE_IAP_ANNUAL_CTA_FR = "Passer à l’abonnement annuel et économiser";
 
 export function appleProductFromId(productId) {

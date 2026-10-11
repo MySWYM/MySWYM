@@ -23,9 +23,9 @@ const FAQ_RULES = [
   {
     keys: ["gratuit", "free", "prix", "tarif", "coût", "cout", "abonnement", "premium", "payer", "paiement", "stripe", "combien"],
     answer:
-      `À la création du compte : essai Premium ${TRIAL_DAYS} jours sans carte. Ensuite tes séances se mettent en pause jusqu'à l'abonnement. ${PRICING_SUMMARY_FR}. Détails sur la page Tarifs.`,
+      `Essai Premium ${TRIAL_DAYS} jours avec carte, puis ${PRICING_SUMMARY_FR}. Sans abo ni essai : séances en pause. Détails sur la page Tarifs.`,
     iosAnswer:
-      `À la création du compte : essai Premium ${TRIAL_DAYS} jours sans carte. Ensuite tes séances se mettent en pause jusqu’à l’abonnement. Sur iPhone : ${APPLE_IAP_SUMMARY_FR}, paiement via l’App Store.`,
+      `Essai Premium ${TRIAL_DAYS} jours avec carte Apple ID, puis ${APPLE_IAP_SUMMARY_FR}. Paiement via l’App Store.`,
   },
   {
     keys: [
@@ -49,9 +49,9 @@ const FAQ_RULES = [
       "rembours",
     ],
     answer:
-      "Pour changer d’offre (mensuel, annuel, carte) : Profil → « Modifier mon abonnement ». Pour te désabonner : Profil → « Résilier », puis Stripe. Tu restes Premium jusqu’à la fin de la période déjà payée, puis tes séances se mettent en pause. Essai 7 jours sans carte : rien à résilier. Supprimer le compte depuis Profil arrête l’abonnement Stripe encore actif, sans remboursement de la période déjà payée.",
+      "Pour changer d’offre (mensuel, annuel, carte) : Profil → « Modifier mon abonnement ». Pour te désabonner : Profil → « Résilier », puis Stripe. Tu restes Premium jusqu’à la fin de la période déjà payée, puis tes séances se mettent en pause. Pendant l’essai : résilie avant J+7 pour éviter le prélèvement. Supprimer le compte depuis Profil arrête l’abonnement Stripe encore actif, sans remboursement de la période déjà payée.",
     iosAnswer:
-      "Sur iPhone, l’abonnement se gère dans Réglages, Apple ID, Abonnements. Tu restes Premium jusqu’à la fin de la période déjà payée. Essai 7 jours sans carte : rien à résilier. Supprimer le compte se fait dans Profil : ça n’arrête pas un abonnement App Store tout seul.",
+      "Sur iPhone, l’abonnement se gère dans Réglages, Apple ID, Abonnements. Tu restes Premium jusqu’à la fin de la période déjà payée. Pendant l’essai : résilie avant J+7 pour éviter le prélèvement. Supprimer le compte se fait dans Profil : ça n’arrête pas un abonnement App Store tout seul.",
   },
   {
     id: "goal",

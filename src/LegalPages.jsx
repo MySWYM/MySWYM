@@ -627,12 +627,11 @@ export function CgvPage() {
 
       <H>3. Offres et prix (TTC)</H>
       <Ul items={[
-        "Essai 7 jours : offert à la création du compte, sans saisie de carte bancaire, une seule fois par compte (anti-abus). L’essai commence à la première connexion. À son terme, l’accès est interrompu (aucun contenu d’entraînement visible) jusqu’à souscription d’un abonnement payant.",
-        "Mensuel sans engagement : 9,99 € TTC / mois après l’essai : sans engagement de durée ; reconduction tacite mensuelle ; résiliable à tout moment via le portail client Stripe ; accès jusqu’à la fin de la période déjà payée.",
-        "Mensuel avec engagement 12 mois : 4,99 € TTC / mois après l’essai. En souscrivant, tu t’engages pour 12 mois, facturés chaque mois. Pendant ces 12 mois : aucun remboursement des mensualités, hors cas légaux (rétractation encore ouverte, défaut du prestataire, autres droits impératifs). Supprimer le compte arrête les prélèvements restants, sans remboursement des mois déjà payés. Cette offre n’est pas vendue dans l’app iPhone.",
-        "Annuel : 52,99 € TTC / an : prépaiement 12 mois en un seul paiement (sans essai sur ce tunnel). Pas de remboursement au prorata une fois facturé, hors cas légaux (rétractation encore ouverte, défaut du prestataire, autres droits impératifs). Supprimer le compte coupe le renouvellement, sans remboursement de la période déjà payée.",
-        "App iPhone (App Store) : mensuel sans engagement 6,99 € TTC / mois, ou annuel 59,99 € TTC / an. Paiement et résiliation via Apple. L’essai 7 jours sans carte MySWYM reste le même qu’on s’inscrive sur le site ou dans l’app.",
-        "Offre biennale héritée (24 mois) : Price ID Stripe legacy uniquement (plus commercialisée sur Tarifs). Conservée pour d’éventuels abonnés historiques. Les droits légaux du consommateur restent applicables.",
+        "Essai 7 jours : offert une seule fois par compte, avec carte enregistrée (Stripe Checkout sur le site, ou Apple ID sur iPhone). À son terme, le prélèvement démarre sauf résiliation avant la fin de l’essai. Sans essai ni abonnement actif, l’accès aux séances est en pause.",
+        "Mensuel sans engagement : 8,99 € TTC / mois après l’essai : sans engagement de durée ; reconduction tacite mensuelle ; résiliable à tout moment via le portail client Stripe ; accès jusqu’à la fin de la période déjà payée.",
+        "Annuel : 59,99 € TTC / an : prépaiement 12 mois en un seul paiement après l’essai. Pas de remboursement au prorata une fois facturé, hors cas légaux (rétractation encore ouverte, défaut du prestataire, autres droits impératifs). Supprimer le compte coupe le renouvellement, sans remboursement de la période déjà payée.",
+        "App iPhone (App Store) : mêmes tarifs que le site (8,99 € TTC / mois ou 59,99 € TTC / an). Paiement et résiliation via Apple. Essai 7 jours via offre d’introduction App Store (carte Apple ID).",
+        "Offres héritées (engagement 12 mois à 4,99 €/mois, annuel 52,99 €, biennal) : Price IDs Stripe legacy uniquement (plus commercialisées sur Tarifs). Conservées pour d’éventuels abonnés historiques. Les droits légaux du consommateur restent applicables.",
       ]} />
       <P>
         Prix en euros TTC. TVA : {LEGAL_ENTITY.vatNumber}.
@@ -647,26 +646,25 @@ export function CgvPage() {
         "Sur l’app iPhone, l’abonnement nageur est vendu via l’App Store (In-App Purchase). Apple encaisse le paiement (carte liée à l’Apple ID ou Apple Pay). MySWYM ne collecte pas tes données de carte dans l’app.",
         "Avant redirection vers Stripe Checkout, l’application web présente le prix, la périodicité, le renouvellement automatique et les liens CGU/CGV.",
         "Avant un achat App Store, l’app iPhone présente le prix, la périodicité et les liens CGU/CGV. La feuille Apple confirme le paiement.",
-        "La validation du paiement vaut commande. L’essai sans carte ne constitue pas une commande payante.",
+        "La validation du paiement (ou le démarrage d’un essai avec carte) vaut commande.",
         "Un e-mail / reçu Stripe confirme une transaction web ; Apple envoie le reçu App Store pour un achat iPhone. Un e-mail de confirmation d’abonnement peut également être envoyé par MySWYM.",
       ]} />
 
       <H>5. Exécution et accès</H>
       <P>
-        L’essai de 7 jours est ouvert dès la première connexion après création du compte, sans carte.
-        L’accès Premium payant est ouvert dès validation du paiement (sous réserve du bon
+        L’essai de 7 jours démarre après enregistrement de la carte (Stripe Checkout ou App Store).
+        L’accès Premium payant se poursuit automatiquement après l’essai, sauf résiliation (sous réserve du bon
         fonctionnement des webhooks Stripe ou des notifications App Store). En cas de retard technique, contactez <Mail to={supportEmail} />.
       </P>
 
       <H>6. Renouvellement et résiliation</H>
       <Ul items={[
-        "Pendant l’essai 7 jours sans carte : aucune résiliation Stripe n’est nécessaire ; l’accès s’arrête automatiquement au bout de 7 jours et l’accès aux séances est en pause.",
+        "Pendant l’essai 7 jours avec carte : résilie avant la fin de l’essai pour éviter le premier prélèvement (portail Stripe ou Réglages Apple).",
         "Mensuel sans engagement : renouvellement automatique sauf résiliation avant la date de renouvellement ; accès maintenu jusqu’à la fin de la période payée.",
-        "Mensuel avec engagement 12 mois : les prélèvements continuent jusqu’à la fin des 12 mois, sauf suppression du compte, qui arrête l’abonnement Stripe sans remboursement des mois déjà payés.",
-        "Annuel / biennal (legacy) : prépaiement de la période ; reconduction éventuelle à l’échéance selon les conditions affichées au checkout Stripe ; résiliation avant renouvellement pour éviter une nouvelle période. La suppression du compte arrête la reconduction, sans remboursement de la période déjà payée.",
-        "Résiliation (hors engagement 12 mois en cours) : depuis Profil → Paramètres → « Résilier » (portail Stripe), ou via les outils Stripe Customer Portal. Pour changer d’offre sans partir : « Modifier mon abonnement ».",
+        "Annuel / offres legacy (engagement 12 mois, biennal) : prépaiement ou prélèvements selon l’offre ; reconduction éventuelle à l’échéance ; résiliation avant renouvellement pour éviter une nouvelle période. La suppression du compte arrête la reconduction, sans remboursement de la période déjà payée.",
+        "Résiliation : depuis Profil → Paramètres → « Résilier » (portail Stripe), ou via les outils Stripe Customer Portal. Pour changer d’offre sans partir : « Modifier mon abonnement ».",
         "App iPhone : reconduction tacite via l’App Store. Résiliation : Réglages → Apple ID → Abonnements. L’accès reste actif jusqu’à la fin de la période déjà payée. Supprimer le compte MySWYM n’arrête pas l’abonnement App Store : il faut le résilier dans Réglages. L’app iPhone ne propose pas de paiement web.",
-        "La suppression du compte est disponible dans les paramètres. Un mensuel Stripe, un engagement 12 mois ou un annuel Stripe encore actif est arrêté à ce moment-là, sans remboursement de la période déjà payée. Un abonnement App Store continue jusqu’à résiliation dans Réglages.",
+        "La suppression du compte est disponible dans les paramètres. Un abonnement Stripe encore actif est arrêté à ce moment-là, sans remboursement de la période déjà payée. Un abonnement App Store continue jusqu’à résiliation dans Réglages.",
       ]} />
 
       <H>7. Droit de rétractation (14 jours)</H>

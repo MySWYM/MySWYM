@@ -40,7 +40,7 @@ const B = {
   site: "https://www.myswym.app",
   logoOnDark: "https://www.myswym.app/logo-myswym-banner-blanc.png",
   pricingLine:
-    "9,99 €/mois sans engagement · 4,99 €/mois sur 12 mois · 52,99 €/an",
+    "8,99 €/mois sans engagement · 59,99 €/an",
 } as const;
 
 function isEmailKind(value: unknown): value is EmailKind {
@@ -171,7 +171,7 @@ function buildEmail(kind: EmailKind, payload: Record<string, unknown>): {
             bullets([
               "Ouvre l’app et lance ta 1ʳᵉ séance",
               "Coche-la après, le coach s’ajuste à ton ressenti",
-              "Essai 7 jours sans carte : tu testes, tu décides",
+              "Essai 7 jours avec carte : tu testes, tu décides",
             ]),
           cta: { label: "Ouvrir ma 1ʳᵉ séance", url: `${B.site}/app` },
         }),
@@ -373,7 +373,7 @@ function buildEmail(kind: EmailKind, payload: Record<string, unknown>): {
             bullets([
               "Tes séances déjà validées restent",
               "Le reste de la semaine se met à jour à l'ouverture",
-              "7 jours pour tout voir, sans carte",
+              "7 jours pour tout voir, avec carte",
             ]),
           cta: { label: "Rouvrir MySWYM", url: ctaUrl },
           showUnsubscribe: true,

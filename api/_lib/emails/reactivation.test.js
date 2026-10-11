@@ -19,7 +19,7 @@ const shared = [
   "tes séances ont changé",
   "On a repris le générateur de séances.",
   "Tes séances déjà validées restent",
-  "7 jours pour tout voir, sans carte",
+  "7 jours pour tout voir, avec carte",
   "Rouvrir MySWYM",
 ];
 

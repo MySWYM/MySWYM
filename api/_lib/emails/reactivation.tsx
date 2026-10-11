@@ -38,7 +38,7 @@ export function ReactivationEmail({
         items={[
           "Tes séances déjà validées restent",
           "Le reste de la semaine se met à jour à l'ouverture",
-          "7 jours pour tout voir, sans carte",
+          "7 jours pour tout voir, avec carte",
         ]}
       />
     </EmailLayout>

@@ -26,8 +26,8 @@ export const emailBrand = {
   tagline: "ton coach natation",
   /** Pricing, source: src/lib/pricing.js */
   pricingLine:
-    "9,99 €/mois sans engagement · 4,99 €/mois sur 12 mois · 52,99 €/an",
-  pricingShort: "dès 4,99 €/mois",
+    "8,99 €/mois sans engagement · 59,99 €/an",
+  pricingShort: "dès 8,99 €/mois",
   referralCredit: "4,99 €",
 } as const;
 

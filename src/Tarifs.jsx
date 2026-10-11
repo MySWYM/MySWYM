@@ -132,22 +132,9 @@ export default function TarifsPage() {
       features: [t("pricingPage.flexF1"), t("pricingPage.flexF2"), t("pricingPage.flexF3")],
     },
     {
-      id: "commit",
+      id: "annual",
       featured: true,
       badge: t("pricing.recommended"),
-      priceId: PRICE_IDS.monthlyCommit,
-      name: t("pricingPage.commitName"),
-      title: t("pricingPage.commitTitle"),
-      price: PRICING.monthlyCommit.label,
-      period: t("pricingPage.perMonth"),
-      meta: t("pricingPage.commitMeta"),
-      cta: t("pricingPage.commitCta"),
-      features: [t("pricingPage.commitF1"), t("pricingPage.commitF2"), t("pricingPage.commitF3")],
-    },
-    {
-      id: "annual",
-      featured: false,
-      badge: t("pricingPage.annualBadge"),
       priceId: PRICE_IDS.annual,
       name: t("pricingPage.annualName"),
       title: t("pricingPage.annualTitle"),
@@ -207,7 +194,6 @@ export default function TarifsPage() {
           <ul className="ms-pricing-chips">
             <li>{t("pricingPage.chipTrial")}</li>
             <li>{t("pricingPage.chipFlex")}</li>
-            <li>{t("pricingPage.chipCommit")}</li>
             <li>{t("pricingPage.chipAnnual")}</li>
           </ul>
         </div>
