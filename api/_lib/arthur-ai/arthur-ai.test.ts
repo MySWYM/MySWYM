@@ -187,7 +187,7 @@ await testAsync("subscription anonymous", async () => {
 });
 
 test("prompt fallback", () => {
-  assert.ok(FALLBACK_ARTHUR_PROMPT.includes("create_training_plan"));
+  assert.ok(FALLBACK_ARTHUR_PROMPT.includes("ForSwim"));
   assert.ok(!FALLBACK_ARTHUR_PROMPT.toLowerCase().includes("je suis une ia"));
 });
 
