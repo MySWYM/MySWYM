@@ -50,9 +50,9 @@ export const DELETE_APPLE_NOTICE =
 
 export const DELETE_BLOCK = {
   unverified:
-    "Impossible de vérifier ton abonnement Stripe. Le compte n’a pas été supprimé. Réessaie plus tard ou écris à support@myswym.app.",
+    "Impossible de vérifier ton abonnement Stripe. Le compte n’a pas été supprimé. Réessaie plus tard ou écris à contact@forswim.app.",
   cancelFailed:
-    "Impossible d’arrêter l’abonnement Stripe. Le compte n’a pas été supprimé, pour éviter un prélèvement orphelin. Réessaie ou écris à support@myswym.app.",
+    "Impossible d’arrêter l’abonnement Stripe. Le compte n’a pas été supprimé, pour éviter un prélèvement orphelin. Réessaie ou écris à contact@forswim.app.",
 } as const;
 
 export type DeleteGateCode = "ok" | "unverified";

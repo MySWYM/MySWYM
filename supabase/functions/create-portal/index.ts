@@ -108,7 +108,7 @@ Deno.serve(async (req) => {
           stripe_customer_id: null,
         });
         await persistAccessState(supabaseAdmin, sourceUser as AuthUser, nextState);
-        throw new Error("Lien Stripe périmé, ton compte a été réinitialisé. Contacte support@myswym.app si le problème persiste.");
+        throw new Error("Lien Stripe périmé, ton compte a été réinitialisé. Contacte contact@forswim.app si le problème persiste.");
       }
       throw stripeErr;
     }

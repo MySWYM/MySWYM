@@ -18,7 +18,7 @@ const mail = buildSupportMailto({
   path: "/app",
   appVersion: "1.2.3",
 });
-assert.ok(mail.startsWith("mailto:support@myswym.app?"));
+assert.ok(mail.startsWith("mailto:contact@forswim.app?"));
 assert.ok(mail.includes("E-abcd"));
 assert.ok(mail.includes("%2Fapp") || mail.includes("/app"));
 

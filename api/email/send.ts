@@ -129,7 +129,7 @@ function layout(options: {
     </div>
     <div style="padding:24px 8px 8px;text-align:center">
       <p style="color:${B.ink};font-size:12px;font-weight:600;margin:0 0 6px">ForSwim · ton coach natation</p>
-      <p style="color:${B.muted};font-size:12px;margin:0 0 4px">contact@forswim.app · support@myswym.app</p>
+      <p style="color:${B.muted};font-size:12px;margin:0 0 4px">contact@forswim.app</p>
       <p style="color:${B.muted};font-size:12px;margin:0"><a href="${B.site}" style="color:${B.primary};text-decoration:underline">forswim.app</a></p>
       ${unsub}
     </div>
@@ -215,7 +215,7 @@ function buildEmail(kind: EmailKind, payload: Record<string, unknown>): {
             p(
               "Si tu n’es pas à l’origine de cette demande, ignore cet email : ton compte reste inchangé.",
             ) +
-            `<p style="color:${B.muted};font-size:13px;line-height:20px;margin:16px 0 0">Pour ta sécurité, ce lien expire rapidement. Besoin d’aide ? support@myswym.app</p>`,
+            `<p style="color:${B.muted};font-size:13px;line-height:20px;margin:16px 0 0">Pour ta sécurité, ce lien expire rapidement. Besoin d’aide ? contact@forswim.app</p>`,
           cta: { label: "Choisir un nouveau mot de passe", url: resetUrl },
         }),
       };
@@ -403,9 +403,9 @@ function buildEmail(kind: EmailKind, payload: Record<string, unknown>): {
               "S’il restait un abonnement sans engagement, il a été arrêté",
               "Recréer un compte, c’est repartir de zéro",
             ]) +
-            `<p style="color:${B.muted};font-size:13px;line-height:20px;margin:16px 0 0">Une question ? Écris-nous à support@myswym.app.</p>`,
+            `<p style="color:${B.muted};font-size:13px;line-height:20px;margin:16px 0 0">Une question ? Écris-nous à contact@forswim.app.</p>`,
           cta: { label: "Créer un nouveau compte", url: `${B.site}/inscription` },
-          secondary: { label: "Écrire au support", url: "mailto:support@myswym.app" },
+          secondary: { label: "Écrire au support", url: "mailto:contact@forswim.app" },
         }),
       };
     }
