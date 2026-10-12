@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  Award, Flame, Trophy, TrendingUp, Lock, Users, ChevronRight,
+  Award, Flame, Trophy, TrendingUp, Lock,
 } from "lucide-react";
 import { FONT } from "./theme/brand.js";
 import { G } from "./theme/palette.js";
@@ -122,6 +122,38 @@ export default function Dashboard({
   const coachWeek = plan?.weeks?.length
     ? Math.max(0, plan.weeks.findIndex((w) => !(w.sessions || []).every(isSessionResolved)))
     : 0;
+
+  const buddiesHomeHero =
+    typeof onGoBuddies === "function" && iosNav ? (
+      <section className="ms-buddies-home-module" aria-label={t("home.buddies")}>
+        <button
+          type="button"
+          className="ms-buddies-home-hero"
+          onClick={() => {
+            playUiSound("soft");
+            if (!hasSessionAccess) onUpgrade?.("buddies");
+            else onGoBuddies();
+          }}
+        >
+          <img className="ms-buddies-home-hero-bg" src="/buddies-hero.webp" alt="" decoding="async" />
+          <span className="ms-buddies-home-hero-scrim" aria-hidden />
+          {!hasSessionAccess ? (
+            <span className="ms-buddies-home-hero-pill">
+              <Lock size={12} aria-hidden />
+              {t("home.buddiesLocked")}
+            </span>
+          ) : null}
+          <span className="ms-buddies-home-hero-copy">
+            <span className="ms-buddies-home-hero-title">{t("home.buddies")}</span>
+            <span className="ms-buddies-home-hero-lead">{t("home.buddiesLead")}</span>
+            <span className="ms-buddies-home-hero-cta">
+              {!hasSessionAccess ? <Lock size={14} aria-hidden /> : null}
+              {t("home.buddiesOpen")}
+            </span>
+          </span>
+        </button>
+      </section>
+    ) : null;
 
   return (
     <div
@@ -244,24 +276,7 @@ export default function Dashboard({
                 </div>
               </div>
             )}
-            {typeof onGoBuddies === "function" && iosNav ? (
-              <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 16 }}>
-                <button
-                  type="button"
-                  className="ms-profile-account-row"
-                  onClick={() => {
-                    playUiSound("soft");
-                    onUpgrade?.("buddies");
-                  }}
-                >
-                  <span className="ms-profile-settings-icon" style={{ background: "rgba(31, 174, 134, 0.12)" }}>
-                    <Users size={18} color={G.mint} />
-                  </span>
-                  <span className="ms-profile-settings-label" style={{ flex: 1 }}>{t("home.buddies")}</span>
-                  <Lock size={16} color={G.greyMid} />
-                </button>
-              </div>
-            ) : null}
+            {buddiesHomeHero}
           </>
         ) : (
           <>
@@ -271,24 +286,7 @@ export default function Dashboard({
             {plan && hasSessionAccess ? (
               <CoachCard plan={plan} profile={profile} currentWeekIndex={coachWeek} spaced />
             ) : null}
-            {typeof onGoBuddies === "function" ? (
-              <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 16 }}>
-                <button
-                  type="button"
-                  className="ms-profile-account-row"
-                  onClick={() => {
-                    playUiSound("soft");
-                    onGoBuddies();
-                  }}
-                >
-                  <span className="ms-profile-settings-icon" style={{ background: "rgba(31, 174, 134, 0.12)" }}>
-                    <Users size={18} color={G.mint} />
-                  </span>
-                  <span className="ms-profile-settings-label" style={{ flex: 1 }}>{t("home.buddies")}</span>
-                  <ChevronRight size={18} color={G.greyMid} />
-                </button>
-              </div>
-            ) : null}
+            {buddiesHomeHero}
           </>
         ) : preview ? (
           <div style={{ marginBottom: 12 }}>
