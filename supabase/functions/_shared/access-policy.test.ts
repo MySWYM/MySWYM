@@ -273,4 +273,59 @@ assert.ok(Number.isFinite(untilMs), "RETRIAL_UNTIL_ISO must parse");
   assert.equal(isAnonymousAuthUser(null), false);
 }
 
+{
+  const nowMs = Date.now();
+  const intro = buildSubscriptionStateFromApple(userId, { trial_used: false } as never, {
+    productId: "app.myswym.ios.premium.monthly",
+    originalTransactionId: "intro-1",
+    expiresDate: nowMs + 7 * 86400000,
+    purchaseDate: nowMs,
+    offerType: 1,
+    environment: "Sandbox",
+  }, { nowMs });
+  assert.equal(intro.access_status, ACCESS_STATUS.trial);
+  assert.equal(intro.trial_used, true);
+  assert.equal(intro.trial_ends_at, intro.subscription_ends_at);
+}
+
+{
+  const nowMs = Date.now();
+  const introCanceled = buildSubscriptionStateFromApple(userId, null, {
+    productId: "app.myswym.ios.premium.monthly",
+    originalTransactionId: "intro-2",
+    expiresDate: nowMs + 5 * 86400000,
+    purchaseDate: nowMs,
+    offerType: 1,
+  }, { nowMs, cancelAtPeriodEnd: true });
+  assert.equal(introCanceled.access_status, ACCESS_STATUS.trial);
+  assert.equal(introCanceled.cancel_at_period_end, true);
+}
+
+{
+  const nowMs = Date.now();
+  const renewal = buildSubscriptionStateFromApple(userId, {
+    user_id: userId,
+    access_status: ACCESS_STATUS.trial,
+    trial_used: true,
+    trial_started_at: iso(nowMs - 7 * 86400000),
+    trial_ends_at: iso(nowMs),
+    subscription_started_at: iso(nowMs - 7 * 86400000),
+    subscription_ends_at: iso(nowMs),
+    cancel_at_period_end: false,
+    stripe_customer_id: null,
+    billing_provider: "apple",
+    apple_original_transaction_id: "intro-3",
+    apple_product_id: "app.myswym.ios.premium.monthly",
+    apple_environment: "Sandbox",
+  }, {
+    productId: "app.myswym.ios.premium.monthly",
+    originalTransactionId: "intro-3",
+    expiresDate: nowMs + 30 * 86400000,
+    purchaseDate: nowMs,
+    offerType: 0,
+  }, { nowMs });
+  assert.equal(renewal.access_status, ACCESS_STATUS.active);
+  assert.equal(renewal.trial_used, true);
+}
+
 console.log("access-policy.test.ts OK");

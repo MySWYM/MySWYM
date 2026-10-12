@@ -7,6 +7,7 @@ import IosIapPaywall from "../sheets/IosIapPaywall.jsx";
 
 function Preview() {
   const [period, setPeriod] = useState("annual");
+  const [intro, setIntro] = useState(true);
   return (
     <SoftMistSheet
       open
@@ -15,11 +16,18 @@ function Preview() {
       className="ms-iap-paywall-overlay"
       bodyClassName="ms-soft-sheet-body--tall"
     >
+      <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+        <button type="button" onClick={() => setIntro(true)}>Essai dispo</button>
+        <button type="button" onClick={() => setIntro(false)}>Essai déjà utilisé</button>
+      </div>
       <IosIapPaywall
         period={period}
         onPeriodChange={setPeriod}
         monthlyPrice="8,99€"
         annualPrice="59,99€"
+        trialEligible={intro}
+        pinRestore={!intro}
+        subtitle={intro ? undefined : "L'essai gratuit a déjà été utilisé avec cet identifiant Apple. Ton abonnement démarre aujourd'hui, résiliable à tout moment."}
       />
     </SoftMistSheet>
   );

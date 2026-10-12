@@ -72,6 +72,8 @@ export function assertUsableAppleTransaction(payload: Record<string, unknown>) {
     purchaseDate: payload.purchaseDate as number | string | null,
     environment: payload.environment ? String(payload.environment) : null,
     revocationDate: payload.revocationDate as number | string | null,
+    offerType: payload.offerType as number | string | null,
+    offerDiscountType: payload.offerDiscountType ? String(payload.offerDiscountType) : null,
   } satisfies AppleTransactionLike & { originalTransactionId: string };
 }
 

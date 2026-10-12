@@ -29,6 +29,8 @@ export default function IosIapPaywall({
   headline = null,
   subtitle = null,
   trialEligible = true,
+  pinRestore = false,
+  onSignIn = null,
 }) {
   const { t } = useTranslation("app");
   const isAnnual = period === "annual";
@@ -108,6 +110,24 @@ export default function IosIapPaywall({
           </Btn>
         )}
 
+        {pinRestore ? (
+          <>
+            <button
+              type="button"
+              className="ms-iap-restore"
+              disabled={loading}
+              onClick={onRestore}
+            >
+              {t("paywall.restore")}
+            </button>
+            {onSignIn ? (
+              <button type="button" className="ms-iap-alt" disabled={loading} onClick={onSignIn}>
+                {t("paywall.signInOther")}
+              </button>
+            ) : null}
+          </>
+        ) : null}
+
         {isAnnual ? (
           <button
             type="button"
@@ -131,14 +151,16 @@ export default function IosIapPaywall({
           </button>
         )}
 
-        <button
-          type="button"
-          className="ms-iap-restore"
-          disabled={loading}
-          onClick={onRestore}
-        >
-          {t("paywall.restore")}
-        </button>
+        {pinRestore ? null : (
+          <button
+            type="button"
+            className="ms-iap-restore"
+            disabled={loading}
+            onClick={onRestore}
+          >
+            {t("paywall.restore")}
+          </button>
+        )}
 
         <p className="ms-iap-legal">
           {t("paywall.legal", { monthly: monthlyPrice, annual: annualPrice })}{" "}
