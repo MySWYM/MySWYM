@@ -200,6 +200,7 @@ export function stateToAppMetadata(state: AccessStateRow) {
     trial_used: state.trial_used,
     subscription_started_at: state.subscription_started_at,
     billing_provider: state.billing_provider,
+    apple_product_id: state.apple_product_id,
   };
 }
 

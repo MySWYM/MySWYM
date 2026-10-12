@@ -2,7 +2,7 @@
  * Rappels séance + relances commercial : préférence + planification (pures).
  */
 import { ACCESS_STATUS } from "./access.js";
-import { NOTIF_IDS } from "./native-local-notifications.js";
+import { NOTIF_IDS } from "./notif-ids.js";
 import { sessionReminderCopy } from "./session-reminder-copy.js";
 
 export { sessionReminderCopy } from "./session-reminder-copy.js";
@@ -69,6 +69,8 @@ export function buildLocalNotificationPlan({
   accessStatus = null,
   trialEndsAt = null,
   trialDaysLeft = 0,
+  cancelAtPeriodEnd = false,
+  billingProvider = null,
   hasPlan = false,
   nextResolved = false,
   currentStreak = 0,
@@ -158,11 +160,22 @@ export function buildLocalNotificationPlan({
     if (Number.isFinite(endsMs)) {
       const j2 = atHourOnDay(new Date(endsMs - 2 * 86400000), 10);
       const j1 = atHourOnDay(new Date(endsMs - 1 * 86400000), 10);
+      const apple = billingProvider === "apple";
+      const j2Body = cancelAtPeriodEnd
+        ? "Tes séances se mettront en pause à la fin de l'essai."
+        : (apple
+          ? "Ton abonnement démarre ensuite. Rien à faire pour continuer. Tu le gères dans l'App Store."
+          : "Ton abonnement démarre ensuite. Rien à faire pour continuer.");
+      const j1Body = cancelAtPeriodEnd
+        ? "Demain, tes séances se mettent en pause. Tu peux réactiver ton abonnement quand tu veux."
+        : (apple
+          ? "Ton essai se termine demain. Ton abonnement démarre ensuite, tes séances continuent. Tu le gères dans l'App Store."
+          : "Ton essai se termine demain. Ton abonnement démarre ensuite, tes séances continuent.");
       if (j2.getTime() > nowMs + 60_000) {
         items.push({
           id: NOTIF_IDS.TRIAL_J2,
-          title: "Plus que 2 jours d’essai",
-          body: "Sans abonnement, tes séances se mettent en pause. Garde ton plan sur l’App Store.",
+          title: "Plus que 2 jours d'essai",
+          body: j2Body,
           at: j2,
           extra: { kind: "soft_premium" },
         });
@@ -170,8 +183,8 @@ export function buildLocalNotificationPlan({
       if (j1.getTime() > nowMs + 60_000) {
         items.push({
           id: NOTIF_IDS.TRIAL_J1,
-          title: "Dernier jour d’essai",
-          body: "Demain tes séances passent en pause. Abonne-toi pour tout garder.",
+          title: "Dernier jour d'essai",
+          body: j1Body,
           at: j1,
           extra: { kind: "soft_premium" },
         });

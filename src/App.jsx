@@ -213,6 +213,7 @@ import SaveAccountSheet from "./sheets/SaveAccountSheet.jsx";
 import SessionPrepSheet from "./sheets/SessionPrepSheet.jsx";
 import SoftMistSheet from "./sheets/SoftMistSheet.jsx";
 import UpgradeModal from "./sheets/UpgradeModal.jsx";
+import TrialStatusSheet from "./sheets/TrialStatusSheet.jsx";
 import ConfirmSheet from "./sheets/ConfirmSheet.jsx";
 import CancelSurveySheet from "./sheets/CancelSurveySheet.jsx";
 import { useSheetSwipeDismiss } from "./sheets/useSheetSwipeDismiss.js";
@@ -222,7 +223,8 @@ import WhatsNewSheet, {
   markWhatsNewSeen,
   syncWhatsNewSeenIfNeeded,
 } from "./sheets/WhatsNewSheet.jsx";
-import { restoreAndSyncAppleIap, openAppleSubscriptionManagement, requestAppStoreReview } from "./lib/native-iap.js";
+import { restoreAndSyncAppleIap, openAppleSubscriptionManagement, purchaseAppleProduct, requestAppStoreReview } from "./lib/native-iap.js";
+import { APPLE_IAP_ANNUAL_ID } from "./lib/apple-iap-catalog.js";
 import {
   countFinishedSessions,
   hasAskedAppStoreReview,
@@ -7885,6 +7887,14 @@ export default function App() {
   const [cancelSurveyOpen, setCancelSurveyOpen] = useState(false);
   const [loopPaywall, setLoopPaywall] = useState(null); // null | "cap" | "weekly"
   const trialExpiredPromptedRef = useRef(false);
+  const activationHoldRef = useRef(null);
+  const [showTrialStatus, setShowTrialStatus] = useState(false);
+  if (activationHoldRef.current == null && typeof window !== "undefined") {
+    let stored = false;
+    try { stored = sessionStorage.getItem("myswym_stripe_activation_hold") === "1"; } catch { /* ignore */ }
+    const fromUrl = new URLSearchParams(window.location.search).get("payment") === "success";
+    activationHoldRef.current = stored || fromUrl;
+  }
   const freezeBackgroundedAtRef = useRef(null);
   const forceAuthRef = useRef(false);
   /** Empêche le bounce /app→onboarding pendant / juste après signOut. */
@@ -8357,6 +8367,13 @@ export default function App() {
   }, [sessionCelebrate, user?.id, plans.length, authLoading, coldHold, screen, showUpgrade, showPlanReady, showSaveAccount, showWhatsNew, isFrozen, accessState.hasPremiumAccess]);
 
   const openUpgrade = (softContext = null) => {
+    if (
+      accessState.status === "trial"
+      && ["trial_ending", "trial_chip", "trial_chip_urgent", "trial_countdown", "trial_countdown_urgent", "trial_countdown_hot"].includes(softContext)
+    ) {
+      setShowTrialStatus(true);
+      return;
+    }
     trackEvent("paywall_shown", {
       context: softContext || "generic",
       access_status: accessState.status,
@@ -8382,6 +8399,7 @@ export default function App() {
       return;
     }
     if (!isFrozen || screen !== "app") return;
+    if (activationHoldRef.current) return;
     if (trialExpiredPromptedRef.current || showUpgrade || showPlanReady || showSaveAccount || showWhatsNew) return;
     trialExpiredPromptedRef.current = true;
     openUpgrade(resolveUpgradeGateContext(user));
@@ -8620,12 +8638,22 @@ export default function App() {
       return premium;
     };
 
+    let activationConfirmed = false;
     const syncAndApply = () => syncSubscriptionFromStripe()
       .then(async (u) => {
         const premium = applyUser(u);
-        if (payment === "success" && premium) {
+        if (payment === "success" && premium && !activationConfirmed) {
+          activationConfirmed = true;
+          activationHoldRef.current = false;
+          try { sessionStorage.removeItem("myswym_stripe_activation_hold"); } catch { /* ignore */ }
+          const state = getAccessState(u);
+          if (state.status === "trial" && state.trialEndsAt) {
+            const date = new Date(state.trialEndsAt).toLocaleDateString("fr-FR", { day: "numeric", month: "long" });
+            showToast(appT("trial.activatedCharge", { date }), 8000);
+          } else {
+            showToast(appT("trial.activatedPremium"), 8000);
+          }
           setShowPlanReady(false);
-          // Legacy / race : si un pending quiz reste, générer. Sinon le plan aperçu est déjà là.
           if (readPendingOnboarding()) {
             await resumePendingRef.current(u);
           } else {
@@ -8638,18 +8666,27 @@ export default function App() {
     if (payment === "success" || payment === "portal") {
       if (payment === "success") {
         trackEvent("checkout_returned_success", {}, { essential: true });
+        activationHoldRef.current = true;
+        try { sessionStorage.setItem("myswym_stripe_activation_hold", "1"); } catch { /* ignore */ }
+        showToast(appT("trial.activating"), 8000);
       }
       syncAndApply();
-      if (payment === "success") {
-        showToast("Premium activé, ton plan est débloqué.", 8000);
-      }
       const retry = (ms) => setTimeout(syncAndApply, ms);
       const t1 = retry(2000);
       const t2 = retry(5000);
       const t3 = retry(10000);
       const t4 = retry(20000);
       const t5 = retry(30000);
-      return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4); clearTimeout(t5); };
+      const tHold = payment === "success"
+        ? setTimeout(() => {
+          if (activationConfirmed) return;
+          showToast(appT("trial.activationSlow"), 10000);
+        }, 30000)
+        : null;
+      return () => {
+        clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4); clearTimeout(t5);
+        if (tHold) clearTimeout(tHold);
+      };
     }
 
     if (payment === "cancel") {
@@ -11901,12 +11938,14 @@ export default function App() {
           <div className="ms-convert-banner ms-convert-banner--soft" role="region" aria-label="Essai bientôt terminé">
             <div className="app-shell ms-convert-banner-inner">
               <span className="ms-convert-banner-text">
-                {accessState.trialDaysLeft === 1
-                  ? "Dernier jour d’essai, demain tes séances se mettent en pause. Abonne-toi pour garder tes plans."
-                  : `Plus que ${accessState.trialDaysLeft} jours d’essai. Ensuite tes séances se mettent en pause.`}
+                {accessState.cancelAtPeriodEnd
+                  ? t("trial.canceledLastDayBody")
+                  : (accessState.trialDaysLeft === 1
+                    ? t("trial.chargeLastDayPlain")
+                    : t("trial.chargeTwoDays"))}
               </span>
               <button type="button" className="ms-convert-banner-cta ms-convert-banner-cta--inverse" onClick={() => openUpgrade("trial_ending")}>
-                S’abonner
+                {t("trial.seeStatus")}
               </button>
             </div>
           </div>
@@ -12186,6 +12225,25 @@ export default function App() {
             canDismiss
           />
         )}
+        {showTrialStatus ? (
+          <TrialStatusSheet
+            accessState={accessState}
+            onClose={() => setShowTrialStatus(false)}
+            onManage={() => { handlePortal(); }}
+            onSwitchAnnual={async () => {
+              if (isNativeIos()) {
+                const u = await purchaseAppleProduct(APPLE_IAP_ANNUAL_ID);
+                if (u && getAccessState(u).hasPremiumAccess) {
+                  setUser(u);
+                  setShowTrialStatus(false);
+                  showToast(appT("trial.activatedPremium"));
+                }
+                return;
+              }
+              proceedToStripePortal(null);
+            }}
+          />
+        ) : null}
         {replaceConfirmOpen && (
           <ConfirmSheet
             title="Remplacer ton plan ?"
