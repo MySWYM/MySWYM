@@ -110,6 +110,7 @@
   letter-spacing: var(--ms-tracking);
   -webkit-font-smoothing: antialiased;
   color: var(--ms-ink);
+  overflow-anchor: none;
 }
 
 .ms-home-immersive-bg,
@@ -308,6 +309,7 @@
 /* Accueil : carte Binômes (photo hero) */
 .ms-buddies-home-module {
   margin: 16px 0 0;
+  overflow-anchor: none;
 }
 
 .ms-buddies-home-hero {

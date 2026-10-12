@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useLayoutEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Award, Flame, Trophy, TrendingUp, Lock,
@@ -20,7 +20,8 @@ import {
   shouldShowAllureUnlockTip,
 } from "./lib/allure-unlock-tip.js";
 import { isSessionResolved } from "./lib/plan-progress-merge.js";
-import { canAccessSessions, resolveTrialCountdown } from "./lib/access.js";
+import { canAccessSessions, resolveTrialCountdown, resolveUpgradeGateContext } from "./lib/access.js";
+import { scrollAppToTop } from "./lib/scroll-app.js";
 import { BADGE_DEFS, computeStats, checkBadges } from "./lib/plan-stats.js";
 import { playUiSound } from "./lib/ui-sounds.js";
 import { getTabUi } from "./tab-ui-registry.js";
@@ -99,6 +100,11 @@ export default function Dashboard({
     setAllureTipDismissed(hasSeenAllureUnlockTip(user?.id));
   }, [user?.id]);
 
+  // Accueil : toujours ouvrir en haut (évite d’atterrir sur Binômes après un scroll précédent).
+  useLayoutEffect(() => {
+    scrollAppToTop();
+  }, []);
+
   useEffect(() => {
     if (!showAllureTip) return;
     track("allure_unlock_tip_viewed", {
@@ -111,7 +117,7 @@ export default function Dashboard({
   const hour = new Date().getHours();
   const hello = hour < 12 ? t("home.morning") : hour < 18 ? t("home.afternoon") : t("home.evening");
   const greetTitle = !hasSessionAccess && plan
-    ? t("home.trialDone")
+    ? (accessState?.trialUsed ? t("home.trialDone") : t("home.trialRequired"))
     : !plan
       ? t("home.create")
       : iosNav
@@ -244,29 +250,35 @@ export default function Dashboard({
         {plan && !hasSessionAccess ? (
           <>
             <div className="ios-home-premium-unlock" role="region" aria-label={t("home.unlockTitle")}>
-              <p className="ios-home-premium-unlock-kicker">{t("home.trialDone")}</p>
+              <p className="ios-home-premium-unlock-kicker">
+                {accessState?.trialUsed ? t("home.trialDone") : t("home.trialRequired")}
+              </p>
               <h2 className="ios-home-premium-unlock-title">{t("home.unlockTitle")}</h2>
-              <p className="ios-home-premium-unlock-body">{t("home.unlockBody")}</p>
+              <p className="ios-home-premium-unlock-body">
+                {accessState?.trialUsed ? t("home.unlockBody") : t("home.unlockBodyRequired")}
+              </p>
               <p className="ios-home-premium-unlock-perks">{t("home.unlockPerks")}</p>
               <button
                 type="button"
                 className="ms-pill-cta"
                 onClick={() => {
                   playUiSound("tap");
-                  onUpgrade?.("trial_expired");
+                  onUpgrade?.(resolveUpgradeGateContext(user));
                 }}
                 style={{ fontFamily: FONT }}
               >
-                {isNativeIos()
-                  ? t("home.unlockCta")
-                  : t("home.unlockCtaPrice", { price: PRICING.monthlyFlex.label })}
+                {accessState?.trialUsed
+                  ? (isNativeIos()
+                    ? t("home.unlockCta")
+                    : t("home.unlockCtaPrice", { price: PRICING.monthlyFlex.label }))
+                  : t("home.unlockCtaTrial")}
               </button>
             </div>
             {weekCards.length ? (
               <IosHomeSessionDeck
                 cards={weekCards}
                 locked
-                onOpen={() => onUpgrade?.("trial_expired")}
+                onOpen={() => onUpgrade?.(resolveUpgradeGateContext(user))}
               />
             ) : (
               <div className="ms-glass-card" style={{ padding: "18px 16px", marginBottom: 16 }} role="status">
@@ -276,6 +288,7 @@ export default function Dashboard({
                 </div>
               </div>
             )}
+            <CoachCard plan={plan} profile={profile} currentWeekIndex={coachWeek} spaced />
             {buddiesHomeHero}
           </>
         ) : (
@@ -283,9 +296,7 @@ export default function Dashboard({
         {iosNav ? (
           <>
             <IosHomeSessionDeck cards={weekCards} onOpen={setOpenCard} />
-            {plan && hasSessionAccess ? (
-              <CoachCard plan={plan} profile={profile} currentWeekIndex={coachWeek} spaced />
-            ) : null}
+            <CoachCard plan={plan} profile={profile} currentWeekIndex={coachWeek} spaced />
             {buddiesHomeHero}
           </>
         ) : preview ? (

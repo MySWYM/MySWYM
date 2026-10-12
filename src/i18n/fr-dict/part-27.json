@@ -1,0 +1,58 @@
+{
+  "Essai 7 jours activé. Tes séances sont débloquées.": {
+    "en": "7-day trial on. Your sessions are unlocked.",
+    "de": "7-Tage-Test aktiv. Deine Einheiten sind frei.",
+    "es": "Prueba de 7 días activada. Tus sesiones están desbloqueadas.",
+    "ja": "7日間トライアル開始。セッションが開いた。",
+    "nl": "Proef van 7 dagen aan. Je trainingen zijn open.",
+    "it": "Prova di 7 giorni attiva. Le sessioni sono sbloccate.",
+    "pt": "Teste de 7 dias ativo. As sessões estão desbloqueadas.",
+    "pt-BR": "Teste de 7 dias ativo. Os treinos estão liberados.",
+    "sv": "7 dagars prov igång. Dina pass är upplåsta.",
+    "da": "7 dages prøve er i gang. Dine pas er låst op.",
+    "nb": "7 dagers prøve er i gang. Øktene dine er åpne.",
+    "fi": "7 päivän kokeilu käynnissä. Treenit ovat auki."
+  },
+  "Active ton essai 7 jours pour nager": {
+    "en": "Start your 7-day trial to swim",
+    "de": "Starte deinen 7-Tage-Test zum Schwimmen",
+    "es": "Activa tu prueba de 7 días para nadar",
+    "ja": "7日間トライアルを始めて泳ごう",
+    "nl": "Start je 7-dagenproef om te zwemmen",
+    "it": "Attiva la prova di 7 giorni per nuotare",
+    "pt": "Ativa o teste de 7 dias para nadar",
+    "pt-BR": "Ative o teste de 7 dias para nadar",
+    "sv": "Starta 7-dagarsprovet för att simma",
+    "da": "Start 7-dages prøven for at svømme",
+    "nb": "Start 7-dagersprøven for å svømme",
+    "fi": "Aloita 7 päivän kokeilu uidaksesi"
+  },
+  "Essai 7 jours avec carte App Store, puis abonnement. Sans abo, tes séances se mettent en pause.": {
+    "en": "7-day trial with an App Store card, then a subscription. Without a subscription, your sessions pause.",
+    "de": "7 Tage Test mit App-Store-Karte, dann Abo. Ohne Abo pausieren deine Einheiten.",
+    "es": "Prueba de 7 días con tarjeta App Store, luego suscripción. Sin suscripción, tus sesiones se pausan.",
+    "ja": "App Storeのカードで7日お試し、その後サブスク。サブスクがないとセッションは停止。",
+    "nl": "7 dagen proef met App Store-kaart, daarna abonnement. Zonder abonnement gaan je trainingen op pauze.",
+    "it": "Prova di 7 giorni con carta App Store, poi abbonamento. Senza abbonamento le sessioni vanno in pausa.",
+    "pt": "Teste de 7 dias com cartão App Store, depois subscrição. Sem subscrição, as sessões ficam em pausa.",
+    "pt-BR": "Teste de 7 dias com cartão App Store, depois assinatura. Sem assinatura, os treinos entram em pausa.",
+    "sv": "7 dagars prov med App Store-kort, sedan prenumeration. Utan prenumeration pausas passen.",
+    "da": "7 dages prøve med App Store-kort, derefter abonnement. Uden abonnement sættes dine pas på pause.",
+    "nb": "7 dagers prøve med App Store-kort, deretter abonnement. Uten abonnement settes øktene på pause.",
+    "fi": "7 päivän kokeilu App Store -kortilla, sitten tilaus. Ilman tilausta treenit menevät tauolle."
+  },
+  "Essayer 7 jours gratuits": {
+    "en": "Try 7 days free",
+    "de": "7 Tage gratis testen",
+    "es": "Probar 7 días gratis",
+    "ja": "7日無料で試す",
+    "nl": "7 dagen gratis proberen",
+    "it": "Prova 7 giorni gratis",
+    "pt": "Experimentar 7 dias grátis",
+    "pt-BR": "Experimentar 7 dias grátis",
+    "sv": "Prova 7 dagar gratis",
+    "da": "Prøv 7 dage gratis",
+    "nb": "Prøv 7 dager gratis",
+    "fi": "Kokeile 7 päivää ilmaiseksi"
+  }
+}

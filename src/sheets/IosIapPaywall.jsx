@@ -26,18 +26,30 @@ export default function IosIapPaywall({
   err = null,
   onSubscribe,
   onRestore,
+  headline = null,
+  subtitle = null,
+  trialEligible = true,
 }) {
   const { t } = useTranslation("app");
   const isAnnual = period === "annual";
   const heroPrice = isAnnual ? annualPrice : monthlyPrice;
   const heroPeriod = isAnnual ? t("paywall.perYear") : t("paywall.perMonth");
+  const title = headline
+    || (isAnnual ? t("paywall.annual") : t("paywall.monthly"));
+  const lead = subtitle
+    || (trialEligible ? t("paywall.trialLead") : null);
+  const monthlyCta = trialEligible
+    ? t("paywall.tryFreeMonthly", { price: monthlyPrice })
+    : t("paywall.subscribeMonthly", { price: monthlyPrice });
+  const annualCta = trialEligible
+    ? t("paywall.tryFreeAnnual")
+    : t("paywall.subscribeAnnual");
 
   return (
     <div className="ms-iap-paywall">
       <div className="ms-iap-paywall-main">
-        <h3 className="ms-iap-title">
-          {isAnnual ? t("paywall.annual") : t("paywall.monthly")}
-        </h3>
+        <h3 className="ms-iap-title">{title}</h3>
+        {lead ? <p className="ms-iap-lead">{lead}</p> : null}
         <div className="ms-iap-price-row">
           {isAnnual ? (
             <span className="ms-iap-price-old">{APPLE_IAP_MONTHLY_YEAR_EQUIV}</span>
@@ -65,7 +77,11 @@ export default function IosIapPaywall({
         </div>
 
         <p className="ms-iap-reassure">
-          {isAnnual ? t("paywall.annualReassure") : t("paywall.monthlyReassure")}
+          {trialEligible
+            ? t("paywall.trialCardReassure")
+            : isAnnual
+              ? t("paywall.annualReassure")
+              : t("paywall.monthlyReassure")}
         </p>
       </div>
 
@@ -81,14 +97,14 @@ export default function IosIapPaywall({
           >
             {loading ? t("paywall.buying") : (
               <>
-                {t("paywall.subscribeAnnual")}{" "}
+                {annualCta}{" "}
                 <span>{APPLE_IAP_ANNUAL_SAVE_PCT}</span>
               </>
             )}
           </button>
         ) : (
           <Btn variant="primary" onClick={onSubscribe} disabled={loading} style={{ width: "100%" }}>
-            {loading ? t("paywall.buying") : t("paywall.subscribeMonthly", { price: monthlyPrice })}
+            {loading ? t("paywall.buying") : monthlyCta}
           </Btn>
         )}
 
@@ -99,7 +115,9 @@ export default function IosIapPaywall({
             disabled={loading}
             onClick={() => onPeriodChange("monthly_flex")}
           >
-            {t("paywall.preferMonthly", { price: monthlyPrice })}
+            {trialEligible
+              ? t("paywall.preferTrialMonthly", { price: monthlyPrice })
+              : t("paywall.preferMonthly", { price: monthlyPrice })}
           </button>
         ) : (
           <button
@@ -108,7 +126,7 @@ export default function IosIapPaywall({
             disabled={loading}
             onClick={() => onPeriodChange("annual")}
           >
-            {t("paywall.subscribeAnnual")}{" "}
+            {annualCta}{" "}
             <span>{APPLE_IAP_ANNUAL_SAVE_PCT}</span>
           </button>
         )}

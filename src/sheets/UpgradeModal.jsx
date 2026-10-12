@@ -155,6 +155,12 @@ export default function UpgradeModal({
         }, { essential: true });
         const u = await purchaseAppleProduct(appleProductId);
         if (u && getAccessState(u).hasPremiumAccess) {
+          try {
+            sessionStorage.setItem(
+              "myswym_iap_access_toast",
+              showTrialOffer ? "trial" : "premium",
+            );
+          } catch { /* ignore */ }
           window.location.reload();
           return;
         }
@@ -235,6 +241,9 @@ export default function UpgradeModal({
           err={err}
           onSubscribe={handleCheckout}
           onRestore={handleNativeSync}
+          headline={headline}
+          subtitle={subtitle}
+          trialEligible={showTrialOffer}
         />
       </SoftMistSheet>
     );

@@ -144,13 +144,17 @@ export function isLiveStripeBilling(user) {
   return state.billingProvider === "stripe" || Boolean(customerId);
 }
 
-/** Pas d'essai encore consommé : attendre le sync (il peut accorder 7 jours) avant de mettre l’accès en pause. */
+/**
+ * JWT encore incomplet : attendre le 1er sync avant de geler.
+ * Essai cardless désactivé : EXPIRED explicite sans trial_used = sync a tranché → pas pending.
+ */
 export function isAccessMetadataPending(user) {
   if (!user) return false;
   if (getAccessState(user).hasPremiumAccess) return false;
   const meta = user.app_metadata ?? {};
+  const hasStatus = typeof meta.subscription_status === "string" && meta.subscription_status.length > 0;
   const status = meta.subscription_status
-    || (meta.subscription === "premium" ? ACCESS_STATUS.ACTIVE : ACCESS_STATUS.EXPIRED);
+    || (meta.subscription === "premium" ? ACCESS_STATUS.ACTIVE : null);
   if (meta.subscription === "premium" && meta.trial_used !== true) return false;
   if (meta.trial_used === true) {
     const trialEndsMs = parseMs(meta.trial_ends_at);
@@ -160,7 +164,15 @@ export function isAccessMetadataPending(user) {
     if (createdMs != null && trialEndsMs <= createdMs) return true;
     return false;
   }
-  return true;
+  // Pas d'essai consommé : JWT vide → attendre le sync. Sinon le statut explicite suffit.
+  if (!hasStatus && meta.subscription !== "premium") return true;
+  return false;
+}
+
+/** Contexte paywall gel : essai déjà consommé vs jamais démarré (CB requise). */
+export function resolveUpgradeGateContext(user) {
+  if (!user) return "trial_required";
+  return getAccessState(user).trialUsed ? "trial_expired" : "trial_required";
 }
 
 export const FRESH_SIGNUP_GRACE_MS = 15 * 60 * 1000;
@@ -279,6 +291,8 @@ export function getAccessLabel(accessState) {
     case ACCESS_STATUS.CANCELED:
       return "Premium annulé";
     default:
-      return "Essai terminé, séances en pause";
+      return accessState?.trialUsed
+        ? "Essai terminé, séances en pause"
+        : "Active ton essai 7 jours pour nager";
   }
 }

@@ -12,6 +12,7 @@ import {
   shouldShowTrialCountdown,
   trialDayIndex,
   resolveTrialCountdown,
+  resolveUpgradeGateContext,
 } from "./access.js";
 
 function userWith(meta) {
@@ -161,10 +162,22 @@ const nowSec = Math.floor(Date.now() / 1000);
 }
 
 {
-  const pendingExpiredUnused = isAccessMetadataPending(userWith({
+  const expiredUnused = userWith({
     subscription_status: ACCESS_STATUS.EXPIRED,
-  }));
-  assert.equal(pendingExpiredUnused, true, "expired without trial_used = metadata incomplete (no auto grant)");
+  });
+  assert.equal(
+    isAccessMetadataPending(expiredUnused),
+    false,
+    "EXPIRED explicite sans trial_used = sync a tranché (pas d'attente cardless)",
+  );
+  assert.equal(resolveUpgradeGateContext(expiredUnused), "trial_required");
+  assert.equal(
+    resolveUpgradeGateContext(userWith({
+      subscription_status: ACCESS_STATUS.EXPIRED,
+      trial_used: true,
+    })),
+    "trial_expired",
+  );
 }
 
 {
@@ -355,6 +368,22 @@ const nowSec = Math.floor(Date.now() / 1000);
   );
   assert.equal(shouldAwaitCardlessTrial(anon), false, "no cardless await");
   assert.equal(hasUnlockedPremiumAccess(anon), false, "anonymous locked until Stripe/Apple trial");
+  assert.equal(resolveUpgradeGateContext(anon), "trial_required");
+}
+
+{
+  const anonExpiredOld = {
+    id: "a3",
+    is_anonymous: true,
+    created_at: "2026-01-01T10:00:00.000Z",
+    app_metadata: {
+      subscription: "free",
+      subscription_status: ACCESS_STATUS.EXPIRED,
+    },
+  };
+  assert.equal(isAccessMetadataPending(anonExpiredOld), false);
+  assert.equal(shouldShowTrialFreeze(anonExpiredOld, { accessSynced: true }), true);
+  assert.equal(resolveUpgradeGateContext(anonExpiredOld), "trial_required");
 }
 
 {
