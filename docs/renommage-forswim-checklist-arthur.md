@@ -71,7 +71,7 @@ Redirect URLs à garder : forswim + myswym + `myswym://auth/callback`.
 - [x] Fichier prêt : `public/brand/app-store-icon-1024.png`
 - [x] `Products.storekit` : 8,99 + intro 7 j ; paywall save 35 % ; cartes binôme soft mist + i18n
 - [x] **ASC** : prix 8,99 / 69,99 + intro 7 j (effectif App Store **14/10**)
-- [ ] « push TestFlight » quand tu veux la build **46** (1.1)
+- [ ] « push TestFlight » quand tu veux la build **47** (1.1)
 
 ### Autre
 
@@ -86,7 +86,7 @@ Redirect URLs à garder : forswim + myswym + `myswym://auth/callback`.
 ## Versions iOS (11 oct. 2026)
 
 - [x] Dernière sortie : build **39** / marketing `1.0.1`
-- [x] Piste en cours : marketing **1.1**, build courant **46**
+- [x] Piste en cours : marketing **1.1**, build courant **47**
 - [x] `MIN_SUPPORTED_APP_VERSION` inchangé (`1.0.0`)
 - [ ] Toi Vercel : `LATEST_APP_VERSION=1.1` au déploiement de la 1.1
 
