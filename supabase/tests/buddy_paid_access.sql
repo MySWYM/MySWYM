@@ -1,0 +1,15 @@
+-- Vérification manuelle après `supabase db push` (non exécuté par l'agent).
+-- has_paid_access : anonyme faux, essai faux, expiré faux, actif vrai, annulé non échu vrai.
+--
+-- select public.has_paid_access('<anon_uuid>');          -- false
+-- select public.has_paid_access('<trial_uuid>');         -- false
+-- select public.has_paid_access('<expired_uuid>');       -- false
+-- select public.has_paid_access('<active_uuid>');        -- true
+-- select public.has_paid_access('<canceled_future_uuid>'); -- true
+--
+-- En session authenticated de ces comptes :
+-- select * from public.get_buddy_directory();
+-- select public.request_buddy_connection('<other>', null, true, true);
+-- select * from public.get_connection_phones('<connection_uuid>');
+-- anonyme / essai / expiré : exception premium_required
+-- actif / annulé non échu : pas cette exception

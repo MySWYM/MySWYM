@@ -1,5 +1,5 @@
 import { supabase } from "../supabase.js";
-import { requirePaidBuddies } from "./buddy-access.js";
+import { isPremiumRequiredError, requirePaidBuddies } from "./buddy-access.js";
 import { normalizeWhatsAppE164, formatWhatsAppDisplay, buildWhatsAppLink } from "./buddy-profiles.js";
 
 export const BUDDY_REPORT_THRESHOLD = 3;
@@ -71,7 +71,15 @@ export async function requestBuddyConnection({
     p_share_phone_consent: true,
   });
 
-  if (error) return { data: null, error: { message: rpcErrorMessage(error) } };
+  if (error) {
+    return {
+      data: null,
+      error: {
+        message: rpcErrorMessage(error),
+        code: isPremiumRequiredError(error) ? "premium_required" : undefined,
+      },
+    };
+  }
   try {
     const { notifyBuddyPushEvent, buddyConnectionId } = await import("./native-push.js");
     const connectionId = buddyConnectionId(data);
@@ -199,7 +207,14 @@ export async function fetchConnectionPhones(connectionId) {
   const { data, error } = await supabase.rpc("get_connection_phones", {
     p_connection_id: connectionId,
   });
-  if (error) return { data: null, error };
+  if (error) {
+    return {
+      data: null,
+      error: isPremiumRequiredError(error)
+        ? { message: error.message, code: "premium_required" }
+        : error,
+    };
+  }
   const row = Array.isArray(data) ? data[0] : data;
   return { data: row || null, error: null };
 }

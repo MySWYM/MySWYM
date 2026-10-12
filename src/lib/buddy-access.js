@@ -2,6 +2,12 @@ import { supabase } from "../supabase.js";
 import { getAccessState } from "./access.js";
 
 export const BUDDIES_PAID_ONLY_MSG = "Binômes est réservé aux abonnés.";
+export const PREMIUM_REQUIRED_CODE = "premium_required";
+
+export function isPremiumRequiredError(error) {
+  const blob = `${error?.code || ""} ${error?.message || ""} ${error?.details || ""}`;
+  return blob.includes(PREMIUM_REQUIRED_CODE);
+}
 
 export async function requirePaidBuddies() {
   try {
