@@ -80,8 +80,12 @@ export default function TrialCountdownBanner({
     body = native
       ? (endLabel ? t("trial.enjoyPlain", { date: endLabel }) : t("trial.swimPlain"))
       : (endLabel
-        ? t("trial.enjoyUntil", { date: endLabel, price: priceFrom })
-        : t("trial.swimThen", { price: priceFrom }));
+        ? (knownPrice
+          ? t("trial.enjoyUntil", { date: endLabel, price: knownPrice })
+          : t("trial.enjoyPlain", { date: endLabel }))
+        : (knownPrice
+          ? t("trial.swimThen", { price: knownPrice })
+          : t("trial.swimPlain")));
     cta = t("trial.seeOffers");
   }
 
