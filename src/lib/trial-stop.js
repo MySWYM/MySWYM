@@ -15,6 +15,28 @@ export function canStopTrial(access, isPremium) {
   return isLiveTrial(access, isPremium) && access?.cancelAtPeriodEnd !== true;
 }
 
+/** Boutons du bloc Abonnement. L'abonnement payé passe avant l'essai. */
+export function subscriptionPanelMode(access, isPremium) {
+  if (access?.canManageSubscription) return "manage";
+  const premium = Boolean(isPremium);
+  if (premium && access?.status === ACCESS_STATUS.ACTIVE) return "manage";
+  if (premium && access?.status === ACCESS_STATUS.CANCELED) {
+    const endMs = Date.parse(access?.subscriptionEndsAt || "");
+    if (Number.isFinite(endMs) && endMs > Date.now()) return "manage";
+  }
+  if (canStopTrial(access, isPremium)) return "stop_trial";
+  if (isLiveTrial(access, isPremium)) return "trial_stopped";
+  return "subscribe";
+}
+
+/** Où mène « Arrêter l'essai ». Sans fournisseur, le portail Stripe. */
+export function stopTrialTarget(access, { nativeIos = false } = {}) {
+  if (access?.billingProvider === "apple") {
+    return nativeIos ? "apple_settings" : "apple_toast";
+  }
+  return "stripe_portal";
+}
+
 export function formatTrialChargeDate(iso, language) {
   if (!iso) return null;
   const ms = Date.parse(iso);

@@ -15,7 +15,7 @@ import {
   resolveUpgradeGateContext,
   canAccessSessions,
 } from "./lib/access.js";
-import { isLiveTrialAccess } from "./lib/trial-stop.js";
+import { isLiveTrialAccess, stopTrialTarget } from "./lib/trial-stop.js";
 import { isDecouverteSchoolBlocking } from "./lib/swim-school/progress.js";
 import { ensureAnonymousSession } from "./lib/anonymous-auth.js";
 import {
@@ -11841,11 +11841,12 @@ export default function App() {
   };
 
   const handleStopTrial = () => {
-    if (getAccessState(user).billingProvider === "apple") {
-      if (isNativeIos()) {
-        openAppleManageThenRefresh();
-        return;
-      }
+    const target = stopTrialTarget(getAccessState(user), { nativeIos: isNativeIos() });
+    if (target === "apple_settings") {
+      openAppleManageThenRefresh();
+      return;
+    }
+    if (target === "apple_toast") {
       showToast("Essai App Store : arrête-le sur l’iPhone (Réglages → Apple ID → Abonnements).", 7000);
       return;
     }

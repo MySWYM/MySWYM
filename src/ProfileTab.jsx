@@ -35,7 +35,7 @@ import {
 } from "./lib/ui-sounds.js";
 import { PRICING } from "./lib/pricing.js";
 import { getAccessState } from "./lib/access.js";
-import { canStopTrial, trialSubscriptionHint } from "./lib/trial-stop.js";
+import { subscriptionPanelMode, trialSubscriptionHint } from "./lib/trial-stop.js";
 import { openAppleSubscriptionManagement } from "./lib/native-iap.js";
 import {
   ProfileHelpSettingsRows,
@@ -224,7 +224,7 @@ export default function ProfileTab({
   const applePaid = access.billingProvider === "apple";
   const canManageSubscription = access.canManageSubscription;
   const trialHint = trialSubscriptionHint(ta, access, isPremium, i18n.language);
-  const showStopTrial = canStopTrial(access, isPremium);
+  const panelMode = subscriptionPanelMode(access, isPremium);
   const [msg, setMsg] = useState(null);
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [deleteErr, setDeleteErr] = useState(null);
@@ -1052,7 +1052,7 @@ export default function ProfileTab({
                   </div>
                 </div>
               </div>
-              {canManageSubscription ? (
+              {panelMode === "manage" ? (
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                   {applePaid && isNativeIos() ? (
                     <>
@@ -1102,7 +1102,7 @@ export default function ProfileTab({
                     </>
                   )}
                 </div>
-              ) : showStopTrial ? (
+              ) : panelMode === "stop_trial" ? (
                 <button
                   type="button"
                   onClick={() => onStopTrial?.()}
@@ -1113,7 +1113,7 @@ export default function ProfileTab({
                 >
                   {ta("settings.stopTrial")}
                 </button>
-              ) : trialHint ? null : (
+              ) : panelMode === "subscribe" ? (
                 <button
                   type="button"
                   onClick={() => onUpgrade?.("profile")}
@@ -1122,7 +1122,7 @@ export default function ProfileTab({
                 >
                   {isNativeIos() ? "Devenir Premium" : `S’abonner : dès ${PRICING.monthlyFlex.label}/mois`}
                 </button>
-              )}
+              ) : null}
               {canManageSubscription ? referralSlot : null}
               <button
                 type="button"
