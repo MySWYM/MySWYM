@@ -8,6 +8,8 @@ import {
 } from "lucide-react";
 import { AppTabShell, AppTopBar, AppStatusScreen } from "./app-shell/index.js";
 import { isPremiumRequiredError } from "./lib/buddy-access.js";
+import { getAccessState } from "./lib/access.js";
+import { isLiveTrialAccess } from "./lib/trial-stop.js";
 import { isIosSimpleNav } from "./lib/ios-simple-nav.js";
 import { trackEvent, trackUiError } from "./lib/analytics.js";
 import { humanizeBuddyOtpError } from "./lib/buddy-otp-messages.js";
@@ -309,7 +311,7 @@ function buddyShellPad(extra = 24) {
     : `calc(var(--bottom-nav-h) + var(--safe-bottom) + var(--nav-lift) + ${extra}px)`;
 }
 
-function BuddyLockedScreen({ user, onOpenMenu, onTabChange, onUpgrade }) {
+function BuddyLockedScreen({ user, onOpenMenu, onTabChange, onUpgrade, seeTrial = false }) {
   const { t } = useTranslation("app");
   return (
     <AppTabShell style={{ paddingBottom: buddyShellPad(32) }}>
@@ -343,7 +345,7 @@ function BuddyLockedScreen({ user, onOpenMenu, onTabChange, onUpgrade }) {
               color: "#fff", fontWeight: 700, fontSize: 15,
             }}
           >
-            {t("buddy.seeSubscription")}
+            {seeTrial ? t("buddy.seeTrial") : t("buddy.seeSubscription")}
           </button>
           <button
             type="button"
@@ -1795,6 +1797,7 @@ export default function BuddyMatching({ user, profile, onOpenMenu, onTabChange, 
           onOpenMenu={onOpenMenu}
           onTabChange={onTabChange}
           onUpgrade={onUpgrade}
+          seeTrial={isLiveTrialAccess(getAccessState(user))}
         />
       ) : (
         <BuddyMatchingPaid

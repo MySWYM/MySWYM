@@ -6,6 +6,11 @@ export function isLiveTrial(access, isPremium) {
   return Boolean(isPremium) && access?.status === ACCESS_STATUS.TRIAL;
 }
 
+/** Vrai si le compte est dans un essai vivant (accès premium, pas encore payé). */
+export function isLiveTrialAccess(accessState) {
+  return accessState?.status === ACCESS_STATUS.TRIAL && accessState?.hasPremiumAccess === true;
+}
+
 export function canStopTrial(access, isPremium) {
   return isLiveTrial(access, isPremium) && access?.cancelAtPeriodEnd !== true;
 }

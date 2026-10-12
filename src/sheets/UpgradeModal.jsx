@@ -14,6 +14,7 @@ import { captureReferralFromUrl, resolveReferralCode } from "../lib/referral.js"
 import { nativeBillingBlocked, NATIVE_BILLING_TOAST } from "../lib/native-billing.js";
 import { syncSubscriptionFromStripe } from "../lib/sync-subscription.js";
 import { getAccessState } from "../lib/access.js";
+import { isLiveTrialAccess } from "../lib/trial-stop.js";
 import {
   APPLE_IAP_ANNUAL_ID,
   APPLE_IAP_MONTHLY_ID,
@@ -27,6 +28,7 @@ const MUTED = "#4a5d72";
 
 export default function UpgradeModal({
   onClose,
+  onLiveTrial,
   weeksBlocked,
   softContext = null,
   trialEligible = true,
@@ -48,6 +50,12 @@ export default function UpgradeModal({
     captureReferralFromUrl();
     supabase.auth.getUser().then(({ data }) => setUser(data?.user ?? null));
   }, []);
+
+  const liveTrial = Boolean(user) && isLiveTrialAccess(getAccessState(user));
+  useEffect(() => {
+    if (!liveTrial) return;
+    onLiveTrial?.();
+  }, [liveTrial, onLiveTrial]);
 
   useEffect(() => {
     if (!native) return;
@@ -321,6 +329,8 @@ export default function UpgradeModal({
       </button>
     );
   };
+
+  if (liveTrial) return null;
 
   return (
     <SoftMistSheet

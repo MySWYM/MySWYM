@@ -48,6 +48,7 @@ export default function SoftMistSheet({
   open = true,
   title,
   eyebrow = null,
+  note = null,
   subtitle = null,
   icon = null,
   onClose,
@@ -180,6 +181,7 @@ export default function SoftMistSheet({
             <div style={{ minWidth: 0, flex: 1 }}>
               {eyebrow ? <div className="ms-soft-sheet-eyebrow">{eyebrow}</div> : null}
               {title ? <h3 className="ms-soft-sheet-title">{title}</h3> : null}
+              {note ? <p className="ms-soft-sheet-subtitle">{note}</p> : null}
               {subtitle ? <p className="ms-soft-sheet-subtitle">{subtitle}</p> : null}
             </div>
             {onClose ? (

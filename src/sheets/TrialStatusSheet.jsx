@@ -4,6 +4,7 @@ import SoftMistSheet from "./SoftMistSheet.jsx";
 import { APPLE_IAP_ANNUAL_ID } from "../lib/apple-iap-catalog.js";
 import { PRICING } from "../lib/pricing.js";
 import { intlLocaleFor, normalizeAppLanguage } from "../i18n/languages.js";
+import { formatTrialChargeDate } from "../lib/trial-stop.js";
 
 function formatDay(iso, locale) {
   if (!iso) return null;
@@ -19,6 +20,7 @@ function formatDay(iso, locale) {
 export default function TrialStatusSheet({
   open = true,
   accessState = null,
+  softContext = null,
   onClose,
   onManage,
   onSwitchAnnual,
@@ -35,6 +37,14 @@ export default function TrialStatusSheet({
     ? (annual ? PRICING.annual.label : PRICING.monthlyFlex.label)
     : "";
   const amount = price ? `, ${price}` : "";
+  const buddiesDate = formatTrialChargeDate(endIso, i18n.language);
+  const buddiesNote = softContext === "buddies"
+    ? (canceled
+      ? t("trial.buddiesStopped")
+      : (buddiesDate
+        ? t("trial.buddiesOpenDate", { date: buddiesDate })
+        : t("trial.buddiesOpenPlain")))
+    : null;
 
   const run = async (fn) => {
     if (!fn || busy) return;
@@ -52,6 +62,7 @@ export default function TrialStatusSheet({
       onClose={onClose}
       eyebrow={t("trial.statusEyebrow")}
       title={annual ? t("trial.planAnnual") : t("trial.planMonthly")}
+      note={buddiesNote}
       subtitle={canceled
         ? (date ? t("trial.statusEnd", { date }) : t("trial.canceledLastDayBody"))
         : (date ? t("trial.statusCharge", { date, amount }) : t("trial.chargeLastDayPlain"))}

@@ -21,6 +21,7 @@ import {
 } from "./lib/allure-unlock-tip.js";
 import { isSessionResolved } from "./lib/plan-progress-merge.js";
 import { canAccessSessions, resolveTrialCountdown, resolveUpgradeGateContext } from "./lib/access.js";
+import { isLiveTrialAccess } from "./lib/trial-stop.js";
 import { scrollAppToTop } from "./lib/scroll-app.js";
 import { BADGE_DEFS, computeStats, checkBadges } from "./lib/plan-stats.js";
 import { playUiSound } from "./lib/ui-sounds.js";
@@ -98,6 +99,7 @@ export default function Dashboard({
   const hasSwum = stats.totalSessions > 0;
   /** Essai 7j ou abo : séances ouvertes. Après essai (trial_used) : gel. */
   const hasSessionAccess = canAccessSessions(accessState, isPremium);
+  const liveTrial = isLiveTrialAccess(accessState);
   const trialCountdown = resolveTrialCountdown(accessState, { hasSessionAccess });
   const trialBannerActive = Boolean(trialCountdown);
   const showAllureTip = shouldShowAllureUnlockTip(profile, {
@@ -235,13 +237,13 @@ export default function Dashboard({
           className="ms-buddies-home-hero"
           onClick={() => {
             playUiSound("soft");
-            if (!hasSessionAccess) onUpgrade?.("buddies");
+            if (liveTrial || !hasSessionAccess) onUpgrade?.("buddies");
             else onGoBuddies();
           }}
         >
           <img className="ms-buddies-home-hero-bg" src="/buddies-hero.webp" alt="" decoding="async" />
           <span className="ms-buddies-home-hero-scrim" aria-hidden />
-          {!hasSessionAccess ? (
+          {liveTrial || !hasSessionAccess ? (
             <span className="ms-buddies-home-hero-pill">
               <Lock size={12} aria-hidden />
               {t("home.buddiesLocked")}
@@ -251,8 +253,8 @@ export default function Dashboard({
             <span className="ms-buddies-home-hero-title">{t("home.buddiesCardTitle")}</span>
             <span className="ms-buddies-home-hero-lead">{t("home.buddiesLead")}</span>
             <span className="ms-buddies-home-hero-cta">
-              {!hasSessionAccess ? <Lock size={14} aria-hidden /> : null}
-              {t("home.buddiesOpen")}
+              {liveTrial || !hasSessionAccess ? <Lock size={14} aria-hidden /> : null}
+              {liveTrial ? t("buddy.seeTrial") : t("home.buddiesOpen")}
             </span>
           </span>
         </button>

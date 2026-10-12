@@ -15,6 +15,7 @@ import {
   resolveUpgradeGateContext,
   canAccessSessions,
 } from "./lib/access.js";
+import { isLiveTrialAccess } from "./lib/trial-stop.js";
 import { isDecouverteSchoolBlocking } from "./lib/swim-school/progress.js";
 import { ensureAnonymousSession } from "./lib/anonymous-auth.js";
 import {
@@ -8412,10 +8413,9 @@ export default function App() {
   }, [sessionCelebrate, user?.id, plans.length, authLoading, coldHold, screen, showUpgrade, showPlanReady, showSaveAccount, showWhatsNew, isFrozen, accessState.hasPremiumAccess]);
 
   const openUpgrade = (softContext = null) => {
-    if (
-      accessState.status === "trial"
-      && ["trial_ending", "trial_chip", "trial_chip_urgent", "trial_countdown", "trial_countdown_urgent", "trial_countdown_hot"].includes(softContext)
-    ) {
+    if (isLiveTrialAccess(accessState)) {
+      setUpgradeSoftContext(softContext);
+      setShowUpgrade(false);
       setShowTrialStatus(true);
       return;
     }
@@ -12283,6 +12283,10 @@ export default function App() {
         {showUpgrade && (
           <UpgradeModal
             onClose={closeUpgrade}
+            onLiveTrial={() => {
+              setShowUpgrade(false);
+              setShowTrialStatus(true);
+            }}
             softContext={upgradeSoftContext}
             weeksBlocked={null}
             planWeeks={plan?.totalRealWeeks || plan?.weeks?.length || 0}
@@ -12293,6 +12297,7 @@ export default function App() {
         {showTrialStatus ? (
           <TrialStatusSheet
             accessState={accessState}
+            softContext={upgradeSoftContext}
             onClose={() => setShowTrialStatus(false)}
             onManage={() => { handlePortal(); }}
             onSwitchAnnual={async () => {
