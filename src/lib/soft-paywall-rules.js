@@ -29,29 +29,36 @@ export function writeSoftPaywallDay(userId, dayKey = calendarDayKey()) {
   } catch { /* ignore */ }
 }
 
+export function trialStatusJ2Key(userId, trialEndsAt) {
+  return `myswym_trial_status_j2_${userId || "anon"}_${trialEndsAt || "none"}`;
+}
+
+export function readTrialStatusJ2(userId, trialEndsAt) {
+  try {
+    return localStorage.getItem(trialStatusJ2Key(userId, trialEndsAt)) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function writeTrialStatusJ2(userId, trialEndsAt) {
+  try {
+    localStorage.setItem(trialStatusJ2Key(userId, trialEndsAt), "1");
+  } catch { /* ignore */ }
+}
+
 /**
- * Soft paywall pendant l’essai :
- * - J-7→J-4 (trialDaysLeft >= 4) : seulement après action à valeur
- * - J-3→J-1 (trialDaysLeft <= 3) : aussi à l’ouverture d’app
- * Max 1× / jour calendaire.
- *
- * @param {'app_open'|'value_action'} trigger
+ * Une seule fiche essai automatique, à J-2, si l'essai n'est pas résilié.
+ * iOS et web. Pas de soft paywall J-3..J-1 ni après la première séance.
  */
-export function shouldOfferTrialSoftPaywall({
+export function shouldOpenTrialStatusAtJ2({
   accessState = null,
-  isPremium = false,
-  trigger = "app_open",
-  lastShownDayKey = "",
-  nowMs = Date.now(),
+  alreadyShown = false,
 } = {}) {
-  if (isPremium || !accessState) return false;
+  if (!accessState || alreadyShown) return false;
   if (accessState.status !== ACCESS_STATUS.TRIAL) return false;
-  const days = Number(accessState.trialDaysLeft) || 0;
-  if (days <= 0) return false;
-  const today = calendarDayKey(nowMs);
-  if (lastShownDayKey && lastShownDayKey === today) return false;
-  if (days <= 3) return trigger === "app_open" || trigger === "value_action";
-  return trigger === "value_action";
+  if (accessState.cancelAtPeriodEnd) return false;
+  return Number(accessState.trialDaysLeft) === 2;
 }
 
 /** Après ≥ FREEZE_BG_MS en arrière-plan, on peut re-proposer le sheet freeze. */

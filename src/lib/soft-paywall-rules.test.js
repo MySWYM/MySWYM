@@ -1,66 +1,40 @@
 /**
- * Soft paywall essai + freeze reopen — tests.
+ * Fiche essai J-2 + freeze reopen — tests.
  * Usage: node src/lib/soft-paywall-rules.test.js
  */
 import assert from "node:assert/strict";
 import { ACCESS_STATUS } from "./access.js";
 import {
-  calendarDayKey,
-  shouldOfferTrialSoftPaywall,
+  shouldOpenTrialStatusAtJ2,
   shouldRepromptFreezeOnForeground,
   FREEZE_BG_MS,
 } from "./soft-paywall-rules.js";
 
-const trial = (days) => ({
+const trial = (days, extra = {}) => ({
   status: ACCESS_STATUS.TRIAL,
   trialDaysLeft: days,
   hasPremiumAccess: true,
+  cancelAtPeriodEnd: false,
+  ...extra,
 });
 
+assert.equal(shouldOpenTrialStatusAtJ2({ accessState: trial(3) }), false, "J-3 : pas de fiche auto");
+assert.equal(shouldOpenTrialStatusAtJ2({ accessState: trial(1) }), false, "J-1 : pas de fiche auto");
+assert.equal(shouldOpenTrialStatusAtJ2({ accessState: trial(2) }), true, "J-2 : fiche une fois");
 assert.equal(
-  shouldOfferTrialSoftPaywall({
-    accessState: trial(6),
-    trigger: "app_open",
-    lastShownDayKey: "",
-  }),
+  shouldOpenTrialStatusAtJ2({ accessState: trial(2), alreadyShown: true }),
   false,
-  "J-6: no app_open",
+  "déjà montrée pour cet essai",
 );
 assert.equal(
-  shouldOfferTrialSoftPaywall({
-    accessState: trial(6),
-    trigger: "value_action",
-    lastShownDayKey: "",
-  }),
-  true,
-  "J-6: value_action ok",
-);
-assert.equal(
-  shouldOfferTrialSoftPaywall({
-    accessState: trial(2),
-    trigger: "app_open",
-    lastShownDayKey: "",
-  }),
-  true,
-  "J-2: app_open ok",
-);
-assert.equal(
-  shouldOfferTrialSoftPaywall({
-    accessState: trial(2),
-    trigger: "app_open",
-    lastShownDayKey: calendarDayKey(),
-  }),
+  shouldOpenTrialStatusAtJ2({ accessState: trial(2, { cancelAtPeriodEnd: true }) }),
   false,
-  "same day blocked",
+  "essai résilié : pas de fiche",
 );
 assert.equal(
-  shouldOfferTrialSoftPaywall({
-    accessState: trial(2),
-    isPremium: true,
-    trigger: "app_open",
-  }),
+  shouldOpenTrialStatusAtJ2({ accessState: { status: ACCESS_STATUS.ACTIVE, trialDaysLeft: 2 } }),
   false,
-  "premium skip",
+  "abo payé : pas de fiche",
 );
 
 const now = Date.now();

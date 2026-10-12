@@ -274,6 +274,16 @@ Deno.serve(async (req) => {
   );
 
   const findUserByCustomerId = async (customerId: string) => {
+    const { data: accessRow } = await supabaseAdmin
+      .from("user_access_state")
+      .select("user_id")
+      .eq("stripe_customer_id", customerId)
+      .maybeSingle();
+    if (accessRow?.user_id) {
+      const { data: { user: byAccess } } = await supabaseAdmin.auth.admin.getUserById(accessRow.user_id);
+      if (byAccess) return byAccess as AuthUser;
+    }
+
     const users: AuthUser[] = [];
     let page = 1;
     while (true) {

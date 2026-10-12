@@ -18,6 +18,7 @@
 
 | Date | Contexte | Correction | Statut |
 | --- | --- | --- | --- |
+| 2026-10-12 | Passage Premium, audit du 12 octobre | Essai 7 jours avec carte. Intro Apple stockée en essai. Binômes réservés à l'abonnement payé. Une carte Stripe, un essai. Fiche de fin d'essai à J-2, sans promettre une pause si le prélèvement va démarrer. Détail : `docs/premium-acces.md`. | ✅ active |
 | 2026-10-11 | Versions iOS post-renommage | Build **39** / `1.0.1` = dernière sortie. Piste : marketing **1.1**, build courant **41**. `MIN_SUPPORTED` inchangé. | ✅ active |
 | 2026-10-11 | Correctifs post-renommage ForSwim | P0 : paywall `showTrialOffer`=`trialEligible` ; `/api/` hors 308 myswym ; Edge Functions CORS forswim ; garde `no-undef`. P1 : liens Arthur forswim+myswym ; sitemap statique retiré ; EMAIL_* locaux ForSwim. | ✅ active |
 | 2026-10-11 | Logos ForSwim (S ondulé) | Kit runtime remplacé par le S ondulé (principal / blanc / symbole / monochrome). Icône app et AppIcon : fond `#006BFD` + S blanc ~59 %, RGB sans alpha. Chemins `logo-myswym-*` conservés. Constantes `LOGO_*` dans `src/lib/brand.js`. Archive kit F : `assets/legacy-myswym/`. Favicon cache `?v=5`. | ✅ active |
