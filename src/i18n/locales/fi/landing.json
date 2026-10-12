@@ -428,7 +428,7 @@
     "r7Trial": "Täysi",
     "r7Premium": "Täysi",
     "faqQ1": "Mikä suunnitelma mun kannattaa valita?",
-    "faqA1": "8,99 €/kk, jos haluat voida lopettaa milloin tahansa. 59,99 €, jos mieluummin maksat vuoden kerralla.",
+    "faqA1": "8,99€/kk jos haluat voivasi lopettaa milloin tahansa (noin 1 € per treeni 2×/viikko). 59,99€/vuosi jos mieluummin yksi maksu: alle 0,60 € per treeni, edullisempi kuin kahvi.",
     "faqQ2": "Voinko aloittaa ilmaiseksi?",
     "faqA2": "Kyllä. Luo tili, tallenna kortti ja saat 7 päivää Premiumia. Irtisano ennen loppua välttääksesi veloituksen.",
     "faqQ3": "Säilyykö mun data?",
@@ -438,7 +438,9 @@
     "lastTitleA": "Luo sun tili.",
     "lastTitleB": "Pidä Premium, jotta pääset pidemmälle.",
     "lastLead": "Valitse sitten 8,99 €/kk tai 59,99 € yhdellä maksulla.",
-    "chooseAnnual": "Maksa 59,99 €"
+    "chooseAnnual": "Maksa 59,99 €",
+    "flexHook": "Alkaen 2 treeniä / viikko: noin 1 € per treeni. Vuosi alle 0,60 €.",
+    "annualHook": "Alkaen 2 treeniä / viikko: alle 0,60 € per treeni, edullisempi kuin kahvi."
   },
   "contactPage": {
     "metaTitle": "Yhteys | ForSwim",

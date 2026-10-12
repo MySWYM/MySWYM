@@ -428,7 +428,7 @@
     "r7Trial": "Voll",
     "r7Premium": "Voll",
     "faqQ1": "Welchen Plan soll ich wählen?",
-    "faqA1": "8,99 €/Monat, wenn du jederzeit stoppen willst. 59,99 €, wenn du das Jahr lieber auf einmal zahlst.",
+    "faqA1": "8,99€/Monat, wenn du jederzeit stoppen willst (etwa 1 € pro Einheit bei 2×/Woche). 59,99€/Jahr bei Einmalzahlung: unter 0,60 € pro Einheit, günstiger als ein Kaffee.",
     "faqQ2": "Kann ich kostenlos starten?",
     "faqA2": "Ja. Du erstellst ein Konto, hinterlegst deine Karte und bekommst 7 Tage Premium. Kündige vorher, um die Abbuchung zu vermeiden.",
     "faqQ3": "Bleiben meine Daten erhalten?",
@@ -438,7 +438,9 @@
     "lastTitleA": "Erstelle dein Konto.",
     "lastTitleB": "Behalte Premium, um weiterzukommen.",
     "lastLead": "Dann wählst du 8,99 €/Monat oder 59,99 € in einer Zahlung.",
-    "chooseAnnual": "59,99 € zahlen"
+    "chooseAnnual": "59,99 € zahlen",
+    "flexHook": "Ab 2 Einheiten / Woche: etwa 1 € pro Einheit. Jährlich unter 0,60 €.",
+    "annualHook": "Ab 2 Einheiten / Woche: unter 0,60 € pro Einheit, günstiger als ein Kaffee."
   },
   "contactPage": {
     "metaTitle": "Kontakt | ForSwim",

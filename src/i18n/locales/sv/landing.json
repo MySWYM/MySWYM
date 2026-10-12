@@ -428,7 +428,7 @@
     "r7Trial": "Komplett",
     "r7Premium": "Komplett",
     "faqQ1": "Vilken plan ska jag välja?",
-    "faqA1": "8,99 €/mån om du vill kunna stoppa när som helst. 59,99 € om du hellre betalar året på en gång.",
+    "faqA1": "8,99€/mån om du vill kunna sluta när som helst (cirka 1 € per pass vid 2×/vecka). 59,99€/år om du föredrar en betalning: under 0,60 € per pass, billigare än en kaffe.",
     "faqQ2": "Kan jag börja gratis?",
     "faqA2": "Ja. Skapa ett konto, registrera kortet och få 7 dagar Premium. Avsluta före slutet för att undvika debitering.",
     "faqQ3": "Sparas mina uppgifter?",
@@ -438,7 +438,9 @@
     "lastTitleA": "Skapa ditt konto.",
     "lastTitleB": "Behåll Premium för att gå vidare.",
     "lastLead": "Välj sedan 8,99 €/mån eller 59,99 € i en betalning.",
-    "chooseAnnual": "Betala 59,99 €"
+    "chooseAnnual": "Betala 59,99 €",
+    "flexHook": "Från 2 pass / vecka: cirka 1 € per pass. Årsvis under 0,60 €.",
+    "annualHook": "Från 2 pass / vecka: under 0,60 € per pass, billigare än en kaffe."
   },
   "contactPage": {
     "metaTitle": "Kontakt | ForSwim",

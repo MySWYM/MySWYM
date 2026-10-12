@@ -428,7 +428,7 @@
     "r7Trial": "Fuld",
     "r7Premium": "Fuld",
     "faqQ1": "Hvilken plan skal jeg vælge?",
-    "faqA1": "8,99 €/md. hvis du vil kunne stoppe når som helst. 59,99 € hvis du hellere betaler året på én gang.",
+    "faqA1": "8,99€/md hvis du vil kunne stoppe når som helst (ca. 1 € pr. pas ved 2×/uge). 59,99€/år hvis du foretrækker én betaling: under 0,60 € pr. pas, billigere end en kaffe.",
     "faqQ2": "Kan jeg starte gratis?",
     "faqA2": "Ja. Opret en konto, registrer kortet, og få 7 dages Premium. Opsig før slutningen for at undgå opkrævning.",
     "faqQ3": "Bliver mine data gemt?",
@@ -438,7 +438,9 @@
     "lastTitleA": "Opret din konto.",
     "lastTitleB": "Behold Premium for at komme videre.",
     "lastLead": "Vælg derefter 8,99 €/md. eller 59,99 € i én betaling.",
-    "chooseAnnual": "Betal 59,99 €"
+    "chooseAnnual": "Betal 59,99 €",
+    "flexHook": "Fra 2 pas / uge: ca. 1 € pr. pas. Årligt under 0,60 €.",
+    "annualHook": "Fra 2 pas / uge: under 0,60 € pr. pas, billigere end en kaffe."
   },
   "contactPage": {
     "metaTitle": "Kontakt | ForSwim",

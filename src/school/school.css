@@ -1,0 +1,922 @@
+.ms-school {
+  min-height: 100dvh;
+  padding-bottom: calc(var(--safe-bottom) + 28px);
+  background: linear-gradient(180deg, #d7ebf8 0%, #f7fbff 42%, #fff 100%);
+}
+
+.ms-school-body {
+  padding-top: 8px;
+}
+
+.ms-school-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.ms-school-title {
+  margin: 0;
+}
+
+.ms-school-kicker {
+  color: var(--g-blue, #006bfd);
+  margin: 0 0 4px;
+}
+
+.ms-school-lead {
+  color: #4a5d72;
+  margin: 0 0 16px;
+}
+
+.ms-school-count {
+  margin: 0;
+  font-weight: 600;
+  font-size: 14px;
+  color: #4a5d72;
+  white-space: nowrap;
+}
+
+.ms-school-ready {
+  padding: 14px 16px;
+  margin-bottom: 14px;
+  font-size: 15px;
+  line-height: 1.4;
+  color: #1a3a4a;
+}
+
+.ms-school-nav {
+  display: grid;
+  grid-template-columns: 44px 1fr 44px;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.ms-school-nav-arrow {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.8);
+  color: #0b1f33;
+  box-shadow: 0 1px 8px rgba(0, 107, 253, 0.08);
+}
+
+.ms-school-nav-arrow:disabled {
+  opacity: 0.35;
+}
+
+.ms-school-nav-center {
+  text-align: center;
+  min-width: 0;
+}
+
+.ms-school-nav-chapter {
+  margin: 0 0 2px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #006bfd;
+}
+
+.ms-school-nav-step {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: #0b1f33;
+}
+
+.ms-school-nav-of {
+  font-weight: 500;
+  color: #6b7c8f;
+}
+
+.ms-school-map-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.ms-school-map-link {
+  display: block;
+  margin: 0 auto 14px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #006bfd;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.ms-school-dot {
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: 0 1px 8px rgba(0, 107, 253, 0.08);
+  font-size: 13px;
+  font-weight: 600;
+  color: #4a5d72;
+}
+
+.ms-school-dot.is-done {
+  background: #d8f3ea;
+  color: #147a56;
+}
+
+.ms-school-dot.is-focus {
+  outline: 2px solid #006bfd;
+  color: #0b1f33;
+}
+
+.ms-school-dot.is-locked {
+  opacity: 0.45;
+}
+
+.ms-school-card {
+  padding: 16px 16px 20px;
+}
+
+.ms-school-card-title {
+  margin: 0 0 12px;
+}
+
+.ms-school-rich {
+  display: inline;
+}
+
+.ms-school-term {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin: 0 1px;
+  padding: 2px 7px;
+  border: 0;
+  border-radius: 8px;
+  background: rgba(0, 107, 253, 0.1);
+  color: #006bfd;
+  font: inherit;
+  font-size: 0.92em;
+  font-weight: 700;
+  line-height: 1.3;
+  vertical-align: baseline;
+  cursor: pointer;
+}
+
+.ms-school-motion {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  margin: 0 0 12px;
+  padding: 0;
+  border-radius: 16px;
+  background: #f4f9fd;
+  overflow: hidden;
+}
+
+.ms-school-motion-stage {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 2 / 1;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #f4f9fd;
+}
+
+.ms-school-motion-lottie {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.ms-school-motion-lottie svg {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.ms-school-motion-fallback {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.ms-school-motion-fallback.is-failed {
+  background:
+    radial-gradient(ellipse 38% 24% at 55% 48%, rgba(31, 94, 146, 0.45), transparent 68%),
+    linear-gradient(180deg, #eef6fc 0%, #d9ecf8 100%);
+}
+
+.ms-school-motion-lottie.is-failed {
+  opacity: 0;
+}
+
+.ms-school-motion-caption {
+  margin: 8px 0 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: #4a5d72;
+  text-align: center;
+}
+
+.ms-school-h {
+  margin: 14px 0 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #006bfd;
+}
+
+.ms-school-dosage {
+  margin: 6px 0 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #4a5d72;
+}
+
+.ms-school-gear {
+  margin-top: 14px;
+}
+
+.ms-school-gear .ms-school-h {
+  margin-top: 0;
+}
+
+.ms-school-gear-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.ms-school-gear-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 6px 12px 6px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 1px 8px rgba(0, 107, 253, 0.08);
+}
+
+.ms-school-gear-ico {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: rgba(0, 107, 253, 0.1);
+  color: #006bfd;
+}
+
+.ms-school-gear-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #0b1f33;
+}
+
+.ms-school-gear-opt {
+  font-size: 11px;
+  font-weight: 600;
+  color: #6b7c8f;
+}
+
+.ms-school-gear-hint {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: #6b7c8f;
+}
+
+.ms-school-actions {
+  position: sticky;
+  bottom: calc(var(--safe-bottom) + 8px);
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+  margin-top: 18px;
+  padding-top: 4px;
+}
+
+.ms-school-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 56px;
+  padding: 8px 6px;
+  border: 0;
+  border-radius: 14px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.ms-school-btn-label {
+  line-height: 1.2;
+}
+
+.ms-school-btn-sub {
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1.2;
+  opacity: 0.75;
+}
+
+.ms-school-btn.is-ghost {
+  background: rgba(255, 255, 255, 0.92);
+  color: #0b1f33;
+  box-shadow: 0 4px 16px rgba(15, 27, 45, 0.06);
+}
+
+.ms-school-btn.is-yes {
+  background: #006bfd;
+  color: #fff;
+  box-shadow: 0 6px 18px rgba(0, 107, 253, 0.28);
+}
+
+.ms-school-done-note {
+  margin: 16px 0 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #147a56;
+}
+
+.ms-school-sheet-map {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ms-school-sheet-chapter-title {
+  margin: 0 0 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #0b1f33;
+}
+
+.ms-school-home-module {
+  margin: 0 0 16px;
+}
+
+.ms-school-home-module-title {
+  margin: 0 0 10px;
+  color: var(--ms-ink, #0b1f33);
+}
+
+.ms-school-home-rail {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  margin: 0 -4px;
+  padding: 0 4px 2px;
+}
+
+.ms-school-home-rail::-webkit-scrollbar {
+  display: none;
+}
+
+.ms-school-home-hero {
+  position: relative;
+  display: block;
+  flex: 0 0 min(88%, 320px);
+  width: min(88%, 320px);
+  min-height: 168px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--ms-card-radius, 28px);
+  scroll-snap-align: start;
+  overflow: hidden;
+  text-align: left;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -webkit-tap-highlight-color: transparent;
+  background: #7eb8f5;
+  box-shadow: 0 8px 28px rgba(0, 82, 180, 0.18);
+}
+
+.ms-school-home-hero.is-locked {
+  opacity: 0.92;
+}
+
+.ms-school-home-hero.is-locked .ms-school-home-hero-motion {
+  filter: grayscale(0.35);
+  opacity: 0.85;
+}
+
+.ms-school-home-rail:has(.ms-school-home-hero:only-child) .ms-school-home-hero {
+  flex: 0 0 100%;
+  width: 100%;
+  max-width: none;
+}
+
+.ms-school-home-hero-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.ms-school-home-hero-scrim {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    105deg,
+    rgba(15, 27, 45, 0.72) 0%,
+    rgba(15, 27, 45, 0.42) 48%,
+    rgba(15, 27, 45, 0.12) 100%
+  );
+}
+
+.ms-school-home-hero-motion {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  z-index: 1;
+  width: min(46%, 168px);
+  height: min(78%, 140px);
+  pointer-events: none;
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.18));
+}
+
+.ms-school-home-hero-motion .ms-school-motion {
+  margin: 0;
+  height: 100%;
+  background: transparent;
+}
+
+.ms-school-home-hero-motion .ms-school-motion-stage {
+  height: 100%;
+  aspect-ratio: auto;
+  border-radius: 0;
+  overflow: visible;
+  background: transparent;
+}
+
+.ms-school-home-hero-motion .ms-school-motion-lottie {
+  width: 100%;
+  height: 100%;
+}
+
+.ms-school-home-hero-pill {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #0f1b2d;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+  pointer-events: none;
+}
+
+.ms-school-home-hero-copy {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  max-width: 64%;
+  min-height: 168px;
+  padding: 48px 16px 18px;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+.ms-school-home-hero-title {
+  color: #fff;
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.ms-school-home-hero-lead {
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 0.875rem;
+  line-height: 1.4;
+  font-weight: 400;
+}
+
+.ms-school-home-hero-cta {
+  margin-top: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 16px;
+  border-radius: 999px;
+  background: #006bfd;
+  color: #fff;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+/* Lock / bientôt : pastille claire, le cadenas reste dans la pill du haut. */
+.ms-school-home-hero-cta.is-soft {
+  background: rgba(255, 255, 255, 0.92);
+  color: #0f1b2d;
+  box-shadow: 0 1px 2px rgba(15, 27, 45, 0.08);
+}
+
+.ms-buddies-home-module {
+  margin: 16px 0 0;
+}
+
+.ms-buddies-home-lock-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* Liste parcours */
+.ms-school-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.ms-school-list-chapter-title {
+  margin: 0 0 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #0b1f33;
+}
+
+.ms-school-list-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ms-school-list-row {
+  display: grid;
+  grid-template-columns: 40px 1fr 28px;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 64px;
+  padding: 12px 12px 12px 10px;
+  border: 0;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 2px 14px rgba(0, 82, 180, 0.08);
+  text-align: left;
+  cursor: pointer;
+}
+
+.ms-school-list-row.is-current {
+  outline: 2px solid #006bfd;
+}
+
+.ms-school-list-row.is-done .ms-school-list-num {
+  background: #d8f3ea;
+  color: #147a56;
+}
+
+.ms-school-list-row.is-locked {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.ms-school-list-num {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: rgba(0, 107, 253, 0.1);
+  color: #006bfd;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.ms-school-list-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ms-school-list-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #0b1f33;
+}
+
+.ms-school-list-meta {
+  font-size: 12px;
+  font-weight: 500;
+  color: #6b7c8f;
+}
+
+.ms-school-list-trail {
+  display: grid;
+  place-items: center;
+  color: #6b7c8f;
+}
+
+/* Page exercice */
+.ms-school-ex {
+  padding-bottom: calc(var(--safe-bottom) + 108px);
+}
+
+.ms-school-glass-block {
+  position: relative;
+  margin-bottom: 12px;
+  padding: 12px;
+  border-radius: var(--ms-card-radius, 28px);
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(var(--ms-glass-blur, 24px)) saturate(var(--ms-glass-saturate, 1.25));
+  -webkit-backdrop-filter: blur(var(--ms-glass-blur, 24px)) saturate(var(--ms-glass-saturate, 1.25));
+  border: 1px solid rgba(255, 255, 255, 0.88);
+  box-shadow:
+    0 12px 36px -14px rgba(50, 110, 180, 0.2),
+    0 2px 8px rgba(50, 110, 180, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.75);
+}
+
+.ms-school-glass-inner {
+  background: rgba(255, 255, 255, 0.62);
+  backdrop-filter: blur(16px) saturate(1.2);
+  -webkit-backdrop-filter: blur(16px) saturate(1.2);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 6px 20px -10px rgba(50, 110, 180, 0.16);
+  border-radius: 20px;
+}
+
+.ms-school-ex-nav {
+  display: grid;
+  grid-template-columns: 44px 1fr 44px;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+}
+
+.ms-school-ex .ms-school-nav-arrow {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(12px) saturate(1.2);
+  -webkit-backdrop-filter: blur(12px) saturate(1.2);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 2px 10px rgba(0, 107, 253, 0.1);
+}
+
+.ms-school-ex-hero {
+  padding: 10px 12px 14px;
+}
+
+.ms-school-ex-hero .ms-school-motion {
+  margin: 0 0 10px;
+  background: rgba(244, 249, 253, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+
+.ms-school-ex-title {
+  margin: 4px 0 6px;
+  text-align: center;
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #0b1f33;
+}
+
+.ms-school-ex-dosage {
+  margin: 0 0 10px;
+  text-align: center;
+}
+
+.ms-school-ex-gear-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 0;
+}
+
+.ms-school-ex .ms-school-gear-chip {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  box-shadow: 0 2px 10px rgba(0, 107, 253, 0.08);
+}
+
+.ms-school-gear-opt-lead {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7c8f;
+}
+
+.ms-school-gear-img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.ms-school-ex-details {
+  padding: 12px 8px 14px;
+}
+
+.ms-school-ex-locked {
+  margin: 0;
+  padding: 16px;
+}
+
+.ms-school-carousel {
+  margin-top: 0;
+}
+
+.ms-school-carousel-viewport {
+  overflow: hidden;
+}
+
+.ms-school-carousel-track {
+  display: flex;
+  touch-action: pan-y pinch-zoom;
+}
+
+.ms-school-carousel-slide {
+  flex: 0 0 88%;
+  min-width: 0;
+  margin-right: 12px;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.ms-school-carousel-h {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #6b7c8f;
+}
+
+.ms-school-carousel-dots {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.ms-school-carousel-dot {
+  width: 7px;
+  height: 7px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(15, 27, 45, 0.18);
+}
+
+.ms-school-carousel-dot.is-active {
+  background: #006bfd;
+  width: 18px;
+}
+
+.ms-school-validate-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 40;
+  display: flex;
+  justify-content: center;
+  padding: 12px 20px calc(var(--safe-bottom) + 12px);
+  background: linear-gradient(
+    180deg,
+    rgba(247, 251, 255, 0) 0%,
+    rgba(247, 251, 255, 0.55) 22%,
+    rgba(247, 251, 255, 0.92) 55%,
+    #f7fbff 100%
+  );
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.ms-school-validate-btn {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  background: none;
+  color: #0b1f33;
+  cursor: pointer;
+}
+
+.ms-school-validate-ico {
+  display: grid;
+  place-items: center;
+  width: 68px;
+  height: 68px;
+  border: 2px solid rgba(0, 107, 253, 0.55);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(16px) saturate(1.3);
+  -webkit-backdrop-filter: blur(16px) saturate(1.3);
+  color: #006bfd;
+  box-shadow:
+    0 8px 24px rgba(0, 107, 253, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+
+.ms-school-validate-label {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: #006bfd;
+}
+
+.ms-school-validated-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: min(100%, 420px);
+  min-height: 54px;
+  padding: 0 20px;
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(216, 243, 234, 0.95) 0%, rgba(190, 232, 214, 0.92) 100%);
+  backdrop-filter: blur(16px) saturate(1.2);
+  -webkit-backdrop-filter: blur(16px) saturate(1.2);
+  color: #147a56;
+  font-size: 16px;
+  font-weight: 700;
+  box-shadow:
+    0 10px 28px -12px rgba(20, 122, 86, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+}
+
+.ms-school-validated-ico {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.75);
+  color: #147a56;
+}
+
+.ms-school-congrats-ico {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 999px;
+  background: #d8f3ea;
+  color: #147a56;
+}
+
+.ms-school-congrats-cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 48px;
+  margin-top: 4px;
+  border: 0;
+  border-radius: 14px;
+  background: #006bfd;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}

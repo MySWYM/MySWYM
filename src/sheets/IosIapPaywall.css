@@ -104,6 +104,14 @@
   font-weight: 600;
 }
 
+.ms-iap-hook {
+  margin: 6px 0 0;
+  color: #4A5D72;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
 .ms-iap-table {
   margin: 16px 0 12px;
   overflow: hidden;

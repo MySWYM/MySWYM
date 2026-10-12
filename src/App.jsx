@@ -13,7 +13,9 @@ import {
   shouldAwaitCardlessTrial,
   hasUnlockedPremiumAccess,
   resolveUpgradeGateContext,
+  canAccessSessions,
 } from "./lib/access.js";
+import { isDecouverteSchoolBlocking } from "./lib/swim-school/progress.js";
 import { ensureAnonymousSession } from "./lib/anonymous-auth.js";
 import {
   capturePasswordRecoveryIntent,
@@ -293,6 +295,7 @@ const PoolMode = lazy(() => import("./workout/PoolMode.jsx"));
 const SettingsDrawer = lazy(() => import("./SettingsDrawer.jsx"));
 const SupportBubble = lazy(() => import("./SupportBubble.jsx"));
 const BuddyMatching = lazy(() => import("./BuddyMatching.jsx"));
+const SchoolScreen = lazy(() => import("./school/SchoolScreen.jsx"));
 
 /** Étape K, faits sportifs Supabase (entoure le moteur, ne le remplace pas). */
 const sportsPersistence = createSportsPersistence(supabase);
@@ -3621,7 +3624,6 @@ const ShareModal = ({ session, goalLabel, badge = null, onClose }) => {
               </div>
             )}
           </div>
-          <div style={{ fontSize: 11, fontWeight: 700, color: tm.color, letterSpacing: 1.5, marginBottom: 6, textTransform: "uppercase" }}>{humanSessionType(session.type)}</div>
           <div style={{ fontFamily: FONT_DISPLAY, fontSize: 22, fontWeight: 700, letterSpacing: "-0.02em", color: G.white, marginBottom: 16 }}>{session.title}</div>
           <div style={{ display: "flex", gap: 10, marginBottom: invite?.code ? 14 : 0 }}>
             {[{ v: session.distance, l: appT("share.distance") }, { v: formatDuration(session.duration), l: appT("share.duration") }, { v: session.intensity, l: appT("share.intensity") }].map((s, i) => (
@@ -4510,7 +4512,6 @@ const SessionCard = ({
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
             <div style={{ flex: 1, minWidth: 0, paddingRight: locked ? 28 : 0 }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: resolved || locked ? G.greyMid : tm.color, letterSpacing: "0.07em", textTransform: "uppercase", marginBottom: 3 }}>{humanSessionType(session.type)}</div>
               <div style={{ fontFamily: FONT_DISPLAY, fontSize: 20, fontWeight: 700, color: resolved || locked ? G.grey : G.ink, lineHeight: 1.2, letterSpacing: "-0.01em" }}>{titleShown}</div>
               {skipped && (
                 <span style={{ display: "inline-block", marginTop: 5, fontSize: 10, fontWeight: 700, color: skipped === "missed" ? G.gold : G.grey, background: skipped === "missed" ? G.goldLight : G.greyXLight, padding: "2px 8px", borderRadius: 100 }}>
@@ -7927,6 +7928,7 @@ export default function App() {
     return () => window.clearTimeout(t);
   }, [coldHold, authLoading]);
   const [activeTab, setActiveTab] = useState("home");
+  const [schoolCourseId, setSchoolCourseId] = useState("crawl");
   const lastDockTabRef = useRef("home");
   const [iosHideDock, setIosHideDock] = useState(false);
   const [supportPageOpen, setSupportPageOpen] = useState(false);
@@ -7940,12 +7942,17 @@ export default function App() {
   /** Navigation onglets : remonte en haut (changement d’onglet + re-tap). */
   const goTab = (tab) => {
     const next = isIosSimpleNav() ? iosResolveTab(tab) : tab;
+    const schoolBlocksPlan = next === "plan"
+      && isDecouverteSchoolBlocking(activeProfile)
+      && canAccessSessions(accessState, isPremium || accessState.hasPremiumAccess);
+    const resolved = schoolBlocksPlan ? "school" : next;
+    if (schoolBlocksPlan) setSchoolCourseId("crawl");
     scrollAppToTop();
-    if (next === activeTab) return;
+    if (resolved === activeTab) return;
     if (activeTab === "home" || activeTab === "plan" || activeTab === "analyse" || activeTab === "history" || (isIosSimpleNav() && activeTab === "profile")) {
       lastDockTabRef.current = activeTab === "plan" ? "home" : activeTab;
     }
-    setActiveTab(next);
+    setActiveTab(resolved);
   };
   const [step, setStep] = useState(1);
   // Onboarding draft profile (reset à chaque nouveau plan)
@@ -11355,6 +11362,20 @@ export default function App() {
     }
   };
 
+  const handleSchoolProgress = (nextProgress) => {
+    const nextPatch = { schoolProgress: nextProgress };
+    const nextProfile = { ...(activePlanEntry?.profile || activeProfile || {}), ...nextPatch };
+    if (activePlanId) {
+      setPlans((prev) => prev.map((e) => {
+        if (e.id !== activePlanId) return e;
+        return { ...e, profile: { ...e.profile, ...nextPatch } };
+      }));
+    }
+    if (user?.id) {
+      sportsPersistence.upsertSportProfile(user.id, nextProfile).then(() => {});
+    }
+  };
+
   /** Édition profil nageur depuis ProfileTab, applique aux prochaines si pool / nage / etc. */
   const handleSwimmerProfileChange = (partial) => {
     if (!partial || typeof partial !== "object") return;
@@ -11902,7 +11923,7 @@ export default function App() {
           </div>
         )}
         <div className="myswym-app-main">
-        {activeTab === "home"    && <Dashboard   plan={plan} profile={activeProfile} onTabChange={goTab} onShare={openShare} onSignOut={handleSignOut} user={user} isPremium={isPremium || accessState.hasPremiumAccess} onRegenerateLoop={handleRegenerateLoopSession} onUpgrade={(ctx) => openUpgrade(ctx || "trial_required")} onReset={handleReset} onEditFeedback={handleEditSessionFeedback} onPaceUpdate={handlePaceUpdate} onValidateSession={handleComplete} onOpenMenu={() => setSettingsOpen(true)} activePlanId={activePlanId} accessState={accessState} onGoBuddies={() => goTab("buddies")} />}
+        {activeTab === "home"    && <Dashboard   plan={plan} profile={activeProfile} onTabChange={goTab} onShare={openShare} onSignOut={handleSignOut} user={user} isPremium={isPremium || accessState.hasPremiumAccess} onRegenerateLoop={handleRegenerateLoopSession} onUpgrade={(ctx) => openUpgrade(ctx || "trial_required")} onReset={handleReset} onEditFeedback={handleEditSessionFeedback} onPaceUpdate={handlePaceUpdate} onValidateSession={handleComplete} onOpenMenu={() => setSettingsOpen(true)} activePlanId={activePlanId} accessState={accessState} onGoBuddies={() => goTab("buddies")} onOpenSchool={(courseId) => { setSchoolCourseId(courseId || "crawl"); goTab("school"); }} />}
         {activeTab === "plan"    && <PlanTab     plan={plan} profile={activeProfile} isPremium={isPremium || accessState.hasPremiumAccess} onComplete={handleComplete} onAdvanceLoop={handleAdvanceLoopSession} onShare={openShare} onEditFeedback={handleEditSessionFeedback} onReset={handleReset} onUpgrade={(ctx) => openUpgrade(ctx || "trial_required")} startDate={activePlanEntry?.startDate} plans={plans} activePlanId={activePlanId} onSwitchPlan={handleSwitchPlan} onAddPlan={handleAddPlan} onDeletePlan={handleDeletePlan} onRegenerateLoop={handleRegenerateLoopSession} onUpdateProgram={handleUpdateProgram} user={user} onOpenMenu={() => setSettingsOpen(true)} onTabChange={goTab} addingPlan={addingPlan} onCancelAddPlan={handleCancelAddPlan} onboardingProps={{
           profile,
           step,
@@ -11971,6 +11992,20 @@ export default function App() {
             onChangeGoal={handleChangeGoal}
           />
         )}
+        {activeTab === "school" && (
+          <Suspense fallback={null}>
+            <SchoolScreen
+              profile={activeProfile}
+              user={user}
+              courseId={schoolCourseId}
+              onBack={() => goTab(lastDockTabRef.current || "home")}
+              onOpenMenu={() => setSettingsOpen(true)}
+              onProgress={handleSchoolProgress}
+              hasSessionAccess={canAccessSessions(accessState, isPremium || accessState.hasPremiumAccess)}
+              onUpgrade={(ctx) => openUpgrade(ctx || "trial_required")}
+            />
+          </Suspense>
+        )}
         <Suspense fallback={null}>
         {activeTab === "buddies" && <BuddyMatching user={user} profile={activeProfile} onOpenMenu={() => setSettingsOpen(true)} onTabChange={goTab} canUseBuddies={accessState.canUseBuddies} onUpgrade={(ctx) => openUpgrade(ctx || "buddies")} />}
         </Suspense>
@@ -11978,8 +12013,8 @@ export default function App() {
         {(() => {
           const iosNav = isIosSimpleNav();
           const dockVisible = iosNav
-            ? activeTab !== "plan" && activeTab !== "buddies" && !iosHideDock && !supportPageOpen
-            : activeTab !== "profile";
+            ? activeTab !== "plan" && activeTab !== "buddies" && activeTab !== "school" && !iosHideDock && !supportPageOpen
+            : activeTab !== "profile" && activeTab !== "school";
           return (
             <Suspense fallback={null}>
               {iosNav ? (
@@ -12000,7 +12035,7 @@ export default function App() {
             </Suspense>
           );
         })()}
-        {((isIosSimpleNav() && activeTab !== "plan" && activeTab !== "buddies" && !iosHideDock && !supportPageOpen) || (!isIosSimpleNav() && activeTab !== "profile")) && (
+        {((isIosSimpleNav() && activeTab !== "plan" && activeTab !== "buddies" && activeTab !== "school" && !iosHideDock && !supportPageOpen) || (!isIosSimpleNav() && activeTab !== "profile" && activeTab !== "school")) && (
           <BottomNav
             active={isIosSimpleNav() ? iosDockActive(activeTab) : (activeTab === "buddies" ? "analyse" : activeTab)}
             onChange={goTab}
@@ -12021,6 +12056,7 @@ export default function App() {
           onGoHistory={() => goTab("history")}
           onGoProfile={() => goTab("profile")}
           onGoBuddies={() => goTab("buddies")}
+          onGoSchool={() => { setSchoolCourseId("crawl"); goTab("school"); }}
           showBuddies={hasSwumNav}
           lockBuddies={!accessState.canUseBuddies}
           showModifyPlan={!!plan || plans.length > 0}

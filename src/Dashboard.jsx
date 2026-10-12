@@ -28,8 +28,17 @@ import { getTabUi } from "./tab-ui-registry.js";
 import { isIosSimpleNav } from "./lib/ios-simple-nav.js";
 import { currentWeekSessionCards, sessionTypeAccent } from "./lib/home-week-sessions.js";
 import SessionExportBar from "./ui/SessionExportBar.jsx";
+import "./school/school.css";
 import { PRICING } from "./lib/pricing.js";
 import { isNativeIos } from "./lib/native-platform.js";
+import { isDecouverteLevelId } from "./lib/onboarding-level-gate.js";
+import { visibleSchoolCourses } from "./lib/swim-school/catalog.js";
+import {
+  isDecouverteSchoolBlocking,
+  isSchoolCourseUnlocked,
+  trackDoneCount,
+} from "./lib/swim-school/progress.js";
+import SchoolMotion from "./school/SchoolMotion.jsx";
 
 export function HomeBadgesSection({ plan }) {
   const { t } = useTranslation("app");
@@ -72,6 +81,7 @@ export default function Dashboard({
   activePlanId = null,
   accessState = null,
   onGoBuddies = null,
+  onOpenSchool = null,
 }) {
   const { t } = useTranslation("app");
   const {
@@ -124,14 +134,87 @@ export default function Dashboard({
         ? `${hello}, ${firstName}`
         : t("home.ready");
 
+  const schoolBlocks = isDecouverteSchoolBlocking(profile) && hasSessionAccess;
+  const schoolAboveSessions = isDecouverteLevelId(profile?.level);
+  const schoolCourses = visibleSchoolCourses(profile);
   const planFinished = !isLoop && stats.totalSessions >= stats.planTotal && stats.planTotal > 0;
   const coachWeek = plan?.weeks?.length
     ? Math.max(0, plan.weeks.findIndex((w) => !(w.sessions || []).every(isSessionResolved)))
     : 0;
 
+  const schoolHomeHero =
+    typeof onOpenSchool === "function" ? (
+      <section className="ms-school-home-module" aria-label={t("school.title")}>
+        <h2 className="ms-type-section ms-school-home-module-title">{t("school.title")}</h2>
+        <div className="ms-school-home-rail">
+          {schoolCourses.map((course) => {
+            const done = trackDoneCount(profile?.schoolProgress, course.trackId);
+            const courseUnlocked = isSchoolCourseUnlocked(course.id, profile);
+            const openable = hasSessionAccess && courseUnlocked;
+            const leadKey =
+              !hasSessionAccess
+                ? course.leadKey
+                : course.id === "crawl" && schoolBlocks
+                  ? course.leadDecouverteKey || course.leadKey
+                  : !courseUnlocked && course.lockedLeadKey
+                    ? course.lockedLeadKey
+                    : course.leadKey;
+            return (
+              <button
+                key={course.id}
+                type="button"
+                className={`ms-school-home-hero${openable ? "" : " is-locked"}`}
+                onClick={() => {
+                  playUiSound("soft");
+                  if (!hasSessionAccess) onUpgrade?.(resolveUpgradeGateContext(user));
+                  else onOpenSchool(course.id);
+                }}
+              >
+                <img
+                  className="ms-school-home-hero-bg"
+                  src={course.heroSrc || "/school-hero.webp"}
+                  alt=""
+                  decoding="async"
+                />
+                <span className="ms-school-home-hero-scrim" aria-hidden />
+                {!course.heroSrc && course.cardStepId ? (
+                  <span className="ms-school-home-hero-motion" aria-hidden>
+                    <SchoolMotion stepId={course.cardStepId} showCaption={false} />
+                  </span>
+                ) : null}
+                <span className="ms-school-home-hero-pill">
+                  {!hasSessionAccess ? (
+                    <>
+                      <Lock size={12} aria-hidden />
+                      {t("home.buddiesLocked")}
+                    </>
+                  ) : courseUnlocked
+                    ? t("school.progress", { done, total: course.steps.length })
+                    : t("school.courseLockedPill")}
+                </span>
+                <span className="ms-school-home-hero-copy">
+                  <span className="ms-school-home-hero-title">{t(course.titleKey)}</span>
+                  <span className="ms-school-home-hero-lead">{t(leadKey)}</span>
+                  <span
+                    className={`ms-school-home-hero-cta${!hasSessionAccess || !courseUnlocked ? " is-soft" : ""}`}
+                  >
+                    {!hasSessionAccess
+                      ? t("school.courseLockedCta")
+                      : courseUnlocked
+                        ? t("school.open")
+                        : t("school.courseLockedCta")}
+                  </span>
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+    ) : null;
+
   const buddiesHomeHero =
     typeof onGoBuddies === "function" && iosNav ? (
-      <section className="ms-buddies-home-module" aria-label={t("home.buddies")}>
+      <section className="ms-buddies-home-module" aria-label={t("home.buddiesCardTitle")}>
         <button
           type="button"
           className="ms-buddies-home-hero"
@@ -150,7 +233,7 @@ export default function Dashboard({
             </span>
           ) : null}
           <span className="ms-buddies-home-hero-copy">
-            <span className="ms-buddies-home-hero-title">{t("home.buddies")}</span>
+            <span className="ms-buddies-home-hero-title">{t("home.buddiesCardTitle")}</span>
             <span className="ms-buddies-home-hero-lead">{t("home.buddiesLead")}</span>
             <span className="ms-buddies-home-hero-cta">
               {!hasSessionAccess ? <Lock size={14} aria-hidden /> : null}
@@ -225,6 +308,8 @@ export default function Dashboard({
           </div>
         ) : null}
 
+        {schoolAboveSessions && hasSessionAccess ? schoolHomeHero : null}
+
         {!plan && (
           <div className="ms-glass-card" style={{ padding: "22px 18px", marginBottom: 16 }}>
             <h2 className="ms-type-section" style={{ marginBottom: 8 }}>
@@ -246,6 +331,9 @@ export default function Dashboard({
             </button>
           </div>
         )}
+
+        {!plan && !schoolAboveSessions ? schoolHomeHero : null}
+        {!plan && schoolAboveSessions && !hasSessionAccess ? schoolHomeHero : null}
 
         {plan && !hasSessionAccess ? (
           <>
@@ -274,6 +362,7 @@ export default function Dashboard({
                   : t("home.unlockCtaTrial")}
               </button>
             </div>
+            {schoolAboveSessions ? schoolHomeHero : null}
             {weekCards.length ? (
               <IosHomeSessionDeck
                 cards={weekCards}
@@ -288,6 +377,7 @@ export default function Dashboard({
                 </div>
               </div>
             )}
+            {!schoolAboveSessions ? schoolHomeHero : null}
             <CoachCard plan={plan} profile={profile} currentWeekIndex={coachWeek} spaced />
             {buddiesHomeHero}
           </>
@@ -295,11 +385,12 @@ export default function Dashboard({
           <>
         {iosNav ? (
           <>
-            <IosHomeSessionDeck cards={weekCards} onOpen={setOpenCard} />
+            {schoolBlocks ? null : <IosHomeSessionDeck cards={weekCards} onOpen={setOpenCard} />}
+            {!schoolAboveSessions ? schoolHomeHero : null}
             <CoachCard plan={plan} profile={profile} currentWeekIndex={coachWeek} spaced />
             {buddiesHomeHero}
           </>
-        ) : preview ? (
+        ) : schoolBlocks ? null : preview ? (
           <div style={{ marginBottom: 12 }}>
             <SessionHeroCard
               className="is-glass"
@@ -323,6 +414,8 @@ export default function Dashboard({
             </SessionHeroCard>
           </div>
         ) : null}
+
+        {!iosNav && !schoolAboveSessions ? schoolHomeHero : null}
 
         {plan && hasSessionAccess && !iosNav && (
           <CoachCard

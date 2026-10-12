@@ -62,6 +62,9 @@ export default function IosIapPaywall({
           </span>
         </div>
         {isAnnual ? <p className="ms-iap-save">{t("paywall.save")}</p> : null}
+        <p className="ms-iap-hook">
+          {isAnnual ? t("paywall.perSessionAnnual") : t("paywall.perSessionMonthly")}
+        </p>
 
         <div className="ms-iap-table" role="table" aria-label={t("paywall.tableAria")}>
           <div className="ms-iap-table-head" role="row">

@@ -428,7 +428,7 @@
     "r7Trial": "Volledig",
     "r7Premium": "Volledig",
     "faqQ1": "Welk plan moet ik kiezen?",
-    "faqA1": "€ 8,99/maand als je op elk moment wilt stoppen. € 59,99 als je het jaar liever in één keer betaalt.",
+    "faqA1": "€8,99/maand als je wanneer dan ook wilt stoppen (ongeveer €1 per sessie bij 2×/week). €59,99/jaar bij één betaling: minder dan €0,60 per sessie, goedkoper dan een koffie.",
     "faqQ2": "Kan ik gratis starten?",
     "faqA2": "Ja. Je maakt een account, registreert je kaart en krijgt 7 dagen Premium. Zeg op vóór het einde om afschrijving te vermijden.",
     "faqQ3": "Blijven mijn gegevens bewaard?",
@@ -438,7 +438,9 @@
     "lastTitleA": "Maak je account.",
     "lastTitleB": "Houd Premium om verder te komen.",
     "lastLead": "Kies daarna € 8,99/maand of € 59,99 in één betaling.",
-    "chooseAnnual": "Betaal € 59,99"
+    "chooseAnnual": "Betaal € 59,99",
+    "flexHook": "Vanaf 2 sessies / week: ongeveer €1 per sessie. Jaarlijks onder €0,60.",
+    "annualHook": "Vanaf 2 sessies / week: minder dan €0,60 per sessie, goedkoper dan een koffie."
   },
   "contactPage": {
     "metaTitle": "Contact | ForSwim",

@@ -4,7 +4,7 @@ import { bootStatusLabel, markBootWarm } from "../lib/boot-warm.js";
 
 const WORDMARK_H = 36;
 
-/** Chargement app : logo blanc, fond bleu, anneau. Styles dans index.html. */
+/** Chargement app : logo blanc fixe, fond bleu. Styles dans index.html. */
 export default function Loading() {
   useEffect(() => () => {
     markBootWarm();
@@ -30,7 +30,6 @@ export default function Loading() {
         height={WORDMARK_H}
         width={Math.round(WORDMARK_H * LOGO_WORDMARK_RATIO)}
       />
-      <div className="myswym-boot-spin" aria-hidden="true" />
     </div>
   );
 }

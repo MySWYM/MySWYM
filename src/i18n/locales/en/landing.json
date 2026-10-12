@@ -238,7 +238,7 @@
     "q2": "Can I change my goal along the way?",
     "a2": "Yes. From your profile, you can restart onboarding for a new goal and regenerate a plan. With Premium, you can also manage several plans in parallel.",
     "q3": "How does the subscription work?",
-    "a3": "You start a 7-day Premium trial with a card (Stripe or App Store). Then billing starts unless you cancel before the trial ends. Prices: €8.99/month with no commitment, or €59.99/year. Pay via Stripe on the site, App Store on iPhone.",
+    "a3": "You start a 7-day Premium trial with a card (Stripe or App Store). Then billing starts unless you cancel before the trial ends. Prices: €8.99/month with no commitment (about €1 per session at 2×/week), or €59.99/year (under €0.60 per session, cheaper than a coffee). Pay via Stripe on the site, App Store on iPhone.",
     "q4": "Can I cancel anytime?",
     "a4": "The 7-day trial requires a card. Cancel before it ends to avoid the first charge. Then €8.99/month stays cancel-anytime (access until the end of the paid period). Annual (€59.99) is prepaid with no pro-rata refund once charged, except where required by law.",
     "q5": "Does it work in 25 m and 50 m pools?",
@@ -428,7 +428,7 @@
     "r7Trial": "Full",
     "r7Premium": "Full",
     "faqQ1": "Which plan should I pick?",
-    "faqA1": "€8.99/month if you want to stop anytime. €59.99 if you prefer to pay the year once.",
+    "faqA1": "€8.99/month if you want to stop anytime (about €1 per session at 2×/week). €59.99/year for one payment: under €0.60 per session, cheaper than a coffee.",
     "faqQ2": "Can I start for free?",
     "faqA2": "Yes. Create an account, add your card, and get 7 days of Premium. Cancel before the end to avoid being charged.",
     "faqQ3": "Is my data kept?",
@@ -438,7 +438,9 @@
     "lastTitleA": "Create your account.",
     "lastTitleB": "Keep Premium to go further.",
     "lastLead": "Then choose €8.99/month or €59.99 in one payment.",
-    "chooseAnnual": "Pay €59.99"
+    "chooseAnnual": "Pay €59.99",
+    "flexHook": "From 2 sessions / week: about €1 per session. Annual drops under €0.60.",
+    "annualHook": "From 2 sessions / week: under €0.60 per session, cheaper than a coffee."
   },
   "contactPage": {
     "metaTitle": "Contact | ForSwim",
