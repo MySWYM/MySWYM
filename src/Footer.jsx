@@ -80,9 +80,9 @@ function LinkedinMark() {
 }
 
 const SOCIAL = [
-  { id: "facebook", href: "https://www.facebook.com/myswymapp/", Icon: FacebookMark },
-  { id: "instagram", href: "https://www.instagram.com/myswym.app/", Icon: InstagramMark },
-  { id: "linkedin", href: "https://www.linkedin.com/company/myswym", Icon: LinkedinMark },
+  { id: "facebook", href: "https://www.facebook.com/forswim/", Icon: FacebookMark },
+  { id: "instagram", href: "https://www.instagram.com/forswim.app/", Icon: InstagramMark },
+  { id: "linkedin", href: "https://www.linkedin.com/company/forswim", Icon: LinkedinMark },
 ];
 
 /** Footer marketing, afficher sur toutes les pages publiques et l'app. */

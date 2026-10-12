@@ -75,8 +75,8 @@ Redirect URLs à garder : forswim + myswym + `myswym://auth/callback`.
 
 ### Autre
 
-- [ ] Instagram `@myswym.app` → nouveau handle (hors code)
-- [ ] Facebook / LinkedIn / App Store slug `myswym` (comptes externes, P1-5 signalés)
+- [x] Instagram / Facebook / LinkedIn → `@forswim.app` / `forswim` / `company/forswim` (liens app + footer)
+- [ ] App Store slug `myswym` (compte externe)
 - [ ] `admin@myswym.app` (volontairement inchangé)
 - [ ] staging.myswym.app : **pas** de 301 (reste dual)
 - [x] Articles blog PROD (+ DEV) : MySWYM → ForSwim dans `contenu`

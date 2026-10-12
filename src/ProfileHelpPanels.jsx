@@ -9,11 +9,11 @@ import { playUiSound } from "./lib/ui-sounds.js";
 import { appStoreWriteReviewHref } from "./lib/store-links.js";
 import { openInSystemBrowser } from "./lib/native-links.js";
 
-const IG_MYSWYM_URL = "https://www.instagram.com/myswym.app/";
+const IG_MYSWYM_URL = "https://www.instagram.com/forswim.app/";
 const IG_ARTHUR_URL = "https://www.instagram.com/arthurnatation/";
 const TT_URL = "https://www.tiktok.com/@arthurnatation";
-const FB_URL = "https://www.facebook.com/myswymapp/";
-const LI_URL = "https://www.linkedin.com/company/myswym";
+const FB_URL = "https://www.facebook.com/forswim/";
+const LI_URL = "https://www.linkedin.com/company/forswim";
 
 function InstagramMark({ size = 18, color = "currentColor" }) {
   return (
@@ -203,7 +203,7 @@ export function ProfileSupportPanel({ onBack }) {
         <HelpRow
           icon={InstagramMark}
           title="Instagram"
-          subtitle="@myswym.app"
+          subtitle="@forswim.app"
           href={IG_MYSWYM_URL}
           external
         />

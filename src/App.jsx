@@ -819,7 +819,7 @@ const formatDuration = (mins) => {
 };
 
 const SKIP_LABELS = { missed: "Sautée", not_done: "Pas nagée" };
-const INSTAGRAM_MYSWYM = "https://www.instagram.com/myswym.app/";
+const INSTAGRAM_MYSWYM = "https://www.instagram.com/forswim.app/";
 
 /** Sheet de validation séance (faite / sautée / pas nagée). */
 function SessionMarkSheet({ sessionTitle, onPick, onClose }) {
@@ -3626,7 +3626,7 @@ const ShareModal = ({ session, goalLabel, badge = null, onClose }) => {
               <img src={stickerUrl} alt="" style={{ width: "min(240px, 78%)", height: "auto" }} />
             </div>
             <p style={{ fontSize: 13, color: G.inkLight, lineHeight: 1.45, margin: "0 0 10px" }}>
-              Sans fond. Colle-le sur ta photo, puis tag @myswym.app.
+              Sans fond. Colle-le sur ta photo, puis tag @forswim.app.
             </p>
             <Btn onClick={handleCopySticker} variant="blue" style={{ width: "100%" }}>
               <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>

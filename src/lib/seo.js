@@ -139,7 +139,9 @@ export function organizationJsonLd() {
     email: LEGAL_ENTITY.email,
     logo: `${SITE_ORIGIN}/logo-full-on-light.png`,
     sameAs: [
-      "https://www.instagram.com/myswym.app/",
+      "https://www.instagram.com/forswim.app/",
+      "https://www.facebook.com/forswim/",
+      "https://www.linkedin.com/company/forswim",
       "https://www.instagram.com/arthurnatation/",
     ],
   };
