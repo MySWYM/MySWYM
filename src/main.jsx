@@ -29,8 +29,15 @@ const previewIap =
   typeof window !== "undefined" &&
   new URLSearchParams(window.location.search).get("iap") === "1";
 
+const previewTrial =
+  import.meta.env.DEV &&
+  typeof window !== "undefined" &&
+  new URLSearchParams(window.location.search).get("trial") === "1";
+
 if (previewIap) {
   void import("./dev/IapPaywallPreview.jsx").then((mod) => mod.mountIapPaywallPreview());
+} else if (previewTrial) {
+  void import("./dev/TrialStopPreview.jsx").then((mod) => mod.mountTrialStopPreview());
 } else {
   const render = () => createRoot(document.getElementById("root")).render(
     <StrictMode>

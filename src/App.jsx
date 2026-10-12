@@ -11816,6 +11816,18 @@ export default function App() {
     setCancelSurveyOpen(true);
   };
 
+  const handleStopTrial = () => {
+    if (getAccessState(user).billingProvider === "apple") {
+      if (isNativeIos()) {
+        void openAppleSubscriptionManagement();
+        return;
+      }
+      showToast("Essai App Store : arrête-le sur l’iPhone (Réglages → Apple ID → Abonnements).", 7000);
+      return;
+    }
+    proceedToStripePortal(null);
+  };
+
   const proceedToStripePortal = async (cancelReason = null) => {
     setCancelSurveyOpen(false);
     if (cancelReason) {
@@ -12044,6 +12056,7 @@ export default function App() {
             onUpgrade={(ctx) => openUpgrade(ctx || "trial_required")}
             onPortal={handlePortal}
             onCancelSubscription={handleCancelSubscription}
+            onStopTrial={handleStopTrial}
             onRefreshStatus={handleRefreshStatus}
             onSignOut={handleSignOut}
             onDeleteAccount={handleDeleteAccount}

@@ -35,6 +35,7 @@ import {
 } from "./lib/ui-sounds.js";
 import { PRICING } from "./lib/pricing.js";
 import { getAccessState } from "./lib/access.js";
+import { canStopTrial, trialSubscriptionHint } from "./lib/trial-stop.js";
 import { openAppleSubscriptionManagement } from "./lib/native-iap.js";
 import {
   ProfileHelpSettingsRows,
@@ -204,6 +205,7 @@ export default function ProfileTab({
   onUpgrade,
   onPortal,
   onCancelSubscription,
+  onStopTrial,
   onRefreshStatus,
   onSignOut,
   onDeleteAccount,
@@ -216,11 +218,13 @@ export default function ProfileTab({
   onChangeGoal = null,
 }) {
   const { t: to } = useTranslation("onboarding");
-  const { t: ta } = useTranslation("app");
+  const { t: ta, i18n } = useTranslation("app");
   const { StravaSection, PaceTimesEditor } = getTabUi();
   const access = getAccessState(user);
   const applePaid = access.billingProvider === "apple";
   const canManageSubscription = access.canManageSubscription;
+  const trialHint = trialSubscriptionHint(ta, access, isPremium, i18n.language);
+  const showStopTrial = canStopTrial(access, isPremium);
   const [msg, setMsg] = useState(null);
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [deleteErr, setDeleteErr] = useState(null);
@@ -896,6 +900,7 @@ export default function ProfileTab({
             else onPortal();
           }}
           onCancelSubscription={onCancelSubscription}
+          onStopTrial={onStopTrial}
           referralSlot={referralSlot}
         />
       ) : null}
@@ -1042,9 +1047,8 @@ export default function ProfileTab({
                       ? (access.cancelAtPeriodEnd
                         ? (applePaid ? "Premium App Store, jusqu’à la fin de période" : "Premium actif, jusqu’à la fin de période")
                         : (applePaid ? "Premium App Store" : "Premium actif"))
-                      : isPremium
-                        ? "Essai 7 jours"
-                        : "Essai terminé"}
+                      : trialHint
+                        || (isPremium ? "Essai 7 jours" : "Essai terminé")}
                   </div>
                 </div>
               </div>
@@ -1098,7 +1102,18 @@ export default function ProfileTab({
                     </>
                   )}
                 </div>
-              ) : (
+              ) : showStopTrial ? (
+                <button
+                  type="button"
+                  onClick={() => onStopTrial?.()}
+                  style={{
+                    width: "100%", minHeight: 44, border: "none", background: "none",
+                    color: G.blue, fontWeight: 650, cursor: "pointer",
+                  }}
+                >
+                  {ta("settings.stopTrial")}
+                </button>
+              ) : trialHint ? null : (
                 <button
                   type="button"
                   onClick={() => onUpgrade?.("profile")}

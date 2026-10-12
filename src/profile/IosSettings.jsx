@@ -36,6 +36,7 @@ import {
 } from "../lib/notification-prefs.js";
 import { countryFlagSrc } from "../lib/countries.js";
 import { PanelShell } from "../ProfileHelpPanels.jsx";
+import { canStopTrial, trialSubscriptionHint } from "../lib/trial-stop.js";
 import TimedUndoAction from "../ui/TimedUndoAction.jsx";
 import ConfirmSheet from "../sheets/ConfirmSheet.jsx";
 
@@ -1258,16 +1259,20 @@ export function IosSubscriptionPanel({
   onUpgrade,
   onPortal,
   onCancelSubscription,
+  onStopTrial,
   referralSlot,
 }) {
-  const { t } = useTranslation("app");
-  const hint = canManageSubscription
-    ? (access.cancelAtPeriodEnd
-      ? (applePaid ? t("settings.subUntilApple") : t("settings.subUntilWeb"))
-      : (applePaid ? t("settings.subApple") : t("settings.subActive")))
-    : isPremium
-      ? t("settings.subTrial")
-      : t("settings.trialDone");
+  const { t, i18n } = useTranslation("app");
+  const trialHint = trialSubscriptionHint(t, access, isPremium, i18n.language);
+  const showStopTrial = canStopTrial(access, isPremium);
+  const hint = trialHint
+    || (canManageSubscription
+      ? (access.cancelAtPeriodEnd
+        ? (applePaid ? t("settings.subUntilApple") : t("settings.subUntilWeb"))
+        : (applePaid ? t("settings.subApple") : t("settings.subActive")))
+      : isPremium
+        ? t("settings.subTrial")
+        : t("settings.trialDone"));
 
   return (
     <PanelShell title={t("settings.subscription")} onBack={onBack}>
@@ -1320,7 +1325,16 @@ export function IosSubscriptionPanel({
             </>
           )}
         </div>
-      ) : (
+      ) : showStopTrial ? (
+        <button
+          type="button"
+          className="ios-settings-text-btn"
+          style={{ minHeight: 44 }}
+          onClick={() => onStopTrial?.()}
+        >
+          {t("settings.stopTrial")}
+        </button>
+      ) : trialHint ? null : (
         <button
           type="button"
           onClick={() => onUpgrade?.("profile")}
