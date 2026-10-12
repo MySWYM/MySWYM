@@ -7839,19 +7839,19 @@
     "nb": "engangsbetaling",
     "fi": "kertamaksu"
   },
-  "6,99€/mois sans engagement, ou 59,99€/an": {
-    "en": "€6.99/month no commitment, or €59.99/year",
-    "de": "6,99 €/Monat ohne Bindung oder 59,99 €/Jahr",
-    "es": "6,99 €/mes sin permanencia, o 59,99 €/año",
-    "ja": "月額6,99 €（縛りなし）または年額59,99 €",
-    "nl": "€ 6,99/maand zonder verplichting, of € 59,99/jaar",
-    "it": "6,99 €/mese senza vincoli, o 59,99 €/anno",
-    "pt": "6,99 €/mês sem fidelização, ou 59,99 €/ano",
-    "pt-BR": "6,99 €/mês sem fidelidade, ou 59,99 €/ano",
-    "sv": "6,99 €/mån utan bindningstid, eller 59,99 €/år",
-    "da": "6,99 €/md. uden binding, eller 59,99 €/år",
-    "nb": "6,99 €/mnd. uten binding, eller 59,99 €/år",
-    "fi": "6,99 €/kk ilman sitoutumista tai 59,99 €/v"
+  "8,99€/mois sans engagement, ou 69,99€/an": {
+    "en": "€8.99/month no commitment, or €69.99/year",
+    "de": "8,99 €/Monat ohne Bindung oder 69,99 €/Jahr",
+    "es": "8,99 €/mes sin permanencia, o 69,99 €/año",
+    "ja": "月額8,99 €（縛りなし）または年額69,99 €",
+    "nl": "€ 8,99/maand zonder verplichting, of € 69,99/jaar",
+    "it": "8,99 €/mese senza vincoli, o 69,99 €/anno",
+    "pt": "8,99 €/mês sem fidelização, ou 69,99 €/ano",
+    "pt-BR": "8,99 €/mês sem fidelidade, ou 69,99 €/ano",
+    "sv": "8,99 €/mån utan bindningstid, eller 69,99 €/år",
+    "da": "8,99 €/md. uden binding, eller 69,99 €/år",
+    "nb": "8,99 €/mnd. uten binding, eller 69,99 €/år",
+    "fi": "8,99 €/kk ilman sitoutumista tai 69,99 €/v"
   },
   "28 % moins cher que 12 mois au mensuel": {
     "en": "28% cheaper than 12 months on monthly",

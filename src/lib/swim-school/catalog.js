@@ -1,7 +1,7 @@
 /**
  * Catalogue des cours école (Accueil rail + navigation).
  * Ordre rail Découverte : crawl, dos, virage, départ.
- * Pap / brasse : invisibles tant que Découverte.
+ * Pap / brasse : invisibles en Débutant / Découverte (Intermédiaire+).
  */
 
 import { ANC_STEPS, ANC_TRACK_ID } from "./anc-track.js";
@@ -10,7 +10,7 @@ import { VIRAGE_STEPS, VIRAGE_TRACK_ID } from "./virage-track.js";
 import { DEPART_STEPS, DEPART_TRACK_ID } from "./depart-track.js";
 import { PAP_STEPS, PAP_TRACK_ID } from "./pap-track.js";
 import { BRASSE_STEPS, BRASSE_TRACK_ID } from "./brasse-track.js";
-import { isDecouverteLevelId } from "../onboarding-level-gate.js";
+import { isBeginnerLevelId } from "../onboarding-level-gate.js";
 import { nextIdIn, prevIdIn, stepById } from "./track-utils.js";
 
 /**
@@ -21,6 +21,7 @@ import { nextIdIn, prevIdIn, stepById } from "./track-utils.js";
  *   leadKey: string,
  *   leadDecouverteKey?: string,
  *   lockedLeadKey?: string,
+ *   lockedCtaKey?: string,
  *   lockedBodyKey?: string,
  *   cardStepId?: string,
  *   heroSrc?: string,
@@ -48,6 +49,7 @@ export const SCHOOL_COURSES = [
     leadKey: "school.dosHomeLead",
     leadDecouverteKey: "school.dosHomeLeadDecouverte",
     lockedLeadKey: "school.dosHomeLeadLocked",
+    lockedCtaKey: "school.dosHomeCtaLocked",
     lockedBodyKey: "school.dosLocked",
     cardStepId: "DOS12",
     heroSrc: "/school-hero-dos.webp",
@@ -59,6 +61,7 @@ export const SCHOOL_COURSES = [
     titleKey: "school.virage",
     leadKey: "school.virageHomeLead",
     lockedLeadKey: "school.virageHomeLeadLocked",
+    lockedCtaKey: "school.virageHomeCtaLocked",
     lockedBodyKey: "school.virageLocked",
     heroSrc: "/school-hero-virage.webp",
     steps: VIRAGE_STEPS,
@@ -69,6 +72,7 @@ export const SCHOOL_COURSES = [
     titleKey: "school.depart",
     leadKey: "school.departHomeLead",
     lockedLeadKey: "school.departHomeLeadLocked",
+    lockedCtaKey: "school.departHomeCtaLocked",
     lockedBodyKey: "school.departLocked",
     heroSrc: "/school-hero-depart.webp",
     steps: DEPART_STEPS,
@@ -79,6 +83,7 @@ export const SCHOOL_COURSES = [
     titleKey: "school.pap",
     leadKey: "school.papHomeLead",
     lockedLeadKey: "school.papHomeLeadLocked",
+    lockedCtaKey: "school.papHomeCtaLocked",
     lockedBodyKey: "school.papLocked",
     cardStepId: "PAP10",
     heroSrc: "/school-hero-pap.webp",
@@ -91,6 +96,7 @@ export const SCHOOL_COURSES = [
     titleKey: "school.brasse",
     leadKey: "school.brasseHomeLead",
     lockedLeadKey: "school.brasseHomeLeadLocked",
+    lockedCtaKey: "school.brasseHomeCtaLocked",
     lockedBodyKey: "school.brasseLocked",
     cardStepId: "BRA10",
     heroSrc: "/school-hero-brasse.webp",
@@ -125,12 +131,12 @@ export function prevTrackStepId(trackId, stepId) {
 
 /**
  * Cours visibles sur l’Accueil.
- * Pap / brasse hors liste tant que Découverte.
+ * Pap / brasse hors liste en Débutant / Découverte (ouverts Intermédiaire+).
  */
 export function visibleSchoolCourses(profile = {}) {
   return SCHOOL_COURSES.filter((course) => {
     if (course.requiresIntermediate) {
-      return !isDecouverteLevelId(profile.level);
+      return !isBeginnerLevelId(profile.level);
     }
     return true;
   });

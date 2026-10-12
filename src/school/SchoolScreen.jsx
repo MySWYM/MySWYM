@@ -17,6 +17,7 @@ export default function SchoolScreen({
   onBack,
   onOpenMenu,
   onProgress,
+  onSchoolUpgrade = null,
   hasSessionAccess = false,
   onUpgrade,
 }) {
@@ -50,6 +51,7 @@ export default function SchoolScreen({
         onOpenMenu={onOpenMenu}
         onProgress={onProgress}
         onChangeStep={setStepId}
+        onSchoolUpgrade={onSchoolUpgrade}
         hasSessionAccess={hasSessionAccess}
         onUpgrade={onUpgrade}
       />

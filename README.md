@@ -43,7 +43,7 @@ Bassin 25 m ou 50 m. Matériel optionnel (pull-buoy, planche, palmes, tuba). Jus
 Essai Premium **7 jours avec carte**. Ensuite les séances se mettent en pause jusqu'à un abonnement.
 
 - **8,99 €/mois** sans engagement
-- **59,99 €/an** en une fois
+- **69,99 €/an** en une fois
 
 Détail : [forswim.app/fr/tarifs](https://www.forswim.app/fr/tarifs)
 

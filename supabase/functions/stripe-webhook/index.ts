@@ -34,6 +34,7 @@ const RETIRED_PRICE_IDS = new Set([
   "price_1U3N2tAS4mfgF2TwyaI2hf22",
   "price_1TPjyPAS4mfgF2Twx3Zh4zrJ",
   "price_1U7E38AS4mfgF2TwpJGYoMpE",
+  "price_1UPMjIAS4mfgF2Tw3VYyFnaV",
 ]);
 
 function envPrice(name: string, fallback: string) {
@@ -47,17 +48,18 @@ const PRICE_MONTHLY_COMMIT = envPrice(
   "STRIPE_PRICE_MONTHLY_COMMIT",
   envPrice("STRIPE_PRICE_MONTHLY", "price_1TPjyPAS4mfgF2Twx3Zh4zrJ"),
 );
-const PRICE_ANNUAL = envPrice("STRIPE_PRICE_ANNUAL", "price_1UPMjIAS4mfgF2Tw3VYyFnaV");
+const PRICE_ANNUAL = envPrice("STRIPE_PRICE_ANNUAL", "price_1UPprJAS4mfgF2TwYr2H7Irp");
 /** Legacy biennal (24 mois) : plus vendu sur Tarifs ; gardé pour abonnés historiques. */
 const PRICE_BIENNIAL = Deno.env.get("STRIPE_PRICE_BIENNIAL") ?? "price_1Tue7cAS4mfgF2TwP53wZ7qn";
 
 const PRICE_LABELS: Record<string, string> = {
   [PRICE_MONTHLY_FLEX]: "Premium, 8,99 € / mois (sans engagement)",
   [PRICE_MONTHLY_COMMIT]: "Premium, 4,99 € / mois (engagement 12 mois, legacy)",
-  [PRICE_ANNUAL]: "Premium, 59,99 € / an",
+  [PRICE_ANNUAL]: "Premium, 69,99 € / an",
   [PRICE_BIENNIAL]: "Premium, 29,99 € / 2 ans",
   price_1UPMipAS4mfgF2Twd2eNOMyl: "Premium, 8,99 € / mois (sans engagement)",
-  price_1UPMjIAS4mfgF2Tw3VYyFnaV: "Premium, 59,99 € / an",
+  price_1UPprJAS4mfgF2TwYr2H7Irp: "Premium, 69,99 € / an",
+  price_1UPMjIAS4mfgF2Tw3VYyFnaV: "Premium, 59,99 € / an (ancien tarif)",
   price_1U3N2tAS4mfgF2TwyaI2hf22: "Premium, 9,99 € / mois (ancien tarif)",
   price_1TPjyPAS4mfgF2Twx3Zh4zrJ: "Premium, 4,99 € / mois (engagement 12 mois, legacy)",
   price_1U7E38AS4mfgF2TwpJGYoMpE: "Premium, 52,99 € / an (ancien tarif)",

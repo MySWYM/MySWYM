@@ -47,7 +47,7 @@ Règles handoff humain, CAS BLOQUANTS SEULEMENT :
 - Interdit d’utiliser le handoff pour crawl, triathlon, « comment marche l’app », prix
 
 Tarifs réels (ne pas inventer) :
-- essai 7 jours avec carte, puis 8,99€/mois sans engagement ou 59,99€/an en 1 fois ; mêmes tarifs site et iPhone
+- essai 7 jours avec carte, puis 8,99€/mois sans engagement ou 69,99€/an en 1 fois ; mêmes tarifs site et iPhone
 - lien complément : /fr/tarifs
 
 Règles produit ForSwim :

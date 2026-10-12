@@ -69,8 +69,8 @@ Redirect URLs à garder : forswim + myswym + `myswym://auth/callback`.
 ### iOS Store / prochain TestFlight
 
 - [x] Fichier prêt : `public/brand/app-store-icon-1024.png`
-- [x] `Products.storekit` : 8,99 + intro 7 j ; paywall save 44 % ; cartes binôme soft mist + i18n
-- [ ] **Toi ASC** : prix 8,99 / 59,99 + offre intro 7 j sur les SKUs `app.myswym.ios.premium.*`
+- [x] `Products.storekit` : 8,99 + intro 7 j ; paywall save 35 % ; cartes binôme soft mist + i18n
+- [x] **ASC** : prix 8,99 / 69,99 + intro 7 j (effectif App Store **14/10**)
 - [ ] « push TestFlight » quand tu veux la build **41** (1.1)
 
 ### Autre
@@ -98,4 +98,4 @@ Redirect URLs à garder : forswim + myswym + `myswym://auth/callback`.
 4. [ ] **Meta** : webhook → `https://www.forswim.app/api/instagram/webhook`
 5. [ ] **Strava** : callback domain = `www.forswim.app`
 6. [ ] **Vercel + Supabase** : `EMAIL_FROM`, `EMAIL_REPLY_TO`, `APP_URL`, `LATEST_APP_VERSION=1.1`
-7. [ ] **ASC** : prix 8,99 / 59,99 + intro 7 j, puis build forswim
+7. [x] **ASC** : prix 8,99 / 69,99 + intro 7 j (live 14/10) ; Stripe annuel `price_1UPprJ…` branché

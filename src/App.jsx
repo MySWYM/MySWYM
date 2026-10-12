@@ -57,7 +57,7 @@ import { buildSessionProvenance } from "./lib/session-provenance.js";
 import { buildCoachPlanWeeks, shouldUseCoachGenerator, buildCompetitionSessions, competitionSessionCount, COMPETITION_TIP, buildProgressionLoopSession, buildProgressionLoopWeek, expandLoopWeekSessions, formatLoopSessionTitle, formatLoopWeekSessionTitle, loopDisplaySession, loopSessionOrdinalIndex, withLoopSessionTitle, isoWeekKey, usesSessionLoop } from "./lib/swim-plan-bridge.js";
 import { FONT, FONT_DISPLAY } from "./theme/brand.js";
 import { G, G_SOFT, applyTheme } from "./theme/palette.js";
-import { unlockUiSounds } from "./lib/ui-sounds.js";
+import { playUiSound, unlockUiSounds } from "./lib/ui-sounds.js";
 import PlanRevealView from "./PlanRevealView.jsx";
 import FirstSwimTip, { hasSeenFirstSwimTip } from "./FirstSwimTip.jsx";
 import CoachCard from "./CoachCard.jsx";
@@ -2280,6 +2280,10 @@ const StravaSection = ({
   onBestPace,
   showProgramActions = true,
   showDetails = true,
+  showSync = true,
+  showDisconnect = true,
+  showHrConsent = null,
+  onConnectRequest = null,
   embedded = false,
   isPremium = false,
   onUpgrade,
@@ -2304,6 +2308,7 @@ const StravaSection = ({
   // client_id est public (pas un secret), fallback hardcodé si l'env n'est pas chargé
   const clientId = import.meta.env.VITE_STRAVA_CLIENT_ID || "233278";
   const healthOk = localHealthConsent === true || hasHeartRateConsent(profile);
+  const hrConsentVisible = showHrConsent == null ? !showDetails : showHrConsent;
 
   useEffect(() => {
     if (!user) return;
@@ -2314,7 +2319,11 @@ const StravaSection = ({
     if (!user) return;
     const onStrava = () => { checkConnection(); };
     window.addEventListener("myswym:strava-connected", onStrava);
-    return () => window.removeEventListener("myswym:strava-connected", onStrava);
+    window.addEventListener("myswym:strava-status", onStrava);
+    return () => {
+      window.removeEventListener("myswym:strava-connected", onStrava);
+      window.removeEventListener("myswym:strava-status", onStrava);
+    };
   }, [user?.id]);
 
   async function checkConnection() {
@@ -2501,14 +2510,19 @@ const StravaSection = ({
 
   // Pendant le chargement on affiche le bouton "Connecter" (état optimiste)
   // il sera remplacé par l'état réel dès que checkConnection() répond
+  const homeConnectCard = connected === false && typeof onConnectRequest === "function";
+  const homeLoading = connected === null && typeof onConnectRequest === "function";
+
+  if (homeLoading) return null;
 
   return (
     <div style={embedded
-      ? { padding: "0 0 24px", margin: 0 }
+      ? { padding: homeConnectCard ? 0 : "0 0 24px", margin: 0 }
       : { background: G.surface, borderRadius: 20, padding: "18px 16px", marginBottom: 16, border: `1px solid ${G.greyLight}`, boxShadow: "0 4px 20px rgba(0,0,0,0.04)" }
     }>
 
-      {/* ── En-tête ──────────────────────────────────────────────── */}
+      {/* ── En-tête (masqué sur la carte Accueil « connecter ») ── */}
+      {!homeConnectCard ? (
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <div style={{
@@ -2527,7 +2541,7 @@ const StravaSection = ({
             </div>
           </div>
         </div>
-        {connected && (
+        {connected && showSync && (
           <button
             onClick={sync}
             disabled={syncing}
@@ -2537,8 +2551,9 @@ const StravaSection = ({
           </button>
         )}
       </div>
+      ) : null}
 
-      {connected && !healthOk && showDetails && (
+      {connected && !healthOk && hrConsentVisible && (
         <button
           type="button"
           onClick={() => {
@@ -2574,20 +2589,44 @@ const StravaSection = ({
 
       {/* ── Non connecté ─────────────────────────────────────────── */}
       {!connected ? (
-        <div>
-          <p style={{ fontSize: 13, color: G.grey, lineHeight: 1.5, margin: "0 0 12px" }}>
-            {t("strava.lead")}
-          </p>
+        typeof onConnectRequest === "function" ? (
           <button
-            onClick={connect}
-            style={{ width: "100%", padding: "13px", borderRadius: 12, border: "none", background: G.blue, color: "#fff", fontWeight: 600, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, fontFamily: FONT, minHeight: 48 }}
+            type="button"
+            className="ms-strava-home-hero"
+            onClick={() => {
+              playUiSound("soft");
+              onConnectRequest();
+            }}
           >
-            <span style={{ width: 22, height: 22, borderRadius: 6, background: "#FC4C02", display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              <Activity size={13} color="#fff" />
+            <img
+              className="ms-strava-home-hero-bg"
+              src="/strava-home-hero.webp"
+              alt=""
+              decoding="async"
+            />
+            <span className="ms-strava-home-hero-scrim" aria-hidden />
+            <span className="ms-strava-home-hero-copy">
+              <span className="ms-strava-home-hero-title">{t("strava.homeConnectTitle")}</span>
+              <span className="ms-strava-home-hero-lead">{t("strava.homeConnectLead")}</span>
+              <span className="ms-strava-home-hero-cta">{t("strava.connectCta")}</span>
             </span>
-            {t("strava.connectCta")}
           </button>
-        </div>
+        ) : (
+          <div>
+            <p style={{ fontSize: 13, color: G.grey, lineHeight: 1.5, margin: "0 0 12px" }}>
+              {t("strava.lead")}
+            </p>
+            <button
+              onClick={connect}
+              style={{ width: "100%", padding: "13px", borderRadius: 12, border: "none", background: G.blue, color: "#fff", fontWeight: 600, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, fontFamily: FONT, minHeight: 48 }}
+            >
+              <span style={{ width: 22, height: 22, borderRadius: 6, background: "#FC4C02", display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <Activity size={13} color="#fff" />
+              </span>
+              {t("strava.connectCta")}
+            </button>
+          </div>
+        )
       ) : (
         <>
           {!showDetails && (
@@ -2719,7 +2758,7 @@ const StravaSection = ({
           {/* Liste des activités, 3 visibles, le reste derrière « Voir plus » */}
           {showDetails && (activities.length === 0 ? (
             <div style={{ fontSize: 13, color: G.grey, textAlign: "center", padding: "16px 0" }}>
-              {t("strava.empty")}
+              {t(showSync ? "strava.empty" : "strava.emptyHome")}
             </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", marginBottom: 12 }}>
@@ -2786,30 +2825,31 @@ const StravaSection = ({
             </div>
           ))}
 
-          {/* Déconnexion */}
-          <button
-            type="button"
-            onClick={disconnect}
-            disabled={disconnecting}
-            style={{
-              width: "100%",
-              marginTop: 4,
-              marginBottom: embedded ? 8 : 0,
-              padding: "13px 14px",
-              borderRadius: 12,
-              border: `1.5px solid ${G.coral}`,
-              background: G.coralLight || "rgba(255, 90, 120, 0.12)",
-              color: G.coral,
-              fontSize: 14,
-              fontWeight: 700,
-              cursor: disconnecting ? "not-allowed" : "pointer",
-              opacity: disconnecting ? 0.5 : 1,
-              fontFamily: FONT,
-              minHeight: 48,
-            }}
-          >
-            {disconnecting ? t("strava.disconnecting") : t("strava.disconnect")}
-          </button>
+          {showDisconnect ? (
+            <button
+              type="button"
+              onClick={disconnect}
+              disabled={disconnecting}
+              style={{
+                width: "100%",
+                marginTop: 4,
+                marginBottom: embedded ? 8 : 0,
+                padding: "13px 14px",
+                borderRadius: 12,
+                border: `1.5px solid ${G.coral}`,
+                background: G.coralLight || "rgba(255, 90, 120, 0.12)",
+                color: G.coral,
+                fontSize: 14,
+                fontWeight: 700,
+                cursor: disconnecting ? "not-allowed" : "pointer",
+                opacity: disconnecting ? 0.5 : 1,
+                fontFamily: FONT,
+                minHeight: 48,
+              }}
+            >
+              {disconnecting ? t("strava.disconnecting") : t("strava.disconnect")}
+            </button>
+          ) : null}
         </>
       )}
           <StravaActivityModal
@@ -11376,6 +11416,30 @@ export default function App() {
     }
   };
 
+  /** Offre école : Intermédiaire (Débutant) ou 4 nages (Inter/Avancé), puis regen prochaines séances. */
+  const handleSchoolUpgrade = (kind) => {
+    const nextPatch =
+      kind === "intermediate"
+        ? { level: "sportif" }
+        : kind === "four_nages"
+          ? { swimStyle: "4_nages" }
+          : null;
+    if (!nextPatch) return;
+    const nextProfile = { ...(activePlanEntry?.profile || activeProfile || {}), ...nextPatch };
+    if (activePlanId) {
+      setPlans((prev) => prev.map((e) => {
+        if (e.id !== activePlanId) return e;
+        return { ...e, profile: { ...e.profile, ...nextPatch } };
+      }));
+    }
+    if (user?.id) {
+      sportsPersistence.upsertSportProfile(user.id, nextProfile).then(() => {});
+    }
+    if (canUpdateProgram) {
+      applyProfileToUpcomingSessions(nextProfile, { toast: true });
+    }
+  };
+
   /** Édition profil nageur depuis ProfileTab, applique aux prochaines si pool / nage / etc. */
   const handleSwimmerProfileChange = (partial) => {
     if (!partial || typeof partial !== "object") return;
@@ -12001,6 +12065,7 @@ export default function App() {
               onBack={() => goTab(lastDockTabRef.current || "home")}
               onOpenMenu={() => setSettingsOpen(true)}
               onProgress={handleSchoolProgress}
+              onSchoolUpgrade={handleSchoolUpgrade}
               hasSessionAccess={canAccessSessions(accessState, isPremium || accessState.hasPremiumAccess)}
               onUpgrade={(ctx) => openUpgrade(ctx || "trial_required")}
             />

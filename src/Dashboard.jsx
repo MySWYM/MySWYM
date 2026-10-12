@@ -150,21 +150,30 @@ export default function Dashboard({
           {schoolCourses.map((course) => {
             const done = trackDoneCount(profile?.schoolProgress, course.trackId);
             const courseUnlocked = isSchoolCourseUnlocked(course.id, profile);
+            const courseLocked = hasSessionAccess && !courseUnlocked;
             const openable = hasSessionAccess && courseUnlocked;
             const leadKey =
               !hasSessionAccess
                 ? course.leadKey
                 : course.id === "crawl" && schoolBlocks
                   ? course.leadDecouverteKey || course.leadKey
-                  : !courseUnlocked && course.lockedLeadKey
+                  : courseLocked && course.lockedLeadKey
                     ? course.lockedLeadKey
                     : course.leadKey;
+            const ctaLabel = !hasSessionAccess
+              ? t("school.courseLockedCta")
+              : courseUnlocked
+                ? t("school.open")
+                : t(course.lockedCtaKey || "school.courseLockedCta");
             return (
               <button
                 key={course.id}
                 type="button"
-                className={`ms-school-home-hero${openable ? "" : " is-locked"}`}
+                className={`ms-school-home-hero${courseLocked ? " is-locked" : ""}${!hasSessionAccess ? " is-paywall" : ""}`}
+                disabled={courseLocked}
+                aria-disabled={courseLocked || undefined}
                 onClick={() => {
+                  if (courseLocked) return;
                   playUiSound("soft");
                   if (!hasSessionAccess) onUpgrade?.(resolveUpgradeGateContext(user));
                   else onOpenSchool(course.id);
@@ -182,27 +191,33 @@ export default function Dashboard({
                     <SchoolMotion stepId={course.cardStepId} showCaption={false} />
                   </span>
                 ) : null}
+                {courseLocked ? (
+                  <span className="ms-school-home-hero-lock" aria-hidden>
+                    <Lock size={52} strokeWidth={1.75} />
+                  </span>
+                ) : null}
                 <span className="ms-school-home-hero-pill">
                   {!hasSessionAccess ? (
                     <>
                       <Lock size={12} aria-hidden />
                       {t("home.buddiesLocked")}
                     </>
-                  ) : courseUnlocked
-                    ? t("school.progress", { done, total: course.steps.length })
-                    : t("school.courseLockedPill")}
+                  ) : courseUnlocked ? (
+                    t("school.progress", { done, total: course.steps.length })
+                  ) : (
+                    <>
+                      <Lock size={12} aria-hidden />
+                      {t("school.courseLockedPill")}
+                    </>
+                  )}
                 </span>
                 <span className="ms-school-home-hero-copy">
                   <span className="ms-school-home-hero-title">{t(course.titleKey)}</span>
                   <span className="ms-school-home-hero-lead">{t(leadKey)}</span>
                   <span
-                    className={`ms-school-home-hero-cta${!hasSessionAccess || !courseUnlocked ? " is-soft" : ""}`}
+                    className={`ms-school-home-hero-cta${!openable ? " is-soft" : ""}`}
                   >
-                    {!hasSessionAccess
-                      ? t("school.courseLockedCta")
-                      : courseUnlocked
-                        ? t("school.open")
-                        : t("school.courseLockedCta")}
+                    {ctaLabel}
                   </span>
                 </span>
               </button>

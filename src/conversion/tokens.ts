@@ -54,7 +54,7 @@ export const tokens = {
     monthlyCommit: { label: '4,99 €', period: '/ mois', commitment: '12 mois' },
     /** Alias : mensuel sans engagement (8,99 €). */
     monthly: { label: '8,99 €', period: '/ mois', trialNote: '7 jours offerts avec carte' },
-    annual: { label: '59,99 €', period: '/ an' },
+    annual: { label: '69,99 €', period: '/ an' },
   },
 } as const
 

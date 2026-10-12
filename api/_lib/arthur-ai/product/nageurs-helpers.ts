@@ -35,6 +35,8 @@ const ANNUAL_IDS = new Set(
   [
     process.env.STRIPE_PRICE_ANNUAL,
     process.env.VITE_STRIPE_PRICE_ANNUAL,
+    "price_1UPprJAS4mfgF2TwYr2H7Irp",
+    "price_1UPMjIAS4mfgF2Tw3VYyFnaV",
     "price_1U7E38AS4mfgF2TwpJGYoMpE",
     "price_1U67kaAS4mfgF2TwvUsVQ3vE",
   ].filter(Boolean) as string[],
@@ -43,7 +45,7 @@ const ANNUAL_IDS = new Set(
 export const TIER_MRR: Record<Exclude<PriceTier, "unknown">, number> = {
   monthly_flex: 8.99,
   monthly_commit: 4.99, // legacy, plus commercialisé
-  annual: Math.round((59.99 / 12) * 100) / 100,
+  annual: Math.round((69.99 / 12) * 100) / 100,
 };
 
 export function accessStatusOf(row: AccessLike | null | undefined): string {

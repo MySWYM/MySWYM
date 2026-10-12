@@ -28,7 +28,7 @@ Insights paywall : `src/lib/coach-insights.js`.
 |-------|------|
 | Essai | 7 jours · avec carte · puis prélèvement |
 | Mensuel sans engagement | 8,99€ / mois |
-| Annuel | 59,99€ / an · paiement en 1 fois · pas de remboursement au prorata (hors cas légaux) |
+| Annuel | 69,99€ / an · paiement en 1 fois · pas de remboursement au prorata (hors cas légaux) |
 
 Offre engagement 12 mois (4,99€) retirée (legacy Stripe uniquement).
 
@@ -99,6 +99,6 @@ Voir `tokens.ts` + `conversion.css`.
 
 DA emails : header dark `#000514` + CTA `#006bfd` (aligné `public.css`). Republish templates Resend : `npm run email:republish`.
 
-Prix dans les mails : `8,99 €/mois sans engagement · 59,99 €/an` (`src/lib/pricing.js`).
+Prix dans les mails : `8,99 €/mois sans engagement · 69,99 €/an` (`src/lib/pricing.js`).
 
 Si l’utilisateur annule pendant le délai → `subscription.canceled` stoppe le drip (timeout only).

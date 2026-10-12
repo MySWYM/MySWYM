@@ -18,8 +18,37 @@ import {
   nextTrackStepId,
   VIRAGE_TRACK_ID,
   DEPART_TRACK_ID,
+  PAP_TRACK_ID,
+  BRASSE_TRACK_ID,
 } from "./catalog.js";
-import { isDecouverteLevelId } from "../onboarding-level-gate.js";
+import { isBeginnerLevelId, isDecouverteLevelId } from "../onboarding-level-gate.js";
+import { isFourNagesDeclared } from "../sports-engine/four-nages-mix.js";
+
+/** Aligné sur `hidesFourNagesChoice` (sans importer le catalog JSX). */
+const DIPLOMA_GOAL_IDS = new Set(["bnssa", "bpjeps_aan", "tests_pompiers", "caepmns"]);
+
+function profileCanChooseFourNages(profile = {}) {
+  if (isBeginnerLevelId(profile.level)) return false;
+  const cat = String(profile.category || "");
+  const goal = String(profile.goal || "");
+  if (cat === "diplome" || DIPLOMA_GOAL_IDS.has(goal)) return false;
+  return true;
+}
+
+/** Crawl + dos + virage + départ (parcours Débutant / Découverte). */
+export const SCHOOL_FOUNDATION_TRACK_IDS = Object.freeze([
+  ANC_TRACK_ID,
+  DOS_TRACK_ID,
+  VIRAGE_TRACK_ID,
+  DEPART_TRACK_ID,
+]);
+
+/** Les 6 cours école. */
+export const SCHOOL_ALL_TRACK_IDS = Object.freeze([
+  ...SCHOOL_FOUNDATION_TRACK_IDS,
+  PAP_TRACK_ID,
+  BRASSE_TRACK_ID,
+]);
 
 export { SCHOOL_PROGRESS_VERSION, YES_NEEDED };
 
@@ -104,19 +133,21 @@ export function isTrackComplete(progress, trackId) {
 
 /**
  * Découverte : crawl → dos → virage → départ.
- * Pap / brasse : hors Découverte seulement.
- * Autres niveaux : tous les cours visibles ouverts.
+ * Pap / brasse : Intermédiaire+ seulement, débloqués si crawl + dos terminés.
+ * Autres niveaux (hors pap/brasse) : cours visibles ouverts.
  */
 export function isSchoolCourseUnlocked(courseId, profile = {}) {
   const course = getSchoolCourse(courseId);
   if (!course) return false;
   const progress = profile.schoolProgress;
   const dec = isDecouverteLevelId(profile.level);
+  const beginner = isBeginnerLevelId(profile.level);
 
   if (course.id === "crawl") return true;
 
   if (course.requiresIntermediate) {
-    return !dec;
+    if (beginner) return false;
+    return isTrackComplete(progress, ANC_TRACK_ID) && isTrackComplete(progress, DOS_TRACK_ID);
   }
 
   if (!dec) return true;
@@ -125,6 +156,29 @@ export function isSchoolCourseUnlocked(courseId, profile = {}) {
   if (course.id === "virage") return isTrackComplete(progress, DOS_TRACK_ID);
   if (course.id === "depart") return isTrackComplete(progress, VIRAGE_TRACK_ID);
   return false;
+}
+
+export function areFoundationSchoolsComplete(progress) {
+  return SCHOOL_FOUNDATION_TRACK_IDS.every((trackId) => isTrackComplete(progress, trackId));
+}
+
+export function areAllSchoolsComplete(progress) {
+  return SCHOOL_ALL_TRACK_IDS.every((trackId) => isTrackComplete(progress, trackId));
+}
+
+/**
+ * Offre après validation d’une étape (à la place du Bravo).
+ * @returns {{ kind: "intermediate" | "four_nages" } | null}
+ */
+export function resolveSchoolUpgradeOffer(profile = {}, progress = profile.schoolProgress) {
+  if (isBeginnerLevelId(profile.level)) {
+    if (!areFoundationSchoolsComplete(progress)) return null;
+    return { kind: "intermediate" };
+  }
+  if (!profileCanChooseFourNages(profile)) return null;
+  if (isFourNagesDeclared(profile)) return null;
+  if (!areAllSchoolsComplete(progress)) return null;
+  return { kind: "four_nages" };
 }
 
 export function isDecouverteSchoolBlocking(profile = {}) {

@@ -413,12 +413,43 @@
 }
 
 .ms-school-home-hero.is-locked {
-  opacity: 0.92;
+  cursor: default;
+  box-shadow: 0 6px 20px rgba(15, 27, 45, 0.12);
+}
+
+.ms-school-home-hero.is-locked:disabled {
+  opacity: 1;
+  pointer-events: none;
+}
+
+.ms-school-home-hero.is-locked .ms-school-home-hero-bg {
+  filter: grayscale(1) brightness(0.78);
+}
+
+.ms-school-home-hero.is-locked .ms-school-home-hero-scrim {
+  background: linear-gradient(
+    105deg,
+    rgba(15, 27, 45, 0.78) 0%,
+    rgba(15, 27, 45, 0.55) 48%,
+    rgba(15, 27, 45, 0.38) 100%
+  );
 }
 
 .ms-school-home-hero.is-locked .ms-school-home-hero-motion {
-  filter: grayscale(0.35);
-  opacity: 0.85;
+  filter: grayscale(1);
+  opacity: 0.55;
+}
+
+.ms-school-home-hero-lock {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  color: rgba(255, 255, 255, 0.92);
+  filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.35));
 }
 
 .ms-school-home-rail:has(.ms-school-home-hero:only-child) .ms-school-home-hero {
@@ -918,5 +949,21 @@
   color: #fff;
   font-size: 16px;
   font-weight: 700;
+  cursor: pointer;
+}
+
+.ms-school-offer-later {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 44px;
+  margin-top: 10px;
+  border: 0;
+  border-radius: 14px;
+  background: transparent;
+  color: #5a6b7d;
+  font-size: 15px;
+  font-weight: 600;
   cursor: pointer;
 }

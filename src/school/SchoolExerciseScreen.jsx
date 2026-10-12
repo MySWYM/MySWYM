@@ -8,7 +8,11 @@ import { nextTrackStepId, prevTrackStepId } from "../lib/swim-school/catalog.js"
 import { chapterForStepId, stepNumberFromId } from "../lib/swim-school/chapters.js";
 import { SCHOOL_GLOSSARY } from "../lib/swim-school/glossary.js";
 import { schoolGearForStep } from "../lib/swim-school/motion-scenes.js";
-import { applySchoolResult, schoolStepView } from "../lib/swim-school/progress.js";
+import {
+  applySchoolResult,
+  resolveSchoolUpgradeOffer,
+  schoolStepView,
+} from "../lib/swim-school/progress.js";
 import { playUiSound } from "../lib/ui-sounds.js";
 import { getTabUi } from "../tab-ui-registry.js";
 import SchoolMotion from "./SchoolMotion.jsx";
@@ -33,6 +37,7 @@ export default function SchoolExerciseScreen({
   onOpenMenu,
   onProgress,
   onChangeStep,
+  onSchoolUpgrade = null,
   hasSessionAccess = false,
   onUpgrade,
 }) {
@@ -43,6 +48,8 @@ export default function SchoolExerciseScreen({
   const [termKey, setTermKey] = useState(null);
   /** @type {[{ n: number, title: string, nextId: string | null } | null, Function]} */
   const [congrats, setCongrats] = useState(null);
+  /** @type {[{ kind: "intermediate" | "four_nages" } | null, Function]} */
+  const [upgradeOffer, setUpgradeOffer] = useState(null);
   const gear = useMemo(() => schoolGearForStep(stepId), [stepId]);
   const chapter = chapterForStepId(stepId, trackId);
   const stepNo = stepNumberFromId(stepId, trackId);
@@ -104,8 +111,27 @@ export default function SchoolExerciseScreen({
     else onBack?.();
   };
 
+  const dismissUpgradeOffer = () => {
+    setUpgradeOffer(null);
+    playUiSound("soft");
+    onBack?.();
+  };
+
+  const acceptUpgradeOffer = () => {
+    const kind = upgradeOffer?.kind;
+    setUpgradeOffer(null);
+    playUiSound("tap");
+    if (kind) onSchoolUpgrade?.(kind);
+    onBack?.();
+  };
+
   const goAfterDone = () => {
     playUiSound("soft");
+    const offer = resolveSchoolUpgradeOffer(profile, progress);
+    if (offer) {
+      setUpgradeOffer(offer);
+      return;
+    }
     if (nextUnlocked) onChangeStep?.(nextId);
     else onBack?.();
   };
@@ -115,12 +141,17 @@ export default function SchoolExerciseScreen({
       onUpgrade?.("trial_required");
       return;
     }
-    if (!view?.unlocked || view.done || congrats) return;
+    if (!view?.unlocked || view.done || congrats || upgradeOffer) return;
     playUiSound("tap");
     const next = applySchoolResult(progress, trackId, stepId, "yes");
     onProgress?.(next);
     const after = schoolStepView(next, trackId, stepId);
     if (!after?.done) return;
+    const offer = resolveSchoolUpgradeOffer({ ...profile, schoolProgress: next }, next);
+    if (offer) {
+      setUpgradeOffer(offer);
+      return;
+    }
     setCongrats({
       n: stepNo,
       title: view.title,
@@ -241,7 +272,7 @@ export default function SchoolExerciseScreen({
         )}
       </div>
 
-      {view.unlocked && !view.done && !congrats ? (
+      {view.unlocked && !view.done && !congrats && !upgradeOffer ? (
         <div className="ms-school-validate-bar">
           <button
             type="button"
@@ -256,7 +287,7 @@ export default function SchoolExerciseScreen({
         </div>
       ) : null}
 
-      {view.unlocked && view.done && !congrats ? (
+      {view.unlocked && view.done && !congrats && !upgradeOffer ? (
         <div className="ms-school-validate-bar">
           <button
             type="button"
@@ -271,7 +302,40 @@ export default function SchoolExerciseScreen({
         </div>
       ) : null}
 
-      {congrats ? (
+      {upgradeOffer ? (
+        <SoftMistSheet
+          eyebrow={t("school.stepDone")}
+          title={t(`school.offer.${upgradeOffer.kind}.title`)}
+          icon={
+            <span className="ms-school-congrats-ico" aria-hidden>
+              <Check size={28} strokeWidth={2.75} />
+            </span>
+          }
+          onClose={dismissUpgradeOffer}
+          lockScroll={false}
+          zIndex={570}
+        >
+          <p className="ms-tip-lead">
+            {t(`school.offer.${upgradeOffer.kind}.body`)}
+          </p>
+          <button
+            type="button"
+            className="ms-school-congrats-cta"
+            onClick={acceptUpgradeOffer}
+          >
+            {t(`school.offer.${upgradeOffer.kind}.accept`)}
+          </button>
+          <button
+            type="button"
+            className="ms-school-offer-later"
+            onClick={dismissUpgradeOffer}
+          >
+            {t(`school.offer.${upgradeOffer.kind}.later`)}
+          </button>
+        </SoftMistSheet>
+      ) : null}
+
+      {congrats && !upgradeOffer ? (
         <SoftMistSheet
           eyebrow={t("school.stepDone")}
           title={t("school.congratsTitle")}
@@ -297,7 +361,7 @@ export default function SchoolExerciseScreen({
         </SoftMistSheet>
       ) : null}
 
-      {term && !congrats ? (
+      {term && !congrats && !upgradeOffer ? (
         <SoftMistSheet
           eyebrow={t("school.termEyebrow")}
           title={term.title}

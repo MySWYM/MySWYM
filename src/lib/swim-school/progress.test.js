@@ -9,6 +9,8 @@ import { SCHOOL_COURSES, visibleSchoolCourses } from "./catalog.js";
 import {
   applySchoolResult,
   ancDoneCount,
+  areAllSchoolsComplete,
+  areFoundationSchoolsComplete,
   currentAncStepId,
   currentTrackStepId,
   dosDoneCount,
@@ -20,6 +22,7 @@ import {
   isStepDone,
   isTrackComplete,
   normalizeSchoolProgress,
+  resolveSchoolUpgradeOffer,
   schoolStepView,
 } from "./progress.js";
 
@@ -67,11 +70,14 @@ assert.equal(isSchoolCourseUnlocked("virage", { level: "decouverte" }), false);
 assert.equal(isSchoolCourseUnlocked("depart", { level: "decouverte" }), false);
 assert.equal(isSchoolCourseUnlocked("pap", { level: "decouverte" }), false);
 assert.equal(isSchoolCourseUnlocked("brasse", { level: "decouverte" }), false);
-assert.equal(isSchoolCourseUnlocked("pap", { level: "regulier" }), true);
+assert.equal(isSchoolCourseUnlocked("pap", { level: "regulier" }), false);
+assert.equal(isSchoolCourseUnlocked("brasse", { level: "regulier" }), false);
 assert.equal(isSchoolCourseUnlocked("dos", { level: "regulier" }), true);
 
 assert.equal(visibleSchoolCourses({ level: "decouverte" }).map((c) => c.id).join(","), "crawl,dos,virage,depart");
-assert.equal(visibleSchoolCourses({ level: "regulier" }).length, 6);
+assert.equal(visibleSchoolCourses({ level: "regulier" }).map((c) => c.id).join(","), "crawl,dos,virage,depart");
+assert.equal(visibleSchoolCourses({ level: "sportif" }).length, 6);
+assert.equal(visibleSchoolCourses({ level: "performance" }).length, 6);
 
 let p = empty;
 const day1 = new Date("2026-10-10T10:00:00");
@@ -106,11 +112,45 @@ assert.equal(isTrackComplete(afterDos, "dos"), true);
 assert.equal(dosDoneCount(afterDos), 12);
 assert.equal(isSchoolCourseUnlocked("virage", { level: "decouverte", schoolProgress: afterDos }), true);
 assert.equal(isSchoolCourseUnlocked("depart", { level: "decouverte", schoolProgress: afterDos }), false);
+// Pap/brasse : crawl+dos OK, mais encore ANC18 manquant (crawl boucle après gate)
+assert.equal(isSchoolCourseUnlocked("pap", { level: "regulier", schoolProgress: afterDos }), false);
 
-let afterVirage = afterDos;
+let crawlFull = afterDos;
+crawlFull = applySchoolResult(crawlFull, "anc", "ANC18", "yes", day1);
+assert.equal(isTrackComplete(crawlFull, "anc"), true);
+assert.equal(isSchoolCourseUnlocked("pap", { level: "regulier", schoolProgress: crawlFull }), false);
+assert.equal(isSchoolCourseUnlocked("brasse", { level: "regulier", schoolProgress: crawlFull }), false);
+assert.equal(isSchoolCourseUnlocked("pap", { level: "decouverte", schoolProgress: crawlFull }), false);
+assert.equal(isSchoolCourseUnlocked("pap", { level: "sportif", schoolProgress: crawlFull }), true);
+assert.equal(isSchoolCourseUnlocked("brasse", { level: "sportif", schoolProgress: crawlFull }), true);
+
+let afterVirage = crawlFull;
 for (const step of VIRAGE_STEPS) {
   afterVirage = applySchoolResult(afterVirage, "virage", step.id, "yes", day1);
 }
 assert.equal(isSchoolCourseUnlocked("depart", { level: "decouverte", schoolProgress: afterVirage }), true);
+assert.equal(areFoundationSchoolsComplete(afterVirage), false);
+
+let afterDepart = afterVirage;
+for (const step of DEPART_STEPS) {
+  afterDepart = applySchoolResult(afterDepart, "depart", step.id, "yes", day1);
+}
+assert.equal(areFoundationSchoolsComplete(afterDepart), true);
+assert.equal(resolveSchoolUpgradeOffer({ level: "regulier", schoolProgress: afterDepart }, afterDepart)?.kind, "intermediate");
+assert.equal(resolveSchoolUpgradeOffer({ level: "decouverte", schoolProgress: afterDepart }, afterDepart)?.kind, "intermediate");
+assert.equal(resolveSchoolUpgradeOffer({ level: "sportif", swimStyle: "crawl", schoolProgress: afterDepart }, afterDepart), null);
+
+let allSchools = afterDepart;
+for (const step of PAP_STEPS) {
+  allSchools = applySchoolResult(allSchools, "pap", step.id, "yes", day1);
+}
+for (const step of BRASSE_STEPS) {
+  allSchools = applySchoolResult(allSchools, "brasse", step.id, "yes", day1);
+}
+assert.equal(areAllSchoolsComplete(allSchools), true);
+assert.equal(resolveSchoolUpgradeOffer({ level: "sportif", swimStyle: "crawl", schoolProgress: allSchools }, allSchools)?.kind, "four_nages");
+assert.equal(resolveSchoolUpgradeOffer({ level: "performance", swimStyle: "crawl", schoolProgress: allSchools }, allSchools)?.kind, "four_nages");
+assert.equal(resolveSchoolUpgradeOffer({ level: "sportif", swimStyle: "4_nages", schoolProgress: allSchools }, allSchools), null);
+assert.equal(resolveSchoolUpgradeOffer({ level: "regulier", schoolProgress: allSchools }, allSchools)?.kind, "intermediate");
 
 console.log("ok");

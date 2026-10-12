@@ -103,7 +103,7 @@ export function getUpgradeCopy(softContext, { weeks = 0, trialEligible = true } 
     case "after_first_session":
       return {
         headline: "Belle première séance.",
-        subtitle: "Le coach peut déjà adapter la suite. Abonne-toi pour garder ton plan vivant : 8,99 €/mois sans engagement, ou 59,99 €/an.",
+        subtitle: "Le coach peut déjà adapter la suite. Abonne-toi pour garder ton plan vivant : 8,99 €/mois sans engagement, ou 69,99 €/an.",
       };
     case "buddies":
       return {
@@ -120,7 +120,7 @@ export function getUpgradeCopy(softContext, { weeks = 0, trialEligible = true } 
     case "trial_expired":
       return {
         headline: "Ton essai est fini - le coach est en pause",
-        subtitle: "Reprends tes séances et l’adaptation : 8,99 €/mois sans engagement, ou 59,99 €/an.",
+        subtitle: "Reprends tes séances et l’adaptation : 8,99 €/mois sans engagement, ou 69,99 €/an.",
       };
     case "session_locked":
       return {
@@ -141,8 +141,8 @@ export function getUpgradeCopy(softContext, { weeks = 0, trialEligible = true } 
       return {
         headline: "ForSwim Premium",
         subtitle: trialEligible
-          ? "7 jours offerts avec carte, puis 8,99 €/mois sans engagement ou 59,99 €/an."
-          : "Continue à 8,99 €/mois sans engagement, ou 59,99 €/an.",
+          ? "7 jours offerts avec carte, puis 8,99 €/mois sans engagement ou 69,99 €/an."
+          : "Continue à 8,99 €/mois sans engagement, ou 69,99 €/an.",
       };
   }
 }

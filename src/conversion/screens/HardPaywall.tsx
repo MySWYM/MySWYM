@@ -29,7 +29,7 @@ export function HardPaywall({ weekReached, totalWeeks, onSubscribe, onRestore }:
           Ton essai est terminé
         </motion.h1>
         <motion.p variants={fadeUp} className="cv:mt-3 cv:text-[15px] cv:leading-relaxed cv:text-cv-ink-secondary">
-          Tes séances sont en pause. Abonne-toi pour tout revoir : 8,99 €/mois sans engagement, ou 59,99 €/an
+          Tes séances sont en pause. Abonne-toi pour tout revoir : 8,99 €/mois sans engagement, ou 69,99 €/an
           {remaining > 0 ? ` · encore ${remaining} semaine${remaining > 1 ? 's' : ''} de plan` : ''}.
         </motion.p>
 

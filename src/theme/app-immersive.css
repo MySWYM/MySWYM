@@ -415,6 +415,96 @@
   font-weight: 600;
 }
 
+/* Accueil : carte Strava non connecté (16:9) */
+.ms-strava-home-hero {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--ms-card-radius, 28px);
+  overflow: hidden;
+  text-align: left;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -webkit-tap-highlight-color: transparent;
+  background: #7eb8f5;
+  box-shadow: 0 8px 28px rgba(0, 82, 180, 0.18);
+}
+
+.ms-strava-home-hero-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.ms-strava-home-hero-scrim {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    105deg,
+    rgba(15, 27, 45, 0.78) 0%,
+    rgba(15, 27, 45, 0.45) 50%,
+    rgba(15, 27, 45, 0.18) 100%
+  );
+}
+
+.ms-strava-home-hero-copy {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-end;
+  gap: 6px;
+  max-width: 72%;
+  height: 100%;
+  padding: 16px 16px 18px;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+.ms-strava-home-hero-title {
+  color: #fff;
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.ms-strava-home-hero-lead {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.875rem;
+  line-height: 1.35;
+  font-weight: 400;
+}
+
+.ms-strava-home-hero-cta {
+  margin-top: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 16px;
+  border-radius: 999px;
+  background: #006bfd;
+  color: #fff;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  white-space: nowrap;
+  line-height: 1;
+}
+
 .ms-home-immersive .ms-home-streak,
 .ms-app-immersive .ms-home-streak {
   display: inline-flex;
