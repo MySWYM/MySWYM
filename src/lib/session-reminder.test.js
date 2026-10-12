@@ -11,7 +11,7 @@ import {
   NOTIF_MIN_GAP_MS,
 } from "./session-reminder.js";
 import { ACCESS_STATUS } from "./access.js";
-import { NOTIF_IDS } from "./native-local-notifications.js";
+import { NOTIF_IDS } from "./notif-ids.js";
 
 export function runSessionReminderSmoke() {
   const asserts = [];
@@ -66,6 +66,35 @@ export function runSessionReminderSmoke() {
     nowMs: now,
   });
   ok(trial.some((n) => n.id === NOTIF_IDS.TRIAL_J1 || n.id === NOTIF_IDS.TRIAL_J2), "trial notifs");
+  ok(trial.every((n) => !/pause/i.test(`${n.title} ${n.body}`)), "essai non résilié : pas de pause");
+  ok(!trial.some((n) => /App Store/i.test(n.body)), "essai Stripe : pas d'App Store");
+
+  const trialCanceled = buildLocalNotificationPlan({
+    enabled: true,
+    hasPremiumAccess: true,
+    accessStatus: ACCESS_STATUS.TRIAL,
+    trialEndsAt: "2026-09-25T12:00:00.000Z",
+    trialDaysLeft: 2,
+    cancelAtPeriodEnd: true,
+    hasPlan: true,
+    nextResolved: true,
+    nowMs: now,
+  });
+  ok(trialCanceled.some((n) => /pause/i.test(n.body)), "essai résilié : pause");
+
+  const trialApple = buildLocalNotificationPlan({
+    enabled: true,
+    hasPremiumAccess: true,
+    accessStatus: ACCESS_STATUS.TRIAL,
+    trialEndsAt: "2026-09-25T12:00:00.000Z",
+    trialDaysLeft: 2,
+    billingProvider: "apple",
+    hasPlan: true,
+    nextResolved: true,
+    nowMs: now,
+  });
+  ok(trialApple.some((n) => /App Store/i.test(n.body)), "essai Apple : App Store");
+  ok(trialApple.every((n) => !/pause/i.test(n.body)), "essai Apple non résilié : pas de pause");
 
   const abandon = buildLocalNotificationPlan({
     enabled: true,

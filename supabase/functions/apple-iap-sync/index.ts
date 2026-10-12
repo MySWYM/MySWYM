@@ -1,4 +1,6 @@
+import Stripe from "npm:stripe@14";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { cancelStripeTrialForApple } from "../_shared/cancel-stripe-trial.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { getAccessState, type AuthUser } from "../_shared/access-state.ts";
 import {
@@ -76,6 +78,16 @@ Deno.serve(async (req) => {
     const { data: { user: adminUser } } = await supabaseAdmin.auth.admin.getUserById(user.id);
     const sourceUser = (adminUser ?? user) as AuthUser;
     const current = await getAccessState(supabaseAdmin, user.id);
+    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
+    if (stripeKey) {
+      const stripe = new Stripe(stripeKey, { apiVersion: "2024-04-10" });
+      await cancelStripeTrialForApple({
+        stripe,
+        supabaseAdmin,
+        userId: user.id,
+        current,
+      });
+    }
     const persisted = await persistAppleTransaction({
       supabaseAdmin,
       user: sourceUser,

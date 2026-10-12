@@ -61,6 +61,8 @@ export async function syncLocalNotificationsFromState({ user, plan } = {}) {
       accessStatus: access.status,
       trialEndsAt: access.trialEndsAt,
       trialDaysLeft: access.trialDaysLeft,
+      cancelAtPeriodEnd: access.cancelAtPeriodEnd,
+      billingProvider: access.billingProvider,
       hasPlan: Boolean(plan?.weeks?.length),
       nextResolved: !next || next.resolved === true,
       currentStreak: stats.currentStreak || stats.streak || 0,

@@ -280,6 +280,23 @@ Deno.serve(async (req) => {
     const referredBy = (session?.metadata?.referred_by
       ?? session?.subscription_details?.metadata?.referred_by) as string | undefined;
 
+    if (userId && customerId) {
+      try {
+        const customer = await stripe.customers.retrieve(String(customerId));
+        if (!(customer as { deleted?: boolean }).deleted) {
+          const linked = String((customer as Stripe.Customer).metadata?.supabase_user_id || "");
+          if (linked !== userId) {
+            const prev = (customer as Stripe.Customer).metadata || {};
+            await stripe.customers.update(String(customerId), {
+              metadata: { ...prev, supabase_user_id: String(userId) },
+            });
+          }
+        }
+      } catch (claimErr) {
+        console.error("[stripe-webhook] claim customer", claimErr);
+      }
+    }
+
     if (userId) {
       const { data: { user } } = await supabaseAdmin.auth.admin.getUserById(userId);
       if (user) {

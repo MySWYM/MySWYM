@@ -101,6 +101,20 @@ async function resolveMissingCustomerId(user: AuthUser) {
     // Search API indisponible → fallback e-mail
   }
 
+  try {
+    const found = await stripe.subscriptions.search({
+      query: `metadata['supabase_user_id']:'${user.id}'`,
+      limit: 5,
+    });
+    for (const sub of found.data) {
+      if (!ACTIVE_STATUSES.has(sub.status)) continue;
+      const id = typeof sub.customer === "string" ? sub.customer : sub.customer?.id;
+      if (id) return id;
+    }
+  } catch {
+    // Search API indisponible → fallback e-mail
+  }
+
   const email = String(user.email || "").trim().toLowerCase();
   // Review / e-mail confirmé : lookup Stripe. Sans confirmation = skip (sauf review list).
   if (!email) return null;

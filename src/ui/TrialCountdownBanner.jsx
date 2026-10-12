@@ -4,6 +4,7 @@ import { G } from "../theme/palette.js";
 import { FONT } from "../theme/brand.js";
 import { resolveTrialCountdown } from "../lib/access.js";
 import { PRICING } from "../lib/pricing.js";
+import { APPLE_IAP_ANNUAL_ID } from "../lib/apple-iap-catalog.js";
 import { isNativeApp } from "../lib/native-platform.js";
 import { intlLocaleFor, normalizeAppLanguage } from "../i18n/languages.js";
 
@@ -36,23 +37,36 @@ export default function TrialCountdownBanner({
   const locale = intlLocaleFor(normalizeAppLanguage(i18n.language));
   const endLabel = formatTrialEndDate(view.trialEndsAt, locale);
   const native = isNativeApp();
-  const priceFrom = native ? "" : PRICING.monthlyFlex.label;
+  const canceled = view.cancelAtPeriodEnd === true;
+  const knownPrice = view.appleProductId
+    ? (view.appleProductId === APPLE_IAP_ANNUAL_ID ? PRICING.annual.label : PRICING.monthlyFlex.label)
+    : "";
 
   let title;
   let body;
   let cta;
-  if (days === 1) {
-    title = t("trial.lastDay");
-    body = t("trial.lastDayBody");
-    cta = t("trial.keepPlan");
+  if (days === 1 && canceled) {
+    title = t("trial.chargeLastDay");
+    body = t("trial.canceledLastDayBody");
+    cta = t("trial.seeStatus");
+  } else if (days === 1) {
+    title = t("trial.chargeLastDay");
+    body = knownPrice
+      ? t("trial.chargeLastDayBody", { price: knownPrice })
+      : t("trial.chargeLastDayPlain");
+    cta = t("trial.seeStatus");
+  } else if (days === 2 && canceled) {
+    title = t("trial.chargeTwoDays");
+    body = t("trial.canceledLastDayBody");
+    cta = t("trial.seeStatus");
   } else if (days === 2) {
-    title = t("trial.twoDays");
-    body = native
-      ? (endLabel ? t("trial.twoDaysPlain", { date: endLabel }) : t("trial.swimPlain"))
-      : (endLabel
-        ? t("trial.twoDaysBody", { date: endLabel, price: priceFrom })
-        : t("trial.twoDaysSoon", { price: priceFrom }));
-    cta = t("trial.continue");
+    title = t("trial.chargeTwoDays");
+    body = endLabel
+      ? (knownPrice
+        ? t("trial.chargeTwoDaysBody", { date: endLabel, price: knownPrice })
+        : t("trial.chargeTwoDaysPlain", { date: endLabel }))
+      : t("trial.chargeLastDayPlain");
+    cta = t("trial.seeStatus");
   } else if (days === 3) {
     title = t("trial.threeDays");
     body = endLabel

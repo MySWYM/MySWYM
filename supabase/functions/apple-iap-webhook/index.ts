@@ -1,4 +1,6 @@
+import Stripe from "npm:stripe@14";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { cancelStripeTrialForApple } from "../_shared/cancel-stripe-trial.ts";
 import { getAccessState, isLiveStripeEntitlement, type AuthUser } from "../_shared/access-state.ts";
 import {
   assertAppleNotificationEnvironment,
@@ -98,6 +100,16 @@ Deno.serve(async (req) => {
       console.warn("[apple-iap-webhook] skip apple persist, stripe entitlement live", userId);
       return new Response(JSON.stringify({ received: true, linked: true, skipped: "stripe_live" }), {
         headers: { "Content-Type": "application/json" },
+      });
+    }
+    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
+    if (stripeKey) {
+      const stripe = new Stripe(stripeKey, { apiVersion: "2024-04-10" });
+      await cancelStripeTrialForApple({
+        stripe,
+        supabaseAdmin,
+        userId,
+        current,
       });
     }
     await persistAppleTransaction({

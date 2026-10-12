@@ -5,19 +5,9 @@
  */
 import { isNativeIos } from "./native-platform.js";
 import { translateMultiline } from "../i18n/dom-translate.js";
+import { NOTIF_IDS } from "./notif-ids.js";
 
-export const NOTIF_IDS = {
-  SESSION: 1001,
-  STREAK: 1002,
-  COMEBACK: 1003,
-  TRIAL_J2: 1004,
-  TRIAL_J1: 1005,
-  BADGE: 1006,
-  CHECKOUT_ABANDON: 1007,
-  COMEBACK_LONG: 1008,
-  REVIEW_ASK: 1009,
-  NEWSLETTER: 1010,
-};
+export { NOTIF_IDS };
 
 const ALL_IDS = Object.values(NOTIF_IDS);
 const PERMISSION_ASKED_KEY = "myswym_local_notif_asked";

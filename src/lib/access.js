@@ -109,6 +109,7 @@ export function getAccessState(user) {
     cancelAtPeriodEnd,
     entitledByStatus,
     billingProvider: meta.billing_provider || null,
+    appleProductId: meta.apple_product_id || null,
     hasPremiumAccess,
     /** Matching PII (tél., ville, prénom) : abo payant seulement, pas l’essai. */
     canUseBuddies: hasPremiumAccess && status !== ACCESS_STATUS.TRIAL,
