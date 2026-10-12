@@ -99,6 +99,33 @@ export function userIdFromAppAccountToken(payload: Record<string, unknown>) {
   return APP_ACCOUNT_UUID.test(raw) ? raw : null;
 }
 
+function appleExpiresIso(expiresDate: number | string | null | undefined) {
+  if (expiresDate == null || expiresDate === "") return null;
+  const numeric = Number(expiresDate);
+  const ms = Number.isFinite(numeric) && String(expiresDate).trim() !== "" && numeric > 0
+    ? numeric
+    : Date.parse(String(expiresDate));
+  if (!Number.isFinite(ms)) return null;
+  return new Date(ms).toISOString();
+}
+
+/**
+ * Garde un arrêt déjà enregistré quand l'app resynchronise la même période.
+ * Une nouvelle date d'expiration prouve que le renouvellement a eu lieu.
+ */
+export function preservedAppleCancelAtPeriodEnd(
+  current: AccessStateRow | null | undefined,
+  tx: AppleTransactionLike,
+) {
+  if (current?.cancel_at_period_end !== true) return false;
+  const linked = String(current.apple_original_transaction_id || "");
+  const incoming = String(tx.originalTransactionId || "");
+  if (!linked || !incoming || linked !== incoming) return false;
+  const nextEnds = appleExpiresIso(tx.expiresDate ?? null);
+  if (!nextEnds || nextEnds !== current.subscription_ends_at) return false;
+  return true;
+}
+
 export async function persistAppleTransaction(opts: {
   supabaseAdmin: ReturnType<typeof createClient>;
   user: AuthUser;

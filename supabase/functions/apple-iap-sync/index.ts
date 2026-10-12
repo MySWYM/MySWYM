@@ -12,6 +12,7 @@ import {
   isStripeLiveAppleConflict,
   logAppleEntitlementTransfer,
   persistAppleTransaction,
+  preservedAppleCancelAtPeriodEnd,
   releaseAnonymousAppleLink,
   STRIPE_LIVE_APPLE_CODE,
   STRIPE_LIVE_APPLE_MESSAGE,
@@ -93,6 +94,7 @@ Deno.serve(async (req) => {
       user: sourceUser,
       current,
       tx,
+      cancelAtPeriodEnd: preservedAppleCancelAtPeriodEnd(current, tx),
     });
 
     return new Response(JSON.stringify({
