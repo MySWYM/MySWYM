@@ -20,6 +20,7 @@ function envPrice(name: string): string {
 const PREPAID_PRICE_IDS = new Set([
   envPrice("STRIPE_PRICE_ANNUAL"),
   envPrice("STRIPE_PRICE_BIENNIAL"),
+  "price_1UPprJAS4mfgF2TwYr2H7Irp",
   "price_1UPMjIAS4mfgF2Tw3VYyFnaV",
   "price_1U7E38AS4mfgF2TwpJGYoMpE",
   "price_1U67kaAS4mfgF2TwvUsVQ3vE",

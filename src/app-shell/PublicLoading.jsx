@@ -5,7 +5,7 @@ import Loading from "./Loading.jsx";
 
 const WORDMARK_H = 22;
 
-/** Chargement marketing : wordmark + barre. Styles dans index.html. iOS : logo bleu. */
+/** Chargement marketing : wordmark fixe. Styles dans index.html. iOS : logo bleu. */
 export default function PublicLoading() {
   if (isNativeApp()) return <Loading />;
   return (
@@ -24,9 +24,6 @@ export default function PublicLoading() {
           height={WORDMARK_H}
           width={Math.round(WORDMARK_H * LOGO_WORDMARK_RATIO)}
         />
-        <div className="myswym-boot-track" aria-hidden="true">
-          <span className="myswym-boot-bar" />
-        </div>
       </div>
     </div>
   );

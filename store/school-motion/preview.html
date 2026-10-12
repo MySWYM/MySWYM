@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>École de nage · motions</title>
+<style>
+  :root { --bg:#F4F9FD; --ink:#1F3B52; --muted:#5D7A90; --card:#FFFFFF; --line:#D6E8F4; --accent:#2E73A8; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif; }
+  header { padding:20px 16px 8px; max-width:1200px; margin:0 auto; }
+  h1 { font-size:20px; margin:0 0 4px; }
+  header p { margin:0; color:var(--muted); font-size:13px; }
+  nav { display:flex; flex-wrap:wrap; gap:8px; padding:12px 16px 4px; max-width:1200px; margin:0 auto; }
+  nav button { font:inherit; font-size:14px; border:1px solid var(--line); background:var(--card); color:var(--ink);
+    border-radius:999px; padding:6px 14px; cursor:pointer; }
+  nav button[aria-pressed="true"] { background:var(--accent); border-color:var(--accent); color:#fff; }
+  main { display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:14px; padding:12px 16px 32px; max-width:1200px; margin:0 auto; }
+  article { background:var(--card); border:1px solid var(--line); border-radius:12px; overflow:hidden; }
+  .anim { aspect-ratio:2/1; width:100%; }
+  .txt { padding:8px 12px 12px; }
+  .txt b { display:block; font-size:14px; }
+  .txt span { color:var(--muted); font-size:12.5px; }
+  .meta { font-variant-numeric:tabular-nums; color:var(--muted); font-size:11.5px; margin-top:4px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>École de nage : motions</h1>
+  <p>Aperçu local des fichiers Lottie de <code>store/school-motion/</code>, un onglet par cours. À servir en HTTP (voir README).</p>
+</header>
+<nav id="tabs"></nav>
+<main id="grid"></main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
+<script>
+(async () => {
+  const COURSES = [
+    ['crawl', 'Crawl'], ['dos', 'Dos'], ['virage', 'Virage'], ['depart', 'Départ'], ['pap', 'Papillon'], ['brasse', 'Brasse'],
+  ];
+  const items = await (await fetch('_index-all.json')).json();
+  const grid = document.getElementById('grid');
+  const tabs = document.getElementById('tabs');
+  let anims = [];
+
+  function show(course) {
+    anims.forEach((a) => a.destroy());
+    anims = [];
+    grid.innerHTML = '';
+    tabs.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.c === course)));
+    for (const it of items.filter((i) => i.course === course)) {
+      const card = document.createElement('article');
+      card.innerHTML = `<div class="anim"></div><div class="txt"><b>${String(it.n).padStart(2, '0')} · ${it.title}</b>
+        <span>${it.show}</span><div class="meta">${it.stepId} · ${it.file} · ${it.seconds.toFixed(1)} s · ${it.frames} images</div></div>`;
+      grid.appendChild(card);
+      anims.push(lottie.loadAnimation({ container: card.querySelector('.anim'), renderer: 'svg', loop: true, autoplay: true, path: it.file }));
+    }
+    history.replaceState(null, '', '#' + course);
+  }
+
+  for (const [id, label] of COURSES) {
+    const b = document.createElement('button');
+    b.dataset.c = id;
+    b.textContent = `${label} (${items.filter((i) => i.course === id).length})`;
+    b.addEventListener('click', () => show(id));
+    tabs.appendChild(b);
+  }
+  const start = location.hash.slice(1);
+  show(COURSES.some(([id]) => id === start) ? start : 'crawl');
+})();
+</script>
+</body>
+</html>

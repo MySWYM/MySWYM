@@ -5,7 +5,7 @@ Décisions du 12 octobre 2026. Les séances, `PLAN_VERSION` et les identifiants 
 ## Règle
 
 - Essai 7 jours avec carte, une fois par compte (`trial_used`). Web : Stripe. iOS : offre d'introduction App Store.
-- Prix : 8,99 €/mois ou 59,99 €/an, identiques sur le web et l'iPhone.
+- Prix : 8,99 €/mois ou 69,99 €/an, identiques sur le web et l'iPhone.
 - Sans essai ni abonnement : les séances sont en pause.
 - Les binômes sont réservés à un abonnement payé. L'essai ne les ouvre pas.
 - Compte anonyme iOS : quiz, plan, paiement, app, puis enregistrement du compte.

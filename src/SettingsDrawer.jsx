@@ -1,8 +1,9 @@
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import {
-  Users, ChevronRight, X, Home, Calendar, ChartNoAxesCombined, Lock, History, RefreshCw,
+  Users, ChevronRight, X, Home, Calendar, ChartNoAxesCombined, Lock, History, RefreshCw, Waves,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { G } from "./theme/palette.js";
 import { playUiSound } from "./lib/ui-sounds.js";
 import { resolveAvatarUrl } from "./lib/avatar.js";
@@ -20,12 +21,14 @@ export default function SettingsDrawer({
   onGoAnalyse,
   onGoHistory,
   onGoProfile,
+  onGoSchool,
   onGoBuddies,
   onModifyPlan,
   showBuddies = false,
   lockBuddies = false,
   showModifyPlan = false,
 }) {
+  const { t } = useTranslation("app");
   useEffect(() => {
     if (!open) return undefined;
     const onKey = (e) => {
@@ -149,6 +152,16 @@ export default function SettingsDrawer({
         <div className="ms-menu-list">
           {moduleRow({ id: "home", Icon: Home, label: "Accueil", onClick: onGoHome })}
           {moduleRow({ id: "plan", Icon: Calendar, label: "Programme", onClick: onGoPlan })}
+          {onGoSchool
+            ? moduleRow({
+                id: "school",
+                Icon: Waves,
+                label: t("school.title"),
+                onClick: onGoSchool,
+                bg: "rgba(0, 107, 253, 0.1)",
+                color: G.blue,
+              })
+            : null}
           {moduleRow({
             id: "analyse",
             Icon: ChartNoAxesCombined,

@@ -452,7 +452,7 @@ export default function ProfileTab({
 
   // Deep link (notif « Actus ForSwim », etc.) → panneau profil : Notifications ou Mes données.
   useEffect(() => {
-    const PANELS = ["data", "notifications"];
+    const PANELS = ["data", "notifications", "strava"];
     const openPanel = (panel) => {
       setSettingsOpen(true);
       setHelpPanel(panel);
@@ -834,7 +834,10 @@ export default function ProfileTab({
             onPaceUpdate={onPaceUpdate}
             onValidateSession={onValidateSession}
             showProgramActions={false}
-            showDetails
+            showDetails={false}
+            showSync
+            showDisconnect
+            showHrConsent
             embedded
             isPremium={isPremium}
             onUpgrade={onUpgrade}

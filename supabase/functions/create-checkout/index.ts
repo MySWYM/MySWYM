@@ -16,10 +16,11 @@ const RETIRED_PRICE_IDS = new Set([
   "price_1TPjyeAS4mfgF2TwmSjSiidD",
   "price_1TP5yOAVxucD4jHaRYk2cbHC",
   "price_1TPKQfAVxucD4jHaUDssY5cs",
-  /** Anciens live 9,99 / 4,99 / 52,99 */
+  /** Anciens live 9,99 / 4,99 / 52,99 / 59,99 annuel */
   "price_1U3N2tAS4mfgF2TwyaI2hf22",
   "price_1TPjyPAS4mfgF2Twx3Zh4zrJ",
   "price_1U7E38AS4mfgF2TwpJGYoMpE",
+  "price_1UPMjIAS4mfgF2Tw3VYyFnaV",
 ]);
 
 function envPrice(name: string, fallback: string) {
@@ -28,14 +29,19 @@ function envPrice(name: string, fallback: string) {
   return fallback;
 }
 
-// Defaults = Live 8,99 € / 59,99 € (acct_1TP5ueAS4mfgF2Tw).
+// Defaults = Live 8,99 € / 69,99 € (acct_1TP5ueAS4mfgF2Tw).
 const PRICE_MONTHLY_FLEX = envPrice("STRIPE_PRICE_MONTHLY_FLEX", "price_1UPMipAS4mfgF2Twd2eNOMyl");
 /** Legacy engagement 12 mois : plus vendu ; gardé pour abonnés historiques. */
 const PRICE_MONTHLY_COMMIT = envPrice(
   "STRIPE_PRICE_MONTHLY_COMMIT",
   envPrice("STRIPE_PRICE_MONTHLY", "price_1TPjyPAS4mfgF2Twx3Zh4zrJ"),
 );
-const PRICE_ANNUAL = envPrice("STRIPE_PRICE_ANNUAL", "price_1UPMjIAS4mfgF2Tw3VYyFnaV");
+const PRICE_ANNUAL = envPrice("STRIPE_PRICE_ANNUAL", "price_1UPprJAS4mfgF2TwYr2H7Irp");
+/** Anciens Price annuels encore envoyés par un front non redéployé → remap vers 69,99. */
+const SUPERSEDED_ANNUAL_PRICE_IDS = new Set([
+  "price_1UPMjIAS4mfgF2Tw3VYyFnaV",
+  "price_1U7E38AS4mfgF2TwpJGYoMpE",
+]);
 /** Legacy biennal (24 mois) : plus vendu sur Tarifs ; gardé pour abonnés historiques. */
 const PRICE_BIENNIAL = Deno.env.get("STRIPE_PRICE_BIENNIAL") ?? "price_1Tue7cAS4mfgF2TwP53wZ7qn";
 const COUPON_REFERRAL = Deno.env.get("STRIPE_COUPON_REFERRAL") ?? "REFERRAL20";
@@ -55,6 +61,7 @@ function planTierFromPrice(price: string): string | undefined {
   ) return "monthly_commit";
   if (
     price === PRICE_ANNUAL ||
+    price === "price_1UPprJAS4mfgF2TwYr2H7Irp" ||
     price === "price_1UPMjIAS4mfgF2Tw3VYyFnaV" ||
     price === "price_1U7E38AS4mfgF2TwpJGYoMpE" ||
     price === "price_1U67kaAS4mfgF2TwvUsVQ3vE"
@@ -71,6 +78,7 @@ const ALLOWED_PRICE_IDS = new Set([
   PRICE_BIENNIAL,
   Deno.env.get("STRIPE_PRICE_ID") ?? "",
   "price_1UPMipAS4mfgF2Twd2eNOMyl",
+  "price_1UPprJAS4mfgF2TwYr2H7Irp",
   "price_1UPMjIAS4mfgF2Tw3VYyFnaV",
   "price_1U3N2tAS4mfgF2TwyaI2hf22",
   "price_1TPjyPAS4mfgF2Twx3Zh4zrJ",
@@ -233,7 +241,8 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const { priceId, referralCode } = body as { priceId?: string; referralCode?: string };
 
-    const price = priceId ?? Deno.env.get("STRIPE_PRICE_ID")!;
+    let price = priceId ?? Deno.env.get("STRIPE_PRICE_ID")!;
+    if (SUPERSEDED_ANNUAL_PRICE_IDS.has(price)) price = PRICE_ANNUAL;
     if (!ALLOWED_PRICE_IDS.has(price)) throw new Error("Offre invalide");
 
     // Vérifie que le prix existe vraiment sur CE compte Stripe (évite un échec silencieux)

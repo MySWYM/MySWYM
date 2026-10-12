@@ -2,19 +2,24 @@
  * Catalogue Stripe ForSwim : source de vérité des offres payantes.
  *
  *   monthly_flex   8,99 € / mois · sans engagement
- *   annual         59,99 € / an  · paiement en 1 fois
+ *   annual         69,99 € / an  · paiement en 1 fois (−35 % vs 12 × mensuel)
  *
  * Essai 7 jours avec carte (Stripe Checkout / App Store), pas à l’inscription.
  *
  * Defaults = Price IDs **Live** (compte acct_1TP5ueAS4mfgF2Tw).
  * Override via `VITE_STRIPE_PRICE_*` (front) / `STRIPE_PRICE_*` (Edge).
  * Pour tester en mode Test Stripe : poser les IDs test + `sk_test_…`.
+ *
+ * Annuel 69,99 € live : `price_1UPprJAS4mfgF2TwYr2H7Irp`.
+ * Override via `VITE_STRIPE_PRICE_ANNUAL` / `STRIPE_PRICE_ANNUAL`.
  */
 
 /** Live, ForSwim Premium Flexible 8,99 €/mois */
 const FLEX_ID = "price_1UPMipAS4mfgF2Twd2eNOMyl";
-/** Live, ForSwim Premium Annuel 59,99 €/an */
-const ANNUAL_ID = "price_1UPMjIAS4mfgF2Tw3VYyFnaV";
+/** Live, ForSwim Premium Annuel 69,99 €/an */
+const ANNUAL_ID = "price_1UPprJAS4mfgF2TwYr2H7Irp";
+/** Live legacy 59,99 €/an (abonnés historiques / cache checkout). */
+const ANNUAL_ID_LEGACY_5999 = "price_1UPMjIAS4mfgF2Tw3VYyFnaV";
 
 /** IDs mode Test (uniquement si clé sk_test), ne pas utiliser en prod. */
 export const TEST_STRIPE_PRICE_IDS = {
@@ -35,10 +40,11 @@ export const LEGACY_STRIPE_PRICE_IDS = [
   "price_1TPjyeAS4mfgF2TwmSjSiidD",
   "price_1TP5yOAVxucD4jHaRYk2cbHC",
   "price_1TPKQfAVxucD4jHaUDssY5cs",
-  /** Anciens live : 9,99 € / 4,99 € engagé / 52,99 € */
+  /** Anciens live : 9,99 € / 4,99 € engagé / 52,99 € / 59,99 € annuel */
   "price_1U3N2tAS4mfgF2TwyaI2hf22",
   "price_1TPjyPAS4mfgF2Twx3Zh4zrJ",
   "price_1U7E38AS4mfgF2TwpJGYoMpE",
+  ANNUAL_ID_LEGACY_5999,
 ];
 
 /** Price ID biennal (legacy). Ne pas exposer sur Tarifs / UpgradeModal. */
@@ -66,6 +72,7 @@ const SUPERSEDED_ENV_PRICE_IDS = new Set([
   "price_1U3N2tAS4mfgF2TwyaI2hf22",
   "price_1TPjyPAS4mfgF2Twx3Zh4zrJ",
   "price_1U7E38AS4mfgF2TwpJGYoMpE",
+  ANNUAL_ID_LEGACY_5999,
   ...Object.values(TEST_STRIPE_PRICE_IDS),
 ]);
 
@@ -106,19 +113,21 @@ export const PRICING = {
   },
   annual: {
     key: "annual",
-    label: "59,99€",
-    amount: 59.99,
+    label: "69,99€",
+    amount: 69.99,
     period: "/an",
     commitmentFr: "paiement en 1 fois",
     commitmentEn: "prepaid once a year",
+    /** vs 12 × 8,99 € = 107,88 € */
+    saveVsMonthlyPct: 35,
   },
 };
 
 export const PRICING_SUMMARY_FR =
-  "8,99€/mois sans engagement, ou 59,99€/an en 1 fois";
+  "8,99€/mois sans engagement, ou 69,99€/an en 1 fois";
 
 export const PRICING_SUMMARY_EN =
-  "€8.99/month with no commitment, or €59.99/year prepaid";
+  "€8.99/month with no commitment, or €69.99/year prepaid";
 
 export function priceIdForPlan(plan) {
   if (plan === "annual") return PRICE_IDS.annual;

@@ -126,6 +126,20 @@ function phases(n, pattern) {
   console.log("K1h PASS");
 }
 
+{
+  const progress = { version: 1, tracks: { anc: { steps: { ANC1: { yesDates: ["2026-10-10"] } } } } };
+  const row = sportProfileToRow("u-school", {
+    level: "decouverte",
+    sessionsPerWeek: 2,
+    pool: 25,
+    schoolProgress: progress,
+  });
+  assert(row.extra.schoolProgress.tracks.anc.steps.ANC1.yesDates[0] === "2026-10-10", "school extra");
+  const fields = rowToSportProfileFields(row);
+  assert(fields.schoolProgress.tracks.anc.steps.ANC1.yesDates[0] === "2026-10-10", "school round-trip");
+  console.log("K1s PASS");
+}
+
 // ── K2 planned session row ──
 {
   const row = sessionToPlannedRow("u1", "plan1", 0, 1, {

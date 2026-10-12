@@ -40,7 +40,7 @@ const PRICE_MONTHLY_COMMIT = envPrice(
 );
 const PRICE_ANNUAL = envPrice(
   ["STRIPE_PRICE_ANNUAL", "VITE_STRIPE_PRICE_ANNUAL"],
-  "price_1U7E38AS4mfgF2TwpJGYoMpE",
+  "price_1UPprJAS4mfgF2TwYr2H7Irp",
 );
 
 export async function createCheckout(

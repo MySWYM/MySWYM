@@ -8,8 +8,6 @@ import { LOGO_WORDMARK_DARK, LOGO_WORDMARK_RATIO } from "./lib/brand.js";
 import { buildPlanRevealModel } from "./lib/plan-reveal.js";
 import { markBootWarm } from "./lib/boot-warm.js";
 import SessionHeroCard from "./SessionHeroCard.jsx";
-import { humanSessionType } from "./lib/home-week-sessions.js";
-
 const BUILD_LINE_MS = 900;
 
 function prefersReducedMotion() {
@@ -112,7 +110,7 @@ export default function PlanRevealView({
               )}
 
               {model.session && (
-                <SessionHeroCard preview={model.session} kicker={humanSessionType(model.session.type)} />
+                <SessionHeroCard preview={model.session} kicker={t("home.todayKicker")} />
               )}
 
               <div className="ms-plan-reveal-cta">

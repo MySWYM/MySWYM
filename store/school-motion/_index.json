@@ -1,0 +1,146 @@
+[
+ {
+  "n": 1,
+  "file": "step-01-coulee.json",
+  "title": "Coulée ventrale",
+  "frames": 108,
+  "seconds": 3.6,
+  "show": "Poussée au mur, corps à plat et gainé, bras tendus devant : longue glisse sans battements."
+ },
+ {
+  "n": 2,
+  "file": "step-02-kick.json",
+  "title": "Coulée + petits battements",
+  "frames": 114,
+  "seconds": 3.8,
+  "show": "Même coulée, puis petits battements serrés qui prolongent la glisse sans cabrer le corps."
+ },
+ {
+  "n": 3,
+  "file": "step-03-inspire-devant.json",
+  "title": "Inspirer tête devant, bras immobiles",
+  "frames": 108,
+  "seconds": 3.6,
+  "show": "Battements, bras tendus immobiles ; la tête sort juste assez pour inspirer devant puis replonge."
+ },
+ {
+  "n": 4,
+  "file": "step-04-vrille-dos.json",
+  "title": "Demi-vrille, inspirer à plat dos",
+  "frames": 120,
+  "seconds": 4.0,
+  "show": "Bras tendus devant, demi-vrille ventre → dos ; on attend d’être à plat dos pour inspirer, puis retour ventre."
+ },
+ {
+  "n": 5,
+  "file": "step-05-deux-bras.json",
+  "title": "Deux bras en même temps",
+  "frames": 117,
+  "seconds": 3.9,
+  "show": "Traction + poussée des deux bras ensemble jusqu’aux cuisses, glisse, puis inspiration tête devant."
+ },
+ {
+  "n": 6,
+  "file": "step-06-un-bras-puis-autre.json",
+  "title": "Un bras, puis l’autre",
+  "frames": 126,
+  "seconds": 4.2,
+  "show": "Un bras puis l’autre, avec un temps stable entre les deux ; inspiration tête devant après le 2e bras."
+ },
+ {
+  "n": 7,
+  "file": "step-07-retour-sous-eau.json",
+  "title": "Retour des bras sous l’eau",
+  "frames": 120,
+  "seconds": 4.0,
+  "show": "Un bras puis l’autre, arrêt + inspiration devant, puis les deux bras reviennent ensemble sous l’eau."
+ },
+ {
+  "n": 8,
+  "file": "step-08-retour-aerien.json",
+  "title": "Retour aérien, un bras puis l’autre",
+  "frames": 132,
+  "seconds": 4.4,
+  "show": "Deux tractions alternées, arrêt + inspiration, puis chaque bras revient par-dessus l’eau, coude haut."
+ },
+ {
+  "n": 9,
+  "file": "step-09-cycle-vrille-dos.json",
+  "title": "Cycle, puis inspirer sur le dos",
+  "frames": 141,
+  "seconds": 4.7,
+  "show": "Un cycle complet avec retours aériens, puis demi-vrille : inspiration seulement à plat dos, bras devant."
+ },
+ {
+  "n": 10,
+  "file": "step-10-dos-bras-opposes.json",
+  "title": "Inspirer sur le dos, un bras devant / un derrière",
+  "frames": 180,
+  "seconds": 6.0,
+  "show": "Un bras a fini sa poussée, l’autre reste devant : demi-vrille, inspiration dos dans cette opposition, puis fin du retour. Puis l’autre côté."
+ },
+ {
+  "n": 11,
+  "file": "step-11-rattrape-vrille-dos.json",
+  "title": "Rattrapé avant + vrille, inspirer sur le dos",
+  "frames": 180,
+  "seconds": 6.0,
+  "show": "Un bras complet jusqu’à retrouver l’autre devant, vrille et inspiration à plat dos, retour ventre ; puis l’autre bras, l’autre côté."
+ },
+ {
+  "n": 12,
+  "file": "step-12-rattrape-avant-cote.json",
+  "title": "Rattrapé avant, inspirer sur le côté",
+  "frames": 103,
+  "seconds": 3.433333333333333,
+  "show": "Rattrapé avant : après la poussée, quart de vrille et tête sur le côté pour une inspiration courte, puis retour devant. Un côté puis l’autre."
+ },
+ {
+  "n": 13,
+  "file": "step-13-rattrape-arriere-cote.json",
+  "title": "Rattrapé arrière, inspirer sur le côté",
+  "frames": 105,
+  "seconds": 3.5,
+  "show": "Les mains se retrouvent derrière, aux cuisses : un bras fait retour + traction, inspiration côté 1 fois sur 2."
+ },
+ {
+  "n": 14,
+  "file": "step-14-rattrape-avant-3-temps.json",
+  "title": "Rattrapé avant, inspirer tous les 3 temps",
+  "frames": 163,
+  "seconds": 5.433333333333334,
+  "show": "Rattrapé avant enchaîné, bras dissociés ; inspiration tous les 3 passages, une fois de chaque côté, hors poussée."
+ },
+ {
+  "n": 15,
+  "file": "step-15-rattrape-arriere-3-temps.json",
+  "title": "Rattrapé arrière, inspirer tous les 3 temps",
+  "frames": 184,
+  "seconds": 6.133333333333334,
+  "show": "Même chose sans appui devant : les mains se retrouvent aux cuisses, inspiration tous les 3 passages."
+ },
+ {
+  "n": 16,
+  "file": "step-16-opposition-arret.json",
+  "title": "Opposition, arrêt, inspiration",
+  "frames": 84,
+  "seconds": 2.8,
+  "show": "Un bras pousse pendant que l’autre revient, arrêt net, inspiration côté hors poussée ; puis l’autre côté."
+ },
+ {
+  "n": 17,
+  "file": "step-17-crawl-3-temps.json",
+  "title": "Crawl en opposition, inspirer tous les 3 temps",
+  "frames": 112,
+  "seconds": 3.7333333333333334,
+  "show": "C’est le crawl : poussée et retour liés, roulis latéral, inspiration courte tous les 3 temps (alternée)."
+ },
+ {
+  "n": 18,
+  "file": "step-18-cycles.json",
+  "title": "Même nage, plus d’amplitude, moins de cycles",
+  "frames": 153,
+  "seconds": 5.1,
+  "show": "Même crawl, cadence plus lente et main qui glisse devant : on avance plus par cycle (repère livre : 9 cycles / 25 m)."
+ }
+]

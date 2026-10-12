@@ -629,8 +629,8 @@ export function CgvPage() {
       <Ul items={[
         "Essai 7 jours : offert une seule fois par compte, avec carte enregistrée (Stripe Checkout sur le site, ou Apple ID sur iPhone). À son terme, le prélèvement démarre sauf résiliation avant la fin de l’essai. Sans essai ni abonnement actif, l’accès aux séances est en pause.",
         "Mensuel sans engagement : 8,99 € TTC / mois après l’essai : sans engagement de durée ; reconduction tacite mensuelle ; résiliable à tout moment via le portail client Stripe ; accès jusqu’à la fin de la période déjà payée.",
-        "Annuel : 59,99 € TTC / an : prépaiement 12 mois en un seul paiement après l’essai. Pas de remboursement au prorata une fois facturé, hors cas légaux (rétractation encore ouverte, défaut du prestataire, autres droits impératifs). Supprimer le compte coupe le renouvellement, sans remboursement de la période déjà payée.",
-        "App iPhone (App Store) : mêmes tarifs que le site (8,99 € TTC / mois ou 59,99 € TTC / an). Paiement et résiliation via Apple. Essai 7 jours via offre d’introduction App Store (carte Apple ID).",
+        "Annuel : 69,99 € TTC / an : prépaiement 12 mois en un seul paiement après l’essai. Pas de remboursement au prorata une fois facturé, hors cas légaux (rétractation encore ouverte, défaut du prestataire, autres droits impératifs). Supprimer le compte coupe le renouvellement, sans remboursement de la période déjà payée.",
+        "App iPhone (App Store) : mêmes tarifs que le site (8,99 € TTC / mois ou 69,99 € TTC / an). Paiement et résiliation via Apple. Essai 7 jours via offre d’introduction App Store (carte Apple ID).",
         "Offres héritées (engagement 12 mois à 4,99 €/mois, annuel 52,99 €, biennal) : Price IDs Stripe legacy uniquement (plus commercialisées sur Tarifs). Conservées pour d’éventuels abonnés historiques. Les droits légaux du consommateur restent applicables.",
       ]} />
       <P>

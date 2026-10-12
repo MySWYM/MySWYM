@@ -404,7 +404,7 @@ const AuthScreen = ({ onAuth, onBack, onNavigateMode, initialMode = "password", 
       ? (mode === "register" ? "Sign up | ForSwim" : mode === "reset" ? "Reset password | ForSwim" : "Log in | ForSwim")
       : (mode === "register" ? "Inscription | ForSwim" : mode === "reset" ? "Mot de passe oublié | ForSwim" : "Connexion | ForSwim"),
     description: locale === "en"
-      ? "Log in or create your ForSwim account. 7-day Premium trial with card, then €8.99/month or €59.99/year."
+      ? "Log in or create your ForSwim account. 7-day Premium trial with card, then €8.99/month or €69.99/year."
       : "Connecte-toi ou crée ton compte ForSwim. Essai Premium 7 jours avec carte.",
     path: authPath,
     noIndex: true,

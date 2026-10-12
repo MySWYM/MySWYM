@@ -14,7 +14,7 @@ export const MYSWYM_PRODUCT = {
   tagline: "Plans d’entraînement natation personnalisés",
   monthlyFlex: "8,99€",
   monthly: "8,99€",
-  annual: "59,99€",
+  annual: "69,99€",
   trialDays: 7,
   trialRequiresCard: true,
   paths: {

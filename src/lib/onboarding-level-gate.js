@@ -26,6 +26,12 @@ export function isDebutantLevelId(level) {
   return l === "régulier" || l === "regulier" || l === "beginner";
 }
 
+/** Découverte produit : école crawl avant le plan généré. */
+export function isDecouverteLevelId(level) {
+  const l = String(level || "").toLowerCase();
+  return l === "decouverte" || l === "découverte" || l === "discovery";
+}
+
 /**
  * Avancé (`performance`). Règle coach (5 oct. 2026) : le 4 nages vient de ce que le
  * nageur déclare. Choisir Avancé (« Je maîtrise les 4 nages ») le déclare par défaut,

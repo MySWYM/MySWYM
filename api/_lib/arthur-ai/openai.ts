@@ -333,7 +333,7 @@ export function mockStructuredFromUserPayload(
     suggested_action = "ask_plan_confirmation";
   } else if (intent === "subscription") {
     message =
-      "Premium : essai 7 jours avec carte, puis 8,99€/mois sans engagement ou 59,99€/an. Détails : https://forswim.app/fr/tarifs";
+      "Premium : essai 7 jours avec carte, puis 8,99€/mois sans engagement ou 69,99€/an. Détails : https://forswim.app/fr/tarifs";
     suggested_action = "continue";
   } else if (intent === "other") {
     message = "";

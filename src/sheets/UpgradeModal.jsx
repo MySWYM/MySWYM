@@ -338,10 +338,13 @@ export default function UpgradeModal({
         {PRICING_SUMMARY_FR} · résiliation via le portail Stripe
       </p>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 10 }}>
         {planBtn("monthly_flex", t("upgrade.monthly"), PRICING.monthlyFlex.commitmentFr, PRICING.monthlyFlex.label, t("upgrade.perMonth"))}
         {planBtn("annual", t("upgrade.annual"), PRICING.annual.commitmentFr, PRICING.annual.label, t("upgrade.perYear"))}
       </div>
+      <p style={{ color: MUTED, fontSize: 12, margin: "0 0 16px", lineHeight: 1.45, fontWeight: 500 }}>
+        {isAnnual ? t("paywall.perSessionAnnual") : t("paywall.perSessionMonthly")}
+      </p>
 
       {showTrialOffer ? (
         <div
