@@ -51,7 +51,7 @@ const FAQ_RULES = [
     answer:
       "Pour changer d’offre (mensuel, annuel, carte) : Profil → « Modifier mon abonnement ». Pour te désabonner : Profil → « Résilier », puis Stripe. Tu restes Premium jusqu’à la fin de la période déjà payée, puis tes séances se mettent en pause. Pendant l’essai : Profil → Abonnement → « Arrêter l’essai », avant la fin des 7 jours, pour éviter le prélèvement. Supprimer le compte depuis Profil arrête l’abonnement Stripe encore actif, sans remboursement de la période déjà payée.",
     iosAnswer:
-      "Sur iPhone, l’abonnement se gère dans Réglages, Apple ID, Abonnements. Tu restes Premium jusqu’à la fin de la période déjà payée. Pendant l’essai : Profil → Abonnement → « Arrêter l’essai ». Ça ouvre les réglages Apple. Supprimer le compte se fait dans Profil : ça n’arrête pas un abonnement App Store tout seul.",
+      "Sur iPhone, l’abonnement se gère dans Réglages, Apple ID, Abonnements. Tu restes Premium jusqu’à la fin de la période déjà payée. Pendant l’essai : Profil → Abonnement → « Arrêter l’essai ». Essai pris dans l’app : ça ouvre les réglages Apple. Essai pris sur le site : ça ouvre la page Stripe dans le navigateur. Supprimer le compte se fait dans Profil : ça n’arrête pas un abonnement App Store tout seul.",
   },
   {
     id: "goal",
