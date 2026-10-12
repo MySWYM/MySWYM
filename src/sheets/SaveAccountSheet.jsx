@@ -9,6 +9,7 @@ import {
   isAppleSignInCanceled,
   signInWithAppleNative,
 } from "../lib/apple-auth.js";
+import { restoreAndSyncAppleIap } from "../lib/native-iap.js";
 import { getStoredReferralCode } from "../lib/referral.js";
 import { NEWSLETTER_META_KEY } from "../lib/newsletter-opt-in.js";
 import { track } from "../lib/analytics.js";
@@ -47,6 +48,10 @@ export default function SaveAccountSheet({ open, onDismiss, onConverted, onEmail
           accepted_terms_at: new Date().toISOString(),
           [NEWSLETTER_META_KEY]: false,
           ...(referralCode ? { referred_by: referralCode } : {}),
+        },
+        {
+          linkAnonymous: true,
+          onExistingAppleAccount: () => restoreAndSyncAppleIap(),
         },
       );
       const user = data?.user;

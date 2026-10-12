@@ -5,11 +5,14 @@ import {
   expectedAppleIapEnvironment,
 } from "../_shared/apple-iap-catalog.ts";
 import {
+  appleTxOwnerDecision,
   assertUsableAppleTransaction,
   cancelAtPeriodEndFromNotification,
   decodeAppleTransactionJws,
   findUserIdByOriginalTx,
+  logAppleEntitlementTransfer,
   persistAppleTransaction,
+  releaseAnonymousAppleLink,
   userIdFromAppAccountToken,
 } from "../_shared/apple-iap.ts";
 import { decodeJwsPayload } from "../_shared/apple-jws.ts";
@@ -55,7 +58,26 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
     let userId = await findUserIdByOriginalTx(supabaseAdmin, tx.originalTransactionId!);
-    if (!userId) userId = userIdFromAppAccountToken(txPayload);
+    const tokenUserId = userIdFromAppAccountToken(txPayload);
+    if (userId && tokenUserId && userId !== tokenUserId) {
+      const { data: { user: linkedUser } } = await supabaseAdmin.auth.admin.getUserById(userId);
+      const decision = appleTxOwnerDecision({
+        currentUserId: tokenUserId,
+        linkedUserId: userId,
+        linkedUserIsAnonymous: linkedUser?.is_anonymous === true,
+      });
+      if (decision === "transfer") {
+        await releaseAnonymousAppleLink(supabaseAdmin, userId);
+        await logAppleEntitlementTransfer(
+          supabaseAdmin,
+          tokenUserId,
+          userId,
+          tx.originalTransactionId!,
+        );
+        userId = tokenUserId;
+      }
+    }
+    if (!userId) userId = tokenUserId;
     if (!userId) {
       console.warn("[apple-iap-webhook] transaction non liée", tx.originalTransactionId);
       return new Response(JSON.stringify({ received: true, linked: false }), {

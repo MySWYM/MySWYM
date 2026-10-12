@@ -1,6 +1,7 @@
 /**
  * Compte anonyme Supabase : découvrir l’app avant email / Apple / Google.
- * Conversion = même user.id (updateUser / signInWithIdToken / linkIdentity).
+ * Conversion email = updateUser (même user.id).
+ * Conversion Apple = linkIdentity (même user.id). signInWithIdToken seul crée un autre compte.
  */
 
 export function isAnonymousUser(user) {
