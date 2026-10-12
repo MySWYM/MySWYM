@@ -8642,6 +8642,13 @@ export default function App() {
     const syncAndApply = () => syncSubscriptionFromStripe()
       .then(async (u) => {
         const premium = applyUser(u);
+        if (payment === "success" && !premium && u?.app_metadata?.trial_block_reason === "card_reused") {
+          activationConfirmed = true;
+          activationHoldRef.current = false;
+          try { sessionStorage.removeItem("myswym_stripe_activation_hold"); } catch { /* ignore */ }
+          showToast(appT("trial.cardReused"), 10000);
+          openUpgrade("trial_expired");
+        }
         if (payment === "success" && premium && !activationConfirmed) {
           activationConfirmed = true;
           activationHoldRef.current = false;
