@@ -44,6 +44,7 @@ export const SWIMMER_PROFILE_KEYS = Object.freeze([
   "pace400",
   "readinessProfile",
   "sessionDuration",
+  "schoolProgress",
 ]);
 
 export const BIRTH_MONTH_OPTIONS = Object.freeze([
@@ -478,7 +479,7 @@ export function hydrateSwimmerFromSources({ sportRowFields = {}, planProfile = {
   if (!Array.isArray(merged.equipment) && Array.isArray(fromSport.equipment)) {
     merged.equipment = fromSport.equipment;
   }
-  for (const key of ["gender", "country", "birthMonth", "birthDay", "birthYear", "age", "weightKg", "heightCm", "bodyUnits", "appleHealthConnected", "appleHealthConnectedAt"]) {
+  for (const key of ["gender", "country", "birthMonth", "birthDay", "birthYear", "age", "weightKg", "heightCm", "bodyUnits", "appleHealthConnected", "appleHealthConnectedAt", "schoolProgress"]) {
     if (fromSport[key] != null && fromSport[key] !== "") {
       merged[key] = fromSport[key];
     }

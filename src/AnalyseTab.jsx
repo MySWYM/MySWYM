@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { motion, useReducedMotion } from "framer-motion";
-import { Lock, Waves } from "lucide-react";
+import { Lock } from "lucide-react";
 import { G } from "./theme/palette.js";
 import { AppTabShell, AppTopBar } from "./app-shell/index.js";
 import { HomeBadgesSection } from "./Dashboard.jsx";
@@ -160,6 +160,7 @@ export default function AnalyseTab({
         onTabChange={onTabChange}
         onUpgrade={onUpgrade}
         onPaceUpdate={onPaceUpdate}
+        onValidateSession={onValidateSession}
         onShare={onShare}
         activePlanId={activePlanId}
         accessState={accessState}
@@ -450,14 +451,7 @@ export default function AnalyseTab({
 
         {mainTab === "connect" && (
           <div style={{ marginBottom: 16 }}>
-            <div className="ms-glass-card" style={{ padding: "16px", marginBottom: 12 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-                <Waves size={18} color={G.blue} />
-                <div>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: G.ink }}>Strava</div>
-                  <div style={{ fontSize: 12, color: G.grey }}>Sync nage & allure</div>
-                </div>
-              </div>
+            {typeof StravaSection === "function" ? (
               <StravaSection
                 user={user}
                 plan={plan}
@@ -465,12 +459,23 @@ export default function AnalyseTab({
                 currentPace100={profile?.pace100}
                 onPaceUpdate={onPaceUpdate}
                 onValidateSession={onValidateSession}
-                showProgramActions={false}
-                showDetails={false}
+                showProgramActions
+                showDetails
+                showSync={false}
+                showDisconnect={false}
+                showHrConsent={false}
+                onConnectRequest={() => {
+                  try {
+                    sessionStorage.setItem("myswym_profile_panel", "strava");
+                  } catch { /* ignore */ }
+                  window.dispatchEvent(new CustomEvent("myswym:open-profile-panel", { detail: { panel: "strava" } }));
+                  onTabChange?.("profile");
+                }}
+                embedded
                 isPremium={isPremium}
                 onUpgrade={onUpgrade}
               />
-            </div>
+            ) : null}
           </div>
         )}
           </>

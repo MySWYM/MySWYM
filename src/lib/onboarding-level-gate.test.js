@@ -2,7 +2,7 @@
  * Usage : node src/lib/onboarding-level-gate.test.js
  */
 import assert from "node:assert/strict";
-import { isBeginnerBlockedForGoal, isBeginnerLevelId, isDebutantLevelId, isAvanceLevelId, impliedSwimStyleForLevel } from "./onboarding-level-gate.js";
+import { isBeginnerBlockedForGoal, isBeginnerLevelId, isDebutantLevelId, isDecouverteLevelId, isAvanceLevelId, impliedSwimStyleForLevel } from "./onboarding-level-gate.js";
 
 assert.equal(isBeginnerBlockedForGoal("triathlon_xs"), false);
 assert.equal(isBeginnerBlockedForGoal("triathlon_sprint"), false);
@@ -23,6 +23,9 @@ assert.equal(isDebutantLevelId("régulier"), true);
 assert.equal(isDebutantLevelId("regulier"), true);
 assert.equal(isDebutantLevelId("sportif"), false);
 assert.equal(isDebutantLevelId("découverte"), false);
+assert.equal(isDecouverteLevelId("decouverte"), true);
+assert.equal(isDecouverteLevelId("découverte"), true);
+assert.equal(isDecouverteLevelId("régulier"), false);
 
 assert.equal(isAvanceLevelId("performance"), true);
 assert.equal(isAvanceLevelId("advanced"), true);

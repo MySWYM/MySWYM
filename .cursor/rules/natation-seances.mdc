@@ -1,10 +1,10 @@
 ---
-description: Règles pour le contenu des séances et programmes natation ForSwim
+description: Règles pour le contenu des séances et programmes natation MySWYM
 globs: src/App.jsx
 alwaysApply: false
 ---
 
-# Séances natation ForSwim
+# Séances natation MySWYM
 
 ## Avant toute modification
 
@@ -33,6 +33,7 @@ alwaysApply: false
 - **4 nages** : crawl = plus grande part, mix 40/20/20/20. Débutant = crawl seulement. Avancé = 4 nages. Pas de nage favorite.
 - **Éducatifs** : jambes + nage appliquée prioritaires ; chiens rares (~1/8). Soft Sheet : fiche UI = onglet Éducatifs (`sheetEducatif`), pas Arthur `.js`. Vague 1 = Nager 01–03. 4 nages Sheet : `{par 25m}` / `{par 100m}` / `{25m éducatif + 25m nage}` (pas le MIXTE 25+25).
 - **Découverte** : flèche + grand chien (+ palmes/tuba) ; pas de T100.
+- **École** : 6 cours (crawl, dos, virage, départ, pap, brasse). Découverte = crawl (gate ANC17) avant le plan, puis dos → virage → départ. Pap/brasse hors Découverte. UI : « étape X ». Progression `schoolProgress` multi-track, pas le plan.
 - **BNSSA / pompiers** : sauvetage, pas endurance générique seule.
 - **BPJEPS** : 400 m NL, distinct de BNSSA.
 - **Eau libre** : sighting / lieu ; **Triathlon** : cues course.

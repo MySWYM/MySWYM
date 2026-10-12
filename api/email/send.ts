@@ -40,7 +40,7 @@ const B = {
   site: "https://www.forswim.app",
   logoOnDark: "https://www.forswim.app/logo-myswym-banner-blanc.png",
   pricingLine:
-    "8,99 €/mois sans engagement · 59,99 €/an",
+    "8,99 €/mois sans engagement · 69,99 €/an",
 } as const;
 
 function isEmailKind(value: unknown): value is EmailKind {

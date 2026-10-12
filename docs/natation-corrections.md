@@ -1,4 +1,4 @@
-# Mémoire natation ForSwim
+# Mémoire natation MySWYM
 
 > Ancien fichier monolithique **scindé** le 2026-08-15.  
 > L’agent doit lire les fichiers ci-dessous **avant** de modifier le contenu des séances.
@@ -9,6 +9,7 @@
 | [`natation-source-de-verite.md`](./natation-source-de-verite.md) | Hiérarchie des données et architecture |
 | [`natation-validation-seances.md`](./natation-validation-seances.md) | Distance, volume, matériel, 4 nages, sécurité, rendu |
 | [`natation-historique.md`](./natation-historique.md) | Journal daté (`✅ active` / `↩ remplacée` / `🧪 à vérifier`) |
+| [`natation-savoir/`](./natation-savoir/) | Fiches savoir tirées de livres, validées Arthur. École crawl = ANC ; école dos = `nager2-dos.md` (12 étapes). Le reste = savoir non branché sauf mention contraire. |
 
 **Après chaque correction d’Arthur** : mettre à jour règles actives et/ou validation si durable, ajouter une ligne datée dans l’historique, et aligner `.cursor/rules/natation-seances.mdc` si besoin.
 

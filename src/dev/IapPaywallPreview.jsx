@@ -24,7 +24,7 @@ function Preview() {
         period={period}
         onPeriodChange={setPeriod}
         monthlyPrice="8,99€"
-        annualPrice="59,99€"
+        annualPrice="69,99€"
         trialEligible={intro}
         pinRestore={!intro}
         subtitle={intro ? undefined : "L'essai gratuit a déjà été utilisé avec cet identifiant Apple. Ton abonnement démarre aujourd'hui, résiliable à tout moment."}

@@ -128,6 +128,7 @@ export default function TarifsPage() {
       price: PRICING.monthlyFlex.label,
       period: t("pricingPage.perMonth"),
       meta: t("pricingPage.flexMeta"),
+      hook: t("pricingPage.flexHook"),
       cta: t("pricingPage.flexCta"),
       features: [t("pricingPage.flexF1"), t("pricingPage.flexF2"), t("pricingPage.flexF3")],
     },
@@ -141,6 +142,7 @@ export default function TarifsPage() {
       price: PRICING.annual.label,
       period: t("pricingPage.perYear"),
       meta: t("pricingPage.annualMeta"),
+      hook: t("pricingPage.annualHook"),
       cta: t("pricingPage.annualCta"),
       features: [t("pricingPage.annualF1"), t("pricingPage.annualF2"), t("pricingPage.annualF3")],
     },
@@ -216,6 +218,7 @@ export default function TarifsPage() {
                   {plan.price}
                   <span>{plan.period}</span>
                 </p>
+                {plan.hook ? <p className="ms-pricing-hook">{plan.hook}</p> : null}
                 <p className="ms-pricing-meta">{plan.meta}</p>
                 <button
                   type="button"

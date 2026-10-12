@@ -122,11 +122,20 @@ export default function IosAnalyseHome({
   onTabChange,
   onUpgrade,
   onPaceUpdate,
+  onValidateSession = null,
   onShare = null,
   activePlanId = null,
   accessState = null,
 }) {
-  const { MonAllureCard } = getTabUi();
+  const { MonAllureCard, StravaSection } = getTabUi();
+
+  const openStravaSettings = () => {
+    try {
+      sessionStorage.setItem("myswym_profile_panel", "strava");
+    } catch { /* ignore */ }
+    window.dispatchEvent(new CustomEvent("myswym:open-profile-panel", { detail: { panel: "strava" } }));
+    onTabChange?.("profile");
+  };
   const reduced = useReducedMotion();
   const [panel, setPanel] = useState(null);
   const [rank, setRank] = useState(undefined);
@@ -475,6 +484,30 @@ export default function IosAnalyseHome({
             </FadeIn>
           </>
         )}
+
+        {user && typeof StravaSection === "function" ? (
+          <FadeIn index={nextStep()} reduced={reduced}>
+            <section className="ms-analyse-strava" aria-label="Strava" style={{ marginTop: 16 }}>
+              <StravaSection
+                user={user}
+                plan={plan}
+                profile={profile}
+                currentPace100={profile?.pace100}
+                onPaceUpdate={onPaceUpdate}
+                onValidateSession={onValidateSession}
+                showProgramActions={!!isPremium}
+                showDetails
+                showSync={false}
+                showDisconnect={false}
+                showHrConsent={false}
+                onConnectRequest={openStravaSettings}
+                embedded
+                isPremium={isPremium}
+                onUpgrade={onUpgrade}
+              />
+            </section>
+          </FadeIn>
+        ) : null}
 
       </div>
     </AppTabShell>

@@ -92,15 +92,13 @@ export function sessionTypeAccent(type, palette) {
 
 function toCard({ weekIndex, sessionIndex, session, title, resolved }) {
   const preview = sessionCardModel(session);
-  const typeLabel = humanSessionType(session?.type);
-  const line = [typeLabel, preview.distanceLabel].filter(Boolean).join(" · ");
   return {
     key: `${weekIndex}-${sessionIndex}`,
     weekIndex,
     sessionIndex,
     session,
     title,
-    line,
+    line: preview.distanceLabel || "",
     cover: sessionCoverSrc(session?.type, sessionIndex),
     resolved,
     type: session?.type || "",

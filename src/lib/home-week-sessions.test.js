@@ -36,7 +36,7 @@ assert(cards.length === 3, "3 séances = 3 cartes");
 assert(cards[0].title === "Séance 1" && cards[2].title === "Séance 3", "titres 1…n");
 assert(cards[0].resolved && !cards[1].resolved, "faite / ouverte");
 assert(initialWeekCardIndex(cards) === 1, "focus = prochaine");
-assert(cards[1].line.includes("Technique"), "ligne type");
+assert(cards[1].line && !/technique|endurance/i.test(cards[1].line), "ligne = distance, pas le type");
 assert(new Set(cards.map((c) => c.cover)).size === 3, "3 photos distinctes");
 assert(cards[0].cover.includes("hero-pool"), "séance 1 = hero-pool");
 assert(cards[1].cover.includes("technique"), "séance 2 technique");

@@ -13,19 +13,19 @@ interface Props {
 const COPY: Record<NonNullable<Props['context']>, { title: string; subtitle: string }> = {
   after_first_session: {
     title: 'Analyse terminée.',
-    subtitle: 'Essai 7 jours avec carte, puis 8,99 €/mois sans engagement ou 59,99 €/an. Après l’essai, tes séances se mettent en pause.',
+    subtitle: 'Essai 7 jours avec carte, puis 8,99 €/mois sans engagement ou 69,99 €/an. Après l’essai, tes séances se mettent en pause.',
   },
   streak: {
     title: 'Ta progression est prête.',
-    subtitle: 'Garde ton coach : 8,99 €/mois sans engagement, ou 59,99 €/an.',
+    subtitle: 'Garde ton coach : 8,99 €/mois sans engagement, ou 69,99 €/an.',
   },
   week_unlock: {
     title: 'Tes prochaines recommandations sont prêtes.',
-    subtitle: 'Débloque l’analyse complète : 8,99 €/mois sans engagement, ou 59,99 €/an.',
+    subtitle: 'Débloque l’analyse complète : 8,99 €/mois sans engagement, ou 69,99 €/an.',
   },
   generic: {
     title: 'Garde ton coach personnel.',
-    subtitle: 'Essai 7 jours · avec carte · puis 8,99 €/mois sans engagement ou 59,99 €/an. Après l’essai, tes séances se mettent en pause.',
+    subtitle: 'Essai 7 jours · avec carte · puis 8,99 €/mois sans engagement ou 69,99 €/an. Après l’essai, tes séances se mettent en pause.',
   },
 }
 

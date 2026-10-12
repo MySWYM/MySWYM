@@ -235,6 +235,9 @@ export function sportProfileToRow(userId, profile = {}) {
       appleHealthConnectedAt: profile.appleHealthConnected === true
         ? (profile.appleHealthConnectedAt || new Date().toISOString())
         : null,
+      schoolProgress: profile.schoolProgress && typeof profile.schoolProgress === "object"
+        ? profile.schoolProgress
+        : null,
     },
     updated_at: new Date().toISOString(),
   };
@@ -315,6 +318,9 @@ export function rowToSportProfileFields(row) {
     trainingFocus: extra.trainingFocus ?? null,
     appleHealthConnected: extra.appleHealthConnected === true,
     appleHealthConnectedAt: extra.appleHealthConnectedAt || null,
+    schoolProgress: extra.schoolProgress && typeof extra.schoolProgress === "object"
+      ? extra.schoolProgress
+      : null,
   };
 }
 
