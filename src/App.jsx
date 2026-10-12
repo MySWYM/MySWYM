@@ -11792,10 +11792,34 @@ export default function App() {
     }
   };
 
+  const refreshAccessAfterAppleSheet = () => {
+    for (const ms of [3000, 10000, 30000]) {
+      window.setTimeout(() => {
+        if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
+        void (async () => {
+          try {
+            const { data } = await supabase.auth.refreshSession();
+            const next = data?.session?.user;
+            if (!next) return;
+            setUser(next);
+            setIsPremium(checkIsPremium(next));
+          } catch { /* le webhook Apple met à jour le jeton */ }
+        })();
+      }, ms);
+    }
+  };
+
+  const openAppleManageThenRefresh = () => {
+    void (async () => {
+      await openAppleSubscriptionManagement();
+      refreshAccessAfterAppleSheet();
+    })();
+  };
+
   const handlePortal = () => {
     if (getAccessState(user).billingProvider === "apple") {
       if (isNativeIos()) {
-        void openAppleSubscriptionManagement();
+        openAppleManageThenRefresh();
         return;
       }
       showToast("Abonnement App Store : gère-le sur l’iPhone (Réglages → Apple ID → Abonnements).", 7000);
@@ -11807,7 +11831,7 @@ export default function App() {
   const handleCancelSubscription = () => {
     if (getAccessState(user).billingProvider === "apple") {
       if (isNativeIos()) {
-        void openAppleSubscriptionManagement();
+        openAppleManageThenRefresh();
         return;
       }
       showToast("Abonnement App Store : résilie sur l’iPhone (Réglages → Apple ID → Abonnements).", 7000);
@@ -11819,7 +11843,7 @@ export default function App() {
   const handleStopTrial = () => {
     if (getAccessState(user).billingProvider === "apple") {
       if (isNativeIos()) {
-        void openAppleSubscriptionManagement();
+        openAppleManageThenRefresh();
         return;
       }
       showToast("Essai App Store : arrête-le sur l’iPhone (Réglages → Apple ID → Abonnements).", 7000);
