@@ -9,6 +9,8 @@ import {
   persistAppleProfile,
   sha256Hex,
   signInWithAppleNative,
+  isAppleIdentityAlreadyLinked,
+  isManualLinkingDisabled,
 } from "./apple-auth.js";
 
 function assert(cond, msg) {
@@ -86,6 +88,94 @@ assert(!isAppleSignInCanceled({ message: "not enabled" }), "not cancel");
     threw = e.message === "APPLE_NO_TOKEN";
   }
   assert(threw, "missing identity token");
+}
+
+assert(isAppleIdentityAlreadyLinked({ code: "identity_already_exists" }), "already linked code");
+assert(isManualLinkingDisabled({ message: "Manual linking is disabled" }), "manual linking off");
+assert(!isAppleIdentityAlreadyLinked({ message: "Manual linking is disabled" }), "disabled is not already linked");
+
+function appleAuthorize() {
+  return async () => ({ response: { identityToken: "jwt-token", givenName: "Ada" } });
+}
+
+{
+  const calls = [];
+  const supabase = {
+    auth: {
+      getSession: async () => ({ data: { session: { user: { id: "anon", is_anonymous: true } } } }),
+      linkIdentity: async (payload) => {
+        calls.push(["link", payload.provider, payload.token]);
+        return { data: { user: { id: "anon" } }, error: null };
+      },
+      signInWithIdToken: async () => {
+        calls.push(["id"]);
+        return { data: { user: { id: "other" } }, error: null };
+      },
+      updateUser: async () => ({ error: null }),
+    },
+  };
+  const data = await signInWithAppleNative(supabase, appleAuthorize(), {}, { linkAnonymous: true });
+  assert(data.user.id === "anon", "anon link keeps id");
+  assert(calls[0][0] === "link" && calls.length === 1, "anon calls linkIdentity only");
+}
+
+{
+  const calls = [];
+  const supabase = {
+    auth: {
+      getSession: async () => ({ data: { session: { user: { id: "real", is_anonymous: false } } } }),
+      linkIdentity: async () => {
+        calls.push("link");
+        return { data: null, error: null };
+      },
+      signInWithIdToken: async () => {
+        calls.push("id");
+        return { data: { user: { id: "real" } }, error: null };
+      },
+      updateUser: async () => ({ error: null }),
+    },
+  };
+  await signInWithAppleNative(supabase, appleAuthorize(), {}, { linkAnonymous: true });
+  assert(calls.join(",") === "id", "non anon uses signInWithIdToken");
+}
+
+{
+  const calls = [];
+  let restored = false;
+  const supabase = {
+    auth: {
+      getSession: async () => ({ data: { session: { user: { id: "anon", is_anonymous: true } } } }),
+      linkIdentity: async () => ({ data: null, error: { code: "identity_already_exists", message: "already linked" } }),
+      signInWithIdToken: async () => {
+        calls.push("id");
+        return { data: { user: { id: "existing" } }, error: null };
+      },
+      updateUser: async () => ({ error: null }),
+    },
+  };
+  const data = await signInWithAppleNative(supabase, appleAuthorize(), {}, {
+    linkAnonymous: true,
+    onExistingAppleAccount: async () => { restored = true; },
+  });
+  assert(data.user.id === "existing", "already linked switches account");
+  assert(calls[0] === "id" && restored, "restore after existing apple account");
+}
+
+{
+  const calls = [];
+  const supabase = {
+    auth: {
+      getSession: async () => ({ data: { session: { user: { id: "anon", is_anonymous: true } } } }),
+      linkIdentity: async () => ({ data: null, error: { message: "Manual linking is disabled" } }),
+      signInWithIdToken: async () => {
+        calls.push("id");
+        return { data: { user: { id: "fresh" } }, error: null };
+      },
+      updateUser: async () => ({ error: null }),
+    },
+  };
+  const data = await signInWithAppleNative(supabase, appleAuthorize(), {}, { linkAnonymous: true });
+  assert(data.user.id === "fresh" && calls[0] === "id", "manual linking off falls back");
 }
 
 console.log("apple-auth ok");

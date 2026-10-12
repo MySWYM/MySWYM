@@ -49,6 +49,14 @@
   background: #FFFFFF;
 }
 
+.ms-iap-lead {
+  margin: 0 0 12px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--ms-ink-muted, #4a5d72);
+  font-weight: 500;
+}
+
 .ms-iap-title {
   margin: 0 0 10px;
   color: #0F1B2D;

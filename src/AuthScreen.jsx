@@ -296,10 +296,21 @@ const SocialAuthButtons = ({ disabled, onError, onBlockedClick, onAuth, intent =
             ...(getStoredReferralCode() ? { referred_by: getStoredReferralCode() } : {}),
           }
         : {};
+      const { data: appleSession } = await supabase.auth.getSession();
+      const linkAnonymous = intent === "signup" && isAnonymousUser(appleSession?.session?.user);
       const data = await signInWithAppleNative(
         supabase,
         (opts) => SignInWithApple.authorize(opts),
         extraMeta,
+        linkAnonymous
+          ? {
+              linkAnonymous: true,
+              onExistingAppleAccount: async () => {
+                const { restoreAndSyncAppleIap } = await import("./lib/native-iap.js");
+                await restoreAndSyncAppleIap();
+              },
+            }
+          : {},
       );
       const user = data?.user;
       if (!user) throw new Error(t("auth.socialFail"));

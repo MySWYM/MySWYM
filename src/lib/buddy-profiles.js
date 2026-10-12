@@ -1,5 +1,5 @@
 import { supabase } from "../supabase.js";
-import { requirePaidBuddies } from "./buddy-access.js";
+import { isPremiumRequiredError, requirePaidBuddies } from "./buddy-access.js";
 import { sortBuddiesForViewer } from "./buddy-match-rank.js";
 import { humanizeBuddyOtpError } from "./buddy-otp-messages.js";
 import { findObjectionable, UGC_BLOCKED_MESSAGE } from "./ugc-filter.js";
@@ -280,6 +280,10 @@ export async function fetchDiscoverableBuddies({
       ? rows.filter((r) => r.user_id !== excludeUserId)
       : rows;
     return { data: sortBuddiesForViewer(filtered, viewerProfile || {}), error: null };
+  }
+
+  if (isPremiumRequiredError(error)) {
+    return { data: [], error: { message: error.message, code: "premium_required" } };
   }
 
   // Fallback legacy, colonnes publiques uniquement ; filtre numéro sans le sélectionner

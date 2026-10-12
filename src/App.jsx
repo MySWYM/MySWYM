@@ -12,6 +12,7 @@ import {
   isAnonymousUser,
   shouldAwaitCardlessTrial,
   hasUnlockedPremiumAccess,
+  resolveUpgradeGateContext,
 } from "./lib/access.js";
 import { ensureAnonymousSession } from "./lib/anonymous-auth.js";
 import {
@@ -7928,13 +7929,11 @@ export default function App() {
     window.addEventListener("myswym:open-support", onOpen);
     return () => window.removeEventListener("myswym:open-support", onOpen);
   }, []);
-  /** Navigation onglets : remonte en haut (y compris re-tap sur l’onglet actif). */
+  /** Navigation onglets : remonte en haut (changement d’onglet + re-tap). */
   const goTab = (tab) => {
     const next = isIosSimpleNav() ? iosResolveTab(tab) : tab;
-    if (next === activeTab) {
-      scrollAppToTop();
-      return;
-    }
+    scrollAppToTop();
+    if (next === activeTab) return;
     if (activeTab === "home" || activeTab === "plan" || activeTab === "analyse" || activeTab === "history" || (isIosSimpleNav() && activeTab === "profile")) {
       lastDockTabRef.current = activeTab === "plan" ? "home" : activeTab;
     }
@@ -8275,10 +8274,11 @@ export default function App() {
     setShowSaveAccount(false);
   };
 
-  /** Anonyme avec plan : bottom sheet en relance fréquente (snooze court + retour app). */
+  /** Anonyme avec plan + accès (essai/abo) : sauver le compte après IAP, pas avant. */
   useEffect(() => {
     if (!canOpenBootSheets({ authLoading, coldHold, screen })) return undefined;
     if (!isAnonymousUser(user) || plans.length === 0) return undefined;
+    if (!accessState.hasPremiumAccess) return undefined;
     if (showUpgrade || showPlanReady || showSaveAccount || showWhatsNew || isFrozen) return undefined;
     if (sessionCelebrate || planRevealActiveRef.current || planGenerationInFlightRef.current) return undefined;
     if (isSaveAccountSnoozed(user.id)) return undefined;
@@ -8300,6 +8300,7 @@ export default function App() {
     showWhatsNew,
     isFrozen,
     sessionCelebrate,
+    accessState.hasPremiumAccess,
   ]);
 
   /** Relance à la sortie d’arrière-plan (≥ 20 min) + après une séance célébrée. */
@@ -8308,6 +8309,7 @@ export default function App() {
     const bgAt = { current: 0 };
     const tryShow = () => {
       if (!canOpenBootSheets({ authLoading, coldHold, screen })) return;
+      if (!accessState.hasPremiumAccess) return;
       if (showUpgrade || showPlanReady || showSaveAccount || showWhatsNew || isFrozen) return;
       if (sessionCelebrate || planRevealActiveRef.current || planGenerationInFlightRef.current) return;
       if (isSaveAccountSnoozed(user.id)) return;
@@ -8336,6 +8338,7 @@ export default function App() {
     showWhatsNew,
     isFrozen,
     sessionCelebrate,
+    accessState.hasPremiumAccess,
   ]);
 
   const prevSessionCelebrateRef = useRef(sessionCelebrate);
@@ -8344,13 +8347,14 @@ export default function App() {
     prevSessionCelebrateRef.current = sessionCelebrate;
     if (!wasOpen || sessionCelebrate) return undefined;
     if (!isAnonymousUser(user) || plans.length === 0) return undefined;
+    if (!accessState.hasPremiumAccess) return undefined;
     if (!canOpenBootSheets({ authLoading, coldHold, screen })) return undefined;
     if (showUpgrade || showPlanReady || showSaveAccount || showWhatsNew || isFrozen) return undefined;
     // Après une séance : relance même si snooze court (priorité conversion).
     clearSaveAccountSnooze(user.id);
     const t = window.setTimeout(() => setShowSaveAccount(true), 700);
     return () => window.clearTimeout(t);
-  }, [sessionCelebrate, user?.id, plans.length, authLoading, coldHold, screen, showUpgrade, showPlanReady, showSaveAccount, showWhatsNew, isFrozen]);
+  }, [sessionCelebrate, user?.id, plans.length, authLoading, coldHold, screen, showUpgrade, showPlanReady, showSaveAccount, showWhatsNew, isFrozen, accessState.hasPremiumAccess]);
 
   const openUpgrade = (softContext = null) => {
     trackEvent("paywall_shown", {
@@ -8380,8 +8384,30 @@ export default function App() {
     if (!isFrozen || screen !== "app") return;
     if (trialExpiredPromptedRef.current || showUpgrade || showPlanReady || showSaveAccount || showWhatsNew) return;
     trialExpiredPromptedRef.current = true;
-    openUpgrade("trial_expired");
-  }, [isFrozen, screen, showUpgrade, showPlanReady, showSaveAccount, showWhatsNew, accessState.hasPremiumAccess]);
+    openUpgrade(resolveUpgradeGateContext(user));
+  }, [isFrozen, screen, showUpgrade, showPlanReady, showSaveAccount, showWhatsNew, accessState.hasPremiumAccess, user]);
+
+  /** Après IAP natif (reload) : toast clair + SaveAccount si anonyme. */
+  useEffect(() => {
+    if (typeof window === "undefined" || !accessState.hasPremiumAccess || screen !== "app") return;
+    let kind = null;
+    try {
+      kind = sessionStorage.getItem("myswym_iap_access_toast");
+      if (kind) sessionStorage.removeItem("myswym_iap_access_toast");
+    } catch { /* ignore */ }
+    if (!kind) return;
+    if (kind === "trial") {
+      showToast("Essai 7 jours activé. Tes séances sont débloquées.", 8000);
+    } else {
+      showToast("Premium activé, ton plan est débloqué.", 8000);
+    }
+    if (isAnonymousUser(user) && plans.length > 0 && !showSaveAccount) {
+      clearSaveAccountSnooze(user.id);
+      const t = window.setTimeout(() => setShowSaveAccount(true), 900);
+      return () => window.clearTimeout(t);
+    }
+    return undefined;
+  }, [accessState.hasPremiumAccess, screen, user?.id, plans.length, showSaveAccount]);
 
   // Soft paywall essai (option C) + freeze reopen après 30 min arrière-plan.
   useEffect(() => {
@@ -8400,7 +8426,7 @@ export default function App() {
         trialExpiredPromptedRef.current = false;
         freezeBackgroundedAtRef.current = null;
         trialExpiredPromptedRef.current = true;
-        openUpgrade("trial_expired");
+        openUpgrade(resolveUpgradeGateContext(user));
         return;
       }
       if (
@@ -9990,22 +10016,15 @@ export default function App() {
     const liveAccess = getAccessState(liveUser);
     const awaitingTrial = shouldAwaitCardlessTrial(liveUser);
     if (addingPlan && plans.length > 0 && !liveAccess.canGenerateProgram && !awaitingTrial) {
-      if (isAnonymousUser(liveUser)) {
-        setShowSaveAccount(true);
-        return;
-      }
-      openUpgrade("trial_required");
+      openUpgrade(resolveUpgradeGateContext(liveUser));
       return;
     }
-    // 1er plan : essai 7j (ou attente grant) → jamais paywall. Anonyme → nudge compte.
-    const openSaveAccountAfter = isAnonymousUser(liveUser);
-    const openPaywallAfter = !openSaveAccountAfter
-      && !liveAccess.canGenerateProgram
-      && !awaitingTrial;
+    // 1er plan sans accès : PlanReady / IAP (essai CB). SaveAccount seulement après essai/abo.
+    const openPaywallAfter = !liveAccess.hasPremiumAccess && !awaitingTrial;
     await generatePlanFromProfile(sourceProfile, {
       taste: tasteProfile,
       openPaywallAfter,
-      openSaveAccountAfter,
+      openSaveAccountAfter: false,
     });
   };
 
@@ -10249,7 +10268,6 @@ export default function App() {
     setProfile(pending.profile);
     if (pending.addingPlan) setAddingPlan(true);
     let live = await syncAccessRef.current(u);
-    const anon = isAnonymousUser(live || u);
     // Essai 7j : 2ᵉ sync si le JWT n’a pas encore le grant.
     if (!checkIsPremium(live || u) && shouldAwaitCardlessTrial(live || u)) {
       try {
@@ -10258,24 +10276,19 @@ export default function App() {
       } catch { /* ignore */ }
     }
     const awaitingTrial = shouldAwaitCardlessTrial(live || u);
-    const needsPaywall = !anon && !checkIsPremium(live || u) && !awaitingTrial;
+    const liveAccess = getAccessState(live || u);
+    const needsPaywall = !liveAccess.hasPremiumAccess && !awaitingTrial;
     // Remplacement sans Premium → upgrade (1er plan peut passer en aperçu)
     if (pending.addingPlan && needsPaywall) {
       planGenerationInFlightRef.current = false;
-      openUpgrade("trial_required");
-      setScreen("app");
-      return true;
-    }
-    if (pending.addingPlan && anon && !checkIsPremium(live || u) && !awaitingTrial) {
-      planGenerationInFlightRef.current = false;
-      setShowSaveAccount(true);
+      openUpgrade(resolveUpgradeGateContext(live || u));
       setScreen("app");
       return true;
     }
     await generatePlanFromProfile(pending.profile, {
       taste: pending.tasteProfile ? normalizeTaste(pending.tasteProfile) : tasteProfile,
       openPaywallAfter: needsPaywall && !pending.addingPlan,
-      openSaveAccountAfter: anon && !pending.addingPlan,
+      openSaveAccountAfter: false,
     });
     return true;
   };
@@ -10373,7 +10386,7 @@ export default function App() {
 
   const handleRegenerateLoopSession = async () => {
     if (!canUpdateProgram) {
-      openUpgrade("trial_expired");
+      openUpgrade(resolveUpgradeGateContext(user));
       return;
     }
     const entry = plans.find((e) => e.id === activePlanId);
@@ -10441,7 +10454,7 @@ export default function App() {
 
     if (!canUpdateProgram) {
       setShowWhatsNew(false);
-      openUpgrade("trial_expired");
+      openUpgrade(resolveUpgradeGateContext(user));
       return;
     }
 
@@ -11153,7 +11166,7 @@ export default function App() {
   const handlePaceUpdate = (patchOrPace100) => {
     if (!activePlanEntry) return;
     if (!canUpdateProgram) {
-      openUpgrade("trial_expired");
+      openUpgrade(resolveUpgradeGateContext(user));
       return Promise.resolve();
     }
     const patch =
@@ -11389,7 +11402,7 @@ export default function App() {
   const handleUpdateProgram = (newFreq, newPace100 = undefined) => {
     if (!activePlanEntry) return;
     if (!canUpdateProgram) {
-      openUpgrade("trial_expired");
+      openUpgrade(resolveUpgradeGateContext(user));
       return;
     }
     const oldWeeks = activePlanEntry.plan?.weeks ?? [];
@@ -11462,7 +11475,7 @@ export default function App() {
   const handleChangeGoal = (patch) => {
     if (!activePlanEntry) return Promise.resolve();
     if (!canUpdateProgram) {
-      openUpgrade("trial_expired");
+      openUpgrade(resolveUpgradeGateContext(user));
       return Promise.resolve();
     }
     const newProfile = {
@@ -11548,7 +11561,7 @@ export default function App() {
     }
     // Remplacement d'un plan existant → Premium (même gate que update)
     if (!canGenerateProgram) {
-      openUpgrade("trial_expired");
+      openUpgrade(resolveUpgradeGateContext(user));
       return;
     }
     setReplaceConfirmOpen(true);
@@ -11892,7 +11905,7 @@ export default function App() {
                   ? "Dernier jour d’essai, demain tes séances se mettent en pause. Abonne-toi pour garder tes plans."
                   : `Plus que ${accessState.trialDaysLeft} jours d’essai. Ensuite tes séances se mettent en pause.`}
               </span>
-              <button type="button" className="ms-convert-banner-cta ms-convert-banner-cta--inverse" onClick={() => openUpgrade("trial_expired")}>
+              <button type="button" className="ms-convert-banner-cta ms-convert-banner-cta--inverse" onClick={() => openUpgrade("trial_ending")}>
                 S’abonner
               </button>
             </div>
@@ -12090,7 +12103,14 @@ export default function App() {
             plan={plan}
             profile={activeProfile || profile}
             loading={planReadyLoading}
-            onContinue={startMonthlyCheckout}
+            onContinue={() => {
+              setShowPlanReady(false);
+              if (isNativeIos()) {
+                openUpgrade(resolveUpgradeGateContext(user));
+                return;
+              }
+              void startMonthlyCheckout();
+            }}
             onDismiss={() => setShowPlanReady(false)}
           />
         )}

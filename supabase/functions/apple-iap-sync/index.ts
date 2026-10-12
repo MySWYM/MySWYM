@@ -4,10 +4,13 @@ import { getAccessState, type AuthUser } from "../_shared/access-state.ts";
 import {
   assertUsableAppleTransaction,
   decodeAppleTransactionJws,
+  appleTxOwnerDecision,
   findUserIdByOriginalTx,
   isPremiumFromState,
   isStripeLiveAppleConflict,
+  logAppleEntitlementTransfer,
   persistAppleTransaction,
+  releaseAnonymousAppleLink,
   STRIPE_LIVE_APPLE_CODE,
   STRIPE_LIVE_APPLE_MESSAGE,
 } from "../_shared/apple-iap.ts";
@@ -41,7 +44,17 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
     const linkedUserId = await findUserIdByOriginalTx(supabaseAdmin, tx.originalTransactionId!);
+    let linkedIsAnonymous = false;
     if (linkedUserId && linkedUserId !== user.id) {
+      const { data: { user: linkedUser } } = await supabaseAdmin.auth.admin.getUserById(linkedUserId);
+      linkedIsAnonymous = linkedUser?.is_anonymous === true;
+    }
+    const ownerDecision = appleTxOwnerDecision({
+      currentUserId: user.id,
+      linkedUserId,
+      linkedUserIsAnonymous: linkedIsAnonymous,
+    });
+    if (ownerDecision === "conflict") {
       return new Response(JSON.stringify({
         error: "Cet achat Apple est déjà lié à un autre compte ForSwim.",
         code: "apple_tx_other_account",
@@ -49,6 +62,15 @@ Deno.serve(async (req) => {
         status: 409,
         headers: { ...cors, "Content-Type": "application/json" },
       });
+    }
+    if (ownerDecision === "transfer" && linkedUserId) {
+      await releaseAnonymousAppleLink(supabaseAdmin, linkedUserId);
+      await logAppleEntitlementTransfer(
+        supabaseAdmin,
+        user.id,
+        linkedUserId,
+        tx.originalTransactionId!,
+      );
     }
 
     const { data: { user: adminUser } } = await supabaseAdmin.auth.admin.getUserById(user.id);

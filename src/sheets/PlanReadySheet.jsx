@@ -54,7 +54,8 @@ export default function PlanReadySheet({ plan, profile, onContinue, onDismiss, l
 
   const handleContinue = () => {
     if (isNativeApp()) {
-      onDismiss?.();
+      // iOS : ouvre l’IAP (essai 7j + carte), pas un dismiss silencieux.
+      onContinue?.();
       return;
     }
     const gateError = checkoutGatesError(acceptTerms, acceptWithdrawal);
@@ -74,7 +75,11 @@ export default function PlanReadySheet({ plan, profile, onContinue, onDismiss, l
       open
       eyebrow="Ton plan"
       title={title}
-      subtitle="Débloque les séances et l’adaptation coach. Essai 7 jours avec carte au checkout, puis abonnement. Sans abo, tes séances se mettent en pause."
+      subtitle={
+        isNativeApp()
+          ? "Essai 7 jours avec carte App Store, puis abonnement. Sans abo, tes séances se mettent en pause."
+          : "Débloque les séances et l’adaptation coach. Essai 7 jours avec carte au checkout, puis abonnement. Sans abo, tes séances se mettent en pause."
+      }
       onClose={onDismiss}
       zIndex={500}
       ariaLabel="Plan prêt"
@@ -186,7 +191,11 @@ export default function PlanReadySheet({ plan, profile, onContinue, onDismiss, l
         </div>
       ) : null}
       <Btn variant="blue" onClick={handleContinue} disabled={loading}>
-        {isNativeApp() ? "Voir mon plan" : loading ? "Redirection…" : "S’abonner : débloquer mon coach"}
+        {isNativeApp()
+          ? "Essayer 7 jours gratuits"
+          : loading
+            ? "Redirection…"
+            : "S’abonner : débloquer mon coach"}
       </Btn>
       <button
         type="button"

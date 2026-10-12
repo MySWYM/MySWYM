@@ -7,6 +7,7 @@ import {
   AlertTriangle, CheckCircle2, X, Lock, SlidersHorizontal, ChevronLeft,
 } from "lucide-react";
 import { AppTabShell, AppTopBar, AppStatusScreen } from "./app-shell/index.js";
+import { isPremiumRequiredError } from "./lib/buddy-access.js";
 import { isIosSimpleNav } from "./lib/ios-simple-nav.js";
 import { trackEvent, trackUiError } from "./lib/analytics.js";
 import { humanizeBuddyOtpError } from "./lib/buddy-otp-messages.js";
@@ -420,6 +421,14 @@ function BuddyMatchingPaid({ user, profile, onOpenMenu, onTabChange, onUpgrade }
     [connectionRows, user?.id],
   );
 
+  const surfaceBuddyError = (error, fallback) => {
+    if (isPremiumRequiredError(error)) {
+      onUpgrade?.("buddies");
+      return;
+    }
+    setMsg({ type: "err", text: typeof error?.message === "string" ? error.message : fallback });
+  };
+
   const loadList = useCallback(async () => {
     if (!user?.id) return;
     setLoadingList(true);
@@ -438,7 +447,7 @@ function BuddyMatchingPaid({ user, profile, onOpenMenu, onTabChange, onUpgrade }
         },
       });
       setBuddies(Array.isArray(data) ? data : []);
-      if (error) setMsg({ type: "err", text: typeof error.message === "string" ? error.message : "Impossible de charger les profils." });
+      if (error) surfaceBuddyError(error, "Impossible de charger les profils.");
     } catch (err) {
       setBuddies([]);
       setMsg({ type: "err", text: typeof err?.message === "string" ? err.message : "Impossible de charger les profils." });
@@ -454,6 +463,7 @@ function BuddyMatchingPaid({ user, profile, onOpenMenu, onTabChange, onUpgrade }
     form.goal_category,
     form.availability_days,
     form.availability_slots,
+    onUpgrade,
   ]);
 
   const loadOwn = useCallback(async () => {
@@ -521,7 +531,10 @@ function BuddyMatchingPaid({ user, profile, onOpenMenu, onTabChange, onUpgrade }
       }
       const { data, error } = await fetchConnectionPhones(detailConn.id);
       if (!cancelled) {
-        if (error) setPhoneInfo({ error: error.message });
+        if (error) {
+          if (isPremiumRequiredError(error)) onUpgrade?.("buddies");
+          else setPhoneInfo({ error: error.message });
+        }
         else setPhoneInfo(data);
       }
     })();
@@ -720,7 +733,7 @@ function BuddyMatchingPaid({ user, profile, onOpenMenu, onTabChange, onUpgrade }
       safetyAck,
       sharePhoneConsent: sharePhoneAck,
     });
-    if (error) setMsg({ type: "err", text: error.message });
+    if (error) surfaceBuddyError(error, error.message);
     else {
       markBuddySafetyAckedLocally();
       setMsg({ type: "ok", text: "Demande envoyée. Le numéro ne sera visible qu’après acceptation mutuelle." });

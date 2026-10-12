@@ -4,6 +4,7 @@ import {
   buildSubscriptionStateFromApple,
   hasEntitlement,
   isLiveStripeEntitlement,
+  getAccessState,
   persistAccessState,
   type AccessStateRow,
   type AppleTransactionLike,
@@ -127,4 +128,57 @@ export function isPremiumFromState(state: AccessStateRow) {
   return state.access_status === ACCESS_STATUS.trial
     || state.access_status === ACCESS_STATUS.active
     || (state.access_status === ACCESS_STATUS.canceled && hasEntitlement(state));
+}
+
+export { appleTxOwnerDecision } from "./apple-tx-link.ts";
+
+/** Ancien compte anonyme : plus d'accès Apple (une transaction = un seul compte). */
+export function clearedAnonymousAppleState(userId: string, current: AccessStateRow | null): AccessStateRow {
+  return {
+    user_id: userId,
+    access_status: ACCESS_STATUS.expired,
+    trial_started_at: current?.trial_started_at ?? null,
+    trial_ends_at: current?.trial_ends_at ?? null,
+    trial_used: current?.trial_used ?? true,
+    subscription_started_at: null,
+    subscription_ends_at: null,
+    cancel_at_period_end: false,
+    stripe_customer_id: current?.stripe_customer_id ?? null,
+    billing_provider: current?.billing_provider === "apple" ? null : (current?.billing_provider ?? null),
+    apple_original_transaction_id: null,
+    apple_product_id: null,
+    apple_environment: null,
+  };
+}
+
+export async function releaseAnonymousAppleLink(
+  supabaseAdmin: ReturnType<typeof createClient>,
+  fromUserId: string,
+) {
+  const { data: { user } } = await supabaseAdmin.auth.admin.getUserById(fromUserId);
+  if (!user) return;
+  const current = await getAccessState(supabaseAdmin, fromUserId);
+  await persistAccessState(
+    supabaseAdmin,
+    user as AuthUser,
+    clearedAnonymousAppleState(fromUserId, current),
+  );
+}
+
+export async function logAppleEntitlementTransfer(
+  supabaseAdmin: ReturnType<typeof createClient>,
+  toUserId: string,
+  fromUserId: string,
+  originalTransactionId: string,
+) {
+  await supabaseAdmin.from("conversion_events").insert({
+    user_id: toUserId,
+    event_name: "apple_entitlement_transferred",
+    path: "/apple-iap",
+    properties: {
+      from_user_id: fromUserId,
+      original_transaction_id: originalTransactionId,
+    },
+    created_at: new Date().toISOString(),
+  });
 }
