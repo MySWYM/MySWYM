@@ -65,9 +65,9 @@ import AnalyseTab from "./AnalyseTab.jsx";
 import HistoriqueTab from "./HistoriqueTab.jsx";
 import { registerTabUi } from "./tab-ui-registry.js";
 import {
-  readSoftPaywallDay,
-  writeSoftPaywallDay,
-  shouldOfferTrialSoftPaywall,
+  shouldOpenTrialStatusAtJ2,
+  readTrialStatusJ2,
+  writeTrialStatusJ2,
   shouldRepromptFreezeOnForeground,
 } from "./lib/soft-paywall-rules.js";
 import { syncLocalNotificationsFromState } from "./lib/sync-local-notifications.js";
@@ -3850,7 +3850,6 @@ const FREE_WEEKS_LIMIT = 4;
 const FREE_FREQ_LIMIT = 3;
 const FREE_LOOP_SESSION_CAP = 8;
 const FREE_LOOP_WEEKLY_CAP = 2;
-const SOFT_PAYWALL_STORAGE_KEY = "myswym_soft_paywall_v1"; // legacy soft-after-1st (inatteignable sans Premium)
 const PENDING_ONBOARDING_KEY = "myswym_pending_onboarding";
 const PLAN_VERSION = 49; // v49 = Soft Sheet 01-13 + semaine boucle N + tip allure
 // false : one-shot = version < PLAN_VERSION. Ne jamais s'en servir pour bypasser le merge.
@@ -7883,7 +7882,6 @@ export default function App() {
   const [loveReviewStep, setLoveReviewStep] = useState(null);
   const [planReveal, setPlanReveal] = useState(null);
   const [sessionCelebrate, setSessionCelebrate] = useState(null);
-  const [softPaywallPending, setSoftPaywallPending] = useState(false);
   const [cancelSurveyOpen, setCancelSurveyOpen] = useState(false);
   const [loopPaywall, setLoopPaywall] = useState(null); // null | "cap" | "weekly"
   const trialExpiredPromptedRef = useRef(false);
@@ -8389,6 +8387,9 @@ export default function App() {
     setShowUpgrade(true);
   };
   const closeUpgrade = () => {
+    if (isNativeIos() && user?.id && !accessState.hasPremiumAccess) {
+      markCheckoutAbandoned(user.id);
+    }
     setShowUpgrade(false);
     setUpgradeSoftContext(null);
   };
@@ -8447,17 +8448,6 @@ export default function App() {
         openUpgrade(resolveUpgradeGateContext(user));
         return;
       }
-      if (
-        shouldOfferTrialSoftPaywall({
-          accessState,
-          isPremium,
-          trigger: "app_open",
-          lastShownDayKey: readSoftPaywallDay(user?.id),
-        })
-      ) {
-        writeSoftPaywallDay(user?.id);
-        openUpgrade(accessState.trialDaysLeft <= 1 ? "trial_ending" : "trial_soft_daily");
-      }
     };
     document.addEventListener("visibilitychange", onVisibility);
     return () => {
@@ -8466,20 +8456,17 @@ export default function App() {
     };
   }, [isFrozen, screen, showUpgrade, showPlanReady, showSaveAccount, showWhatsNew, accessState, isPremium, user?.id]);
 
-  // Soft à l’ouverture app (J-3→J-1) : iOS natif seulement (pas le web).
+  // Fiche essai automatique à J-2, une fois par essai, iOS et web. Pas si résilié.
   useEffect(() => {
-    if (!isNativeIos()) return;
-    if (screen !== "app" || isPremium || isFrozen || showUpgrade || showPlanReady || showSaveAccount || showWhatsNew) return;
-    if (!user?.id) return;
-    if (!shouldOfferTrialSoftPaywall({
+    if (screen !== "app" || !user?.id) return;
+    if (showTrialStatus || showUpgrade || showPlanReady || showSaveAccount || showWhatsNew) return;
+    if (!shouldOpenTrialStatusAtJ2({
       accessState,
-      isPremium,
-      trigger: "app_open",
-      lastShownDayKey: readSoftPaywallDay(user.id),
+      alreadyShown: readTrialStatusJ2(user.id, accessState.trialEndsAt),
     })) return;
-    writeSoftPaywallDay(user.id);
-    openUpgrade(accessState.trialDaysLeft <= 1 ? "trial_ending" : "trial_soft_daily");
-  }, [screen, user?.id, accessState.trialDaysLeft, accessState.status, isPremium, isFrozen]);
+    writeTrialStatusJ2(user.id, accessState.trialEndsAt);
+    setShowTrialStatus(true);
+  }, [screen, user?.id, accessState, showTrialStatus, showUpgrade, showPlanReady, showSaveAccount, showWhatsNew]);
 
   // Deep link push APNs / notifs locales → onglet (+ panneau profil éventuel).
   useEffect(() => {
@@ -8502,34 +8489,6 @@ export default function App() {
     return () => window.removeEventListener("myswym:open-tab", onOpenTab);
   }, []);
 
-  // Soft paywall après action à valeur (1ʳᵉ séance / etc.).
-  useEffect(() => {
-    if (!softPaywallPending || isPremium || showUpgrade) return;
-    if (sessionFeedbackTarget !== null || feedbackWeek !== null) return;
-    let cancelled = false;
-    const t = setTimeout(() => {
-      if (cancelled) return;
-      setSoftPaywallPending(false);
-      if (!shouldOfferTrialSoftPaywall({
-        accessState,
-        isPremium,
-        trigger: "value_action",
-        lastShownDayKey: readSoftPaywallDay(user?.id),
-      }) && localStorage.getItem(SOFT_PAYWALL_STORAGE_KEY)) {
-        return;
-      }
-      try {
-        localStorage.setItem(SOFT_PAYWALL_STORAGE_KEY, "1");
-        writeSoftPaywallDay(user?.id);
-      } catch { /* ignore */ }
-      openUpgrade("after_first_session");
-    }, 1100);
-    return () => {
-      cancelled = true;
-      clearTimeout(t);
-    };
-  }, [softPaywallPending, isPremium, showUpgrade, sessionFeedbackTarget, feedbackWeek, accessState, user?.id]);
-
   // Pop « Nouveautés » one-shot / compte (pas de reset plan / quiz).
   useEffect(() => {
     if (!canOpenBootSheets({ authLoading, coldHold, screen }) || !user || !plan) return;
@@ -8542,7 +8501,7 @@ export default function App() {
       }
       return;
     }
-    if (showUpgrade || showPlanReady || showSaveAccount || softPaywallPending) return;
+    if (showUpgrade || showPlanReady || showSaveAccount) return;
     if (sessionCelebrate || sessionFeedbackTarget !== null || feedbackWeek !== null) return;
     if (loopPaywall || replaceConfirmOpen || deletePlanId) return;
     const t = setTimeout(() => setShowWhatsNew(true), 600);
@@ -8557,7 +8516,6 @@ export default function App() {
     showUpgrade,
     showPlanReady,
     showSaveAccount,
-    softPaywallPending,
     sessionCelebrate,
     sessionFeedbackTarget,
     feedbackWeek,
@@ -10679,13 +10637,6 @@ export default function App() {
         const prevDone = (active.plan.history || []).filter((s) => s.completed).length;
         if (prevDone === 0) trackEvent("first_session_completed", { plan_type: "loop" }, { essential: true });
         if (prevDone === 1) trackEvent("second_session_completed", { plan_type: "loop" }, { essential: true });
-        if (prevDone === 0) {
-          try {
-            if (!localStorage.getItem(SOFT_PAYWALL_STORAGE_KEY)) setSoftPaywallPending(true);
-          } catch {
-            setSoftPaywallPending(true);
-          }
-        }
       }
 
       // Marque résolue tout de suite (verrouille), garde les autres séances de la semaine
@@ -10737,13 +10688,6 @@ export default function App() {
       const alreadyDone = activeClassic?.plan?.weeks?.[weekIndex]?.sessions?.[sessionIndex]?.completed;
       if (!alreadyDone && prevDone === 0) trackEvent("first_session_completed", { plan_type: "classic" }, { essential: true });
       if (!alreadyDone && prevDone === 1) trackEvent("second_session_completed", { plan_type: "classic" }, { essential: true });
-      if (!alreadyDone && prevDone === 0) {
-        try {
-          if (!localStorage.getItem(SOFT_PAYWALL_STORAGE_KEY)) setSoftPaywallPending(true);
-        } catch {
-          setSoftPaywallPending(true);
-        }
-      }
     }
     setPlans(prev => {
       const next = prev.map(entry => {
