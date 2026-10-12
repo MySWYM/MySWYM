@@ -15,6 +15,7 @@ import {
 import { sendEmailViaHttp } from "../_shared/email-http.ts";
 import { hasNewsletterConsent, sendResendEvent } from "../_shared/resend-events.ts";
 import { revertEarlyCancelIfCommitment } from "../_shared/stripe-commitment.ts";
+import { recordTrialCardFingerprint } from "../_shared/trial-card.ts";
 
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, { apiVersion: "2024-04-10" });
 
@@ -222,6 +223,42 @@ async function creditReferrer(
   console.log("[stripe-webhook] referral credit OK →", referredById);
 }
 
+function paymentMethodFingerprint(pm: unknown) {
+  if (!pm || typeof pm === "string") return null;
+  const card = (pm as { card?: { fingerprint?: string } }).card;
+  return card?.fingerprint || null;
+}
+
+/** Carte du moyen de paiement par défaut, sinon SetupIntent du checkout. */
+async function trialCardFingerprint(
+  stripe: Stripe,
+  session: { setup_intent?: string | { id?: string } | null },
+  subscriptionId: string,
+) {
+  const sub = await stripe.subscriptions.retrieve(subscriptionId, {
+    expand: ["default_payment_method"],
+  });
+  const fromSub = paymentMethodFingerprint(sub.default_payment_method);
+  if (fromSub) return fromSub;
+  if (typeof sub.default_payment_method === "string") {
+    const pm = await stripe.paymentMethods.retrieve(sub.default_payment_method);
+    const fromId = paymentMethodFingerprint(pm);
+    if (fromId) return fromId;
+  }
+  const setupId = typeof session.setup_intent === "string"
+    ? session.setup_intent
+    : session.setup_intent?.id;
+  if (!setupId) return null;
+  const setup = await stripe.setupIntents.retrieve(setupId, { expand: ["payment_method"] });
+  const fromSetup = paymentMethodFingerprint(setup.payment_method);
+  if (fromSetup) return fromSetup;
+  if (typeof setup.payment_method === "string") {
+    const pm = await stripe.paymentMethods.retrieve(setup.payment_method);
+    return paymentMethodFingerprint(pm);
+  }
+  return null;
+}
+
 Deno.serve(async (req) => {
   const sigHeader = req.headers.get("stripe-signature") ?? "";
   const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET") ?? "";
@@ -303,11 +340,62 @@ Deno.serve(async (req) => {
         let nextState: AccessStateRow | null = null;
         let planLabel = "Premium";
         let currentState: AccessStateRow | null = null;
+        let cardBlocked = false;
         if (subscriptionId) {
           const sub = await stripe.subscriptions.retrieve(subscriptionId);
           planLabel = planLabelFromSubscription(sub);
           currentState = await getAccessState(supabaseAdmin, userId);
           nextState = buildSubscriptionState(userId, currentState, customerId ?? null, sub);
+          if (nextState.access_status === ACCESS_STATUS.trial) {
+            try {
+              const fingerprint = await trialCardFingerprint(stripe, session, String(subscriptionId));
+              if (fingerprint) {
+                const decision = await recordTrialCardFingerprint(
+                  supabaseAdmin as never,
+                  fingerprint,
+                  userId,
+                  String(subscriptionId),
+                );
+                if (decision === "reuse") {
+                  cardBlocked = true;
+                  await stripe.subscriptions.cancel(String(subscriptionId), {
+                    invoice_now: false,
+                    prorate: false,
+                  });
+                  nextState = buildExpiredState(userId, {
+                    ...(currentState ?? {}),
+                    trial_used: true,
+                    stripe_customer_id: customerId ? String(customerId) : (currentState?.stripe_customer_id ?? null),
+                  });
+                  await supabaseAdmin.from("conversion_events").insert({
+                    user_id: userId,
+                    event_name: "trial_blocked_card_reused",
+                    path: "/stripe-webhook",
+                    properties: { fingerprint_prefix: fingerprint.slice(0, 6) },
+                    created_at: new Date().toISOString(),
+                  });
+                  const inbox = Array.isArray(user.app_metadata?.notifications)
+                    ? [...user.app_metadata.notifications]
+                    : [];
+                  inbox.unshift({
+                    id: "trial-card-reused",
+                    type: "update",
+                    title: "Essai non disponible",
+                    body: "Cette carte a déjà servi pour un essai ForSwim. Tu peux t'abonner directement, sans essai.",
+                    createdAt: new Date().toISOString(),
+                  });
+                  await supabaseAdmin.auth.admin.updateUserById(userId, {
+                    app_metadata: {
+                      notifications: inbox.slice(0, 30),
+                      trial_block_reason: "card_reused",
+                    },
+                  });
+                }
+              }
+            } catch (cardErr) {
+              console.error("[stripe-webhook] trial card fingerprint", cardErr);
+            }
+          }
         }
 
         if (nextState) {
@@ -345,7 +433,7 @@ Deno.serve(async (req) => {
 
         // Email de confirmation (ne bloque pas le webhook si Resend échoue)
         try {
-          await sendSubscriptionConfirmation(user as AuthUser, planLabel);
+          if (!cardBlocked) await sendSubscriptionConfirmation(user as AuthUser, planLabel);
         } catch (mailErr) {
           console.error("[stripe-webhook] confirmation email error:", mailErr);
         }
@@ -406,7 +494,18 @@ Deno.serve(async (req) => {
     const user = await findUserByCustomerId(customerId);
     if (user) {
       const currentState = await getAccessState(supabaseAdmin, user.id);
-      if (isLiveAppleEntitlement(currentState)) {
+      if (sub?.status === "trialing" && user.app_metadata?.trial_block_reason === "card_reused") {
+        try {
+          await stripe.subscriptions.cancel(String(sub.id), { invoice_now: false, prorate: false });
+        } catch (cancelErr) {
+          console.error("[stripe-webhook] recancel reused card trial", cancelErr);
+        }
+        await persistAccessState(supabaseAdmin, user, buildExpiredState(user.id, {
+          ...(currentState ?? {}),
+          trial_used: true,
+          stripe_customer_id: customerId ? String(customerId) : (currentState?.stripe_customer_id ?? null),
+        }));
+      } else if (isLiveAppleEntitlement(currentState)) {
         console.warn("[stripe-webhook] skip sub update, apple entitlement live", user.id);
       } else {
         const nextState = buildSubscriptionState(user.id, currentState, customerId ?? null, sub as Stripe.Subscription);
