@@ -9,6 +9,8 @@ import { sessionCardModel } from "../lib/plan-reveal.js";
 import SessionHeroCard from "../SessionHeroCard.jsx";
 import { canonicalizeGoal } from "../lib/sports-engine/race-event.js";
 import { isNativeApp } from "../lib/native-platform.js";
+import { APPLE_IAP_MONTHLY_ID } from "../lib/apple-iap-catalog.js";
+import { loadAppleIapProducts } from "../lib/native-iap.js";
 
 const GOAL_LABELS = {
   progression: "Nager & Progresser",
@@ -36,11 +38,27 @@ export default function PlanReadySheet({ plan, profile, onContinue, onDismiss, l
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [acceptWithdrawal, setAcceptWithdrawal] = useState(false);
   const [err, setErr] = useState(null);
+  const [introOk, setIntroOk] = useState(() => !isNativeApp());
   const legalReady = checkoutGatesReady(acceptTerms, acceptWithdrawal);
 
   useEffect(() => {
     if (legalReady) setErr(null);
   }, [legalReady]);
+
+  useEffect(() => {
+    if (!isNativeApp()) return undefined;
+    let cancelled = false;
+    loadAppleIapProducts()
+      .then((products) => {
+        if (cancelled) return;
+        const monthly = (products || []).find((p) => p.id === APPLE_IAP_MONTHLY_ID);
+        setIntroOk(monthly?.introEligible === true);
+      })
+      .catch(() => {
+        if (!cancelled) setIntroOk(false);
+      });
+    return () => { cancelled = true; };
+  }, []);
 
   const handleAcceptTerms = (checked) => {
     setAcceptTerms(checked);
@@ -192,7 +210,7 @@ export default function PlanReadySheet({ plan, profile, onContinue, onDismiss, l
       ) : null}
       <Btn variant="blue" onClick={handleContinue} disabled={loading}>
         {isNativeApp()
-          ? "Essayer 7 jours gratuits"
+          ? (introOk ? "Essayer 7 jours gratuits" : "S’abonner pour continuer")
           : loading
             ? "Redirection…"
             : "S’abonner : débloquer mon coach"}

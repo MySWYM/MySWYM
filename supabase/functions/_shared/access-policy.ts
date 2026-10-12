@@ -297,6 +297,9 @@ export type AppleTransactionLike = {
   purchaseDate?: number | string | null;
   environment?: string | null;
   revocationDate?: number | string | null;
+  /** StoreKit offerType : 1 = offre d'introduction. */
+  offerType?: number | string | null;
+  offerDiscountType?: string | null;
 };
 
 function msFromAppleDate(value: number | string | null | undefined) {
@@ -324,22 +327,32 @@ export function buildSubscriptionStateFromApple(
     : (current?.subscription_started_at ?? nowIso());
   const cancelAtPeriodEnd = opts?.cancelAtPeriodEnd === true;
   const stillCovered = endsMs != null && endsMs > nowMs && revokedMs == null;
+  const isIntro = Number(tx.offerType) === 1;
 
   let accessStatus: AccessStatus;
   if (!stillCovered) {
     accessStatus = ACCESS_STATUS.expired;
+  } else if (isIntro) {
+    accessStatus = ACCESS_STATUS.trial;
   } else if (cancelAtPeriodEnd) {
     accessStatus = ACCESS_STATUS.canceled;
   } else {
     accessStatus = ACCESS_STATUS.active;
   }
 
+  const trialStartedAt = isIntro && startMs != null
+    ? new Date(startMs).toISOString()
+    : (current?.trial_started_at ?? null);
+  const trialEndsAt = isIntro
+    ? subscriptionEndsAt
+    : (current?.trial_ends_at ?? null);
+
   return {
     user_id: userId,
     access_status: accessStatus,
-    trial_started_at: current?.trial_started_at ?? null,
-    trial_ends_at: current?.trial_ends_at ?? null,
-    trial_used: current?.trial_used ?? true,
+    trial_started_at: trialStartedAt,
+    trial_ends_at: trialEndsAt,
+    trial_used: true,
     subscription_started_at: subscriptionStartedAt,
     subscription_ends_at: subscriptionEndsAt,
     cancel_at_period_end: cancelAtPeriodEnd && stillCovered,

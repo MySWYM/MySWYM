@@ -46,14 +46,28 @@ public class AppleIapPlugin: CAPPlugin, CAPBridgedPlugin {
         Task {
             do {
                 let products = try await Product.products(for: Set(ids))
-                let payload = products.map { product in
-                    [
+                var payload: [[String: Any]] = []
+                for product in products {
+                    var introEligible = false
+                    var introPeriodDays: Int? = nil
+                    if let subscription = product.subscription {
+                        introEligible = await subscription.isEligibleForIntroOffer
+                        if let intro = subscription.introductoryOffer {
+                            introPeriodDays = Self.introPeriodDays(intro.period)
+                        }
+                    }
+                    var row: [String: Any] = [
                         "id": product.id,
                         "displayName": product.displayName,
                         "description": product.description,
                         "displayPrice": product.displayPrice,
                         "price": NSDecimalNumber(decimal: product.price).doubleValue,
+                        "introEligible": introEligible,
                     ]
+                    if let introPeriodDays {
+                        row["introPeriodDays"] = introPeriodDays
+                    }
+                    payload.append(row)
                 }
                 call.resolve(["products": payload])
             } catch {
@@ -165,6 +179,16 @@ public class AppleIapPlugin: CAPPlugin, CAPBridgedPlugin {
             }
             SKStoreReviewController.requestReview(in: scene)
             call.resolve()
+        }
+    }
+
+    private static func introPeriodDays(_ period: Product.SubscriptionPeriod) -> Int {
+        switch period.unit {
+        case .day: return period.value
+        case .week: return period.value * 7
+        case .month: return period.value * 30
+        case .year: return period.value * 365
+        @unknown default: return period.value
         }
     }
 }

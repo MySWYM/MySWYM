@@ -63,8 +63,13 @@ export default function UpgradeModal({
   }, [legalReady]);
 
   const hasReferral = Boolean(resolveReferralCode(user));
-  // Essai 7j avec carte : une fois par compte (`trial_used` → trialEligible=false via App).
-  const showTrialOffer = trialEligible;
+  // Essai 7j : compte jamais utilisé ET Apple ID encore éligible à l'intro.
+  // Tant que StoreKit n'a pas répondu, ne pas promettre « gratuit ».
+  const selectedIntro = appleProducts.find((p) => p.id === (period === "annual" ? APPLE_IAP_ANNUAL_ID : APPLE_IAP_MONTHLY_ID));
+  const productsLoaded = appleProducts.length > 0;
+  const introEligible = productsLoaded && selectedIntro?.introEligible === true;
+  const showTrialOffer = Boolean(trialEligible) && (!native || introEligible);
+  const introUnavailable = native && productsLoaded && trialEligible && !introEligible;
   const isAnnual = period === "annual";
   const isCommit = period === "monthly_commit";
   const selectedPriceId = priceIdForPlan(period);
@@ -137,7 +142,7 @@ export default function UpgradeModal({
       }
       setErr("Pas d’abonnement actif sur ce compte.");
     } catch (e) {
-      setErr(e.message || NATIVE_BILLING_TOAST);
+      setErr(e?.code === "apple_tx_other_account" ? "apple_tx_other_account" : (e.message || NATIVE_BILLING_TOAST));
     } finally {
       setLoading(false);
     }
@@ -156,9 +161,10 @@ export default function UpgradeModal({
         const u = await purchaseAppleProduct(appleProductId);
         if (u && getAccessState(u).hasPremiumAccess) {
           try {
+            const synced = getAccessState(u);
             sessionStorage.setItem(
               "myswym_iap_access_toast",
-              showTrialOffer ? "trial" : "premium",
+              synced.status === "trial" ? "trial" : "premium",
             );
           } catch { /* ignore */ }
           window.location.reload();
@@ -238,12 +244,14 @@ export default function UpgradeModal({
           monthlyPrice={monthlyPrice}
           annualPrice={annualPrice}
           loading={loading}
-          err={err}
+          err={err === "apple_tx_other_account" ? null : err}
           onSubscribe={handleCheckout}
           onRestore={handleNativeSync}
           headline={headline}
-          subtitle={subtitle}
+          subtitle={introUnavailable ? t("paywall.introUsed") : (err === "apple_tx_other_account" ? t("paywall.introOtherAccount") : subtitle)}
           trialEligible={showTrialOffer}
+          pinRestore={introUnavailable || err === "apple_tx_other_account"}
+          onSignIn={err === "apple_tx_other_account" ? () => { window.location.assign("/connexion"); } : undefined}
         />
       </SoftMistSheet>
     );

@@ -402,4 +402,27 @@ const nowSec = Math.floor(Date.now() / 1000);
   assert.equal(shouldShowTrialFreeze(anonTrial, { accessSynced: true }), false, "trial anon not frozen");
 }
 
+{
+  const appleTrial = {
+    id: "apple-trial",
+    app_metadata: {
+      subscription: "premium",
+      subscription_status: ACCESS_STATUS.TRIAL,
+      trial_used: true,
+      trial_ends_at: new Date(Date.now() + 5 * 86400000).toISOString(),
+      billing_provider: "apple",
+    },
+  };
+  assert.equal(getAccessState(appleTrial).canUseBuddies, false, "essai Apple : pas de binômes");
+  const after = {
+    id: "apple-after",
+    created_at: "2026-01-01T00:00:00.000Z",
+    app_metadata: {
+      subscription_status: ACCESS_STATUS.EXPIRED,
+      trial_used: true,
+    },
+  };
+  assert.equal(resolveUpgradeGateContext(after), "trial_expired");
+}
+
 console.log("access.test.js OK");
