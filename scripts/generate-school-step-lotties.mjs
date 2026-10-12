@@ -1,17 +1,28 @@
 /**
- * Lottie soft mist par étape école (70 scènes).
- * Silhouettes design (pas le moteur pédagogique Python perdu) :
- * famille par nage + variante par étape, fond mist, eau, surface.
+ * DANGER : silhouettes de secours. Ne pas lancer si les motions pédagogiques
+ * sont présentes (store/school-motion/_source/).
  *
- * Usage: node scripts/generate-school-step-lotties.mjs
+ * Régénérer les vrais Lottie :
+ *   PYTHONDONTWRITEBYTECODE=1 python3 store/school-motion/_source/generate_motions.py store/school-motion
+ *   puis cp store/school-motion/*.json public/school-motion/
+ *
+ * Usage (secours seulement) : node scripts/generate-school-step-lotties.mjs
  */
-import { writeFileSync, mkdirSync, copyFileSync } from "node:fs";
+import { writeFileSync, mkdirSync, copyFileSync, existsSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const PUBLIC = join(ROOT, "public", "school-motion");
 const STORE = join(ROOT, "store", "school-motion");
+
+if (existsSync(join(STORE, "_source", "motion_core.py"))) {
+  console.error(
+    "ABORT: motions pédagogiques présentes (store/school-motion/_source/motion_core.py).\n" +
+      "Ce script écraserait les 70 Lottie. Régénère via generate_motions.py, pas ici.",
+  );
+  process.exit(1);
+}
 const W = 800;
 const H = 400;
 const FR = 30;

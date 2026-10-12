@@ -156,31 +156,16 @@ Les étapes 10, 11, 14 et 15 du crawl dépassent les 3-4 s visées. Le livre dem
 ## Rejouer
 
 - **Aperçu rapide** : glisser un `.json` sur <https://lottiefiles.com/preview>.
-- **Review Arthur (motion + consignes + notes OK/Faux)** : avec `npm run dev`, ouvrir  
-  [http://localhost:5173/school-motion/review.html](http://localhost:5173/school-motion/review.html)  
-  Régénérer les consignes : `node scripts/build-school-motion-review.mjs`
-- **Motions seules, par cours** : `preview.html` (lit `_index-all.json`). En HTTP :
+- **Toutes les scènes, par cours** : `preview.html` (dans ce dossier) a un onglet par cours et lit `_index-all.json`. Il charge lottie-web depuis cdnjs. Il faut servir le dossier en HTTP :
   ```bash
   cd store/school-motion && python3 -m http.server 8787
-  # http://localhost:8787/review.html  ou  preview.html#pap
+  # puis ouvrir http://localhost:8787/preview.html  (ou preview.html#pap pour un cours)
   ```
 - **Web / React** : `lottie-web` (`loadAnimation({ renderer: 'svg', loop: true, autoplay: true, path })`), comme `src/school/SchoolMotion.jsx`. Pour `prefers-reduced-motion`, afficher l'image 0 (`goToAndStop(0, true)`).
 
 ## Régénérer / retoucher
 
-### Silhouettes design (actuel, app)
-
-Moteur pédagogique Python `_source/` perdu (jamais commit). En attendant, les 70 JSON sont des silhouettes soft mist :
-
-```bash
-node scripts/generate-school-step-lotties.mjs
-```
-
-Écrit `public/school-motion/` et `store/school-motion/`. Suffisant pour l’écran exercice ; pas un calque 1:1 des fiches livre.
-
-### Moteur pédagogique (historique)
-
-Le script était sans dépendance (Pillow seulement pour les planches PNG). Il était découpé ainsi :
+Le script est sans dépendance (Pillow seulement pour les planches PNG). Il est découpé ainsi :
 
 | Fichier | Rôle |
 |---|---|

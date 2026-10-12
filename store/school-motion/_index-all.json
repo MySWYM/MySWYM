@@ -1,0 +1,702 @@
+[
+ {
+  "course": "crawl",
+  "n": 1,
+  "stepId": "ANC1",
+  "file": "step-01-coulee.json",
+  "title": "Coulée ventrale",
+  "frames": 108,
+  "seconds": 3.6,
+  "show": "Poussée au mur, corps à plat et gainé, bras tendus devant : longue glisse sans battements."
+ },
+ {
+  "course": "crawl",
+  "n": 2,
+  "stepId": "ANC2",
+  "file": "step-02-kick.json",
+  "title": "Coulée + petits battements",
+  "frames": 114,
+  "seconds": 3.8,
+  "show": "Même coulée, puis petits battements serrés qui prolongent la glisse sans cabrer le corps."
+ },
+ {
+  "course": "crawl",
+  "n": 3,
+  "stepId": "ANC3",
+  "file": "step-03-inspire-devant.json",
+  "title": "Inspirer tête devant, bras immobiles",
+  "frames": 108,
+  "seconds": 3.6,
+  "show": "Battements, bras tendus immobiles ; la tête sort juste assez pour inspirer devant puis replonge."
+ },
+ {
+  "course": "crawl",
+  "n": 4,
+  "stepId": "ANC4",
+  "file": "step-04-vrille-dos.json",
+  "title": "Demi-vrille, inspirer à plat dos",
+  "frames": 120,
+  "seconds": 4.0,
+  "show": "Bras tendus devant, demi-vrille ventre → dos ; on attend d’être à plat dos pour inspirer, puis retour ventre."
+ },
+ {
+  "course": "crawl",
+  "n": 5,
+  "stepId": "ANC5",
+  "file": "step-05-deux-bras.json",
+  "title": "Deux bras en même temps",
+  "frames": 117,
+  "seconds": 3.9,
+  "show": "Traction + poussée des deux bras ensemble jusqu’aux cuisses, glisse, puis inspiration tête devant."
+ },
+ {
+  "course": "crawl",
+  "n": 6,
+  "stepId": "ANC6",
+  "file": "step-06-un-bras-puis-autre.json",
+  "title": "Un bras, puis l’autre",
+  "frames": 126,
+  "seconds": 4.2,
+  "show": "Un bras puis l’autre, avec un temps stable entre les deux ; inspiration tête devant après le 2e bras."
+ },
+ {
+  "course": "crawl",
+  "n": 7,
+  "stepId": "ANC7",
+  "file": "step-07-retour-sous-eau.json",
+  "title": "Retour des bras sous l’eau",
+  "frames": 120,
+  "seconds": 4.0,
+  "show": "Un bras puis l’autre, arrêt + inspiration devant, puis les deux bras reviennent ensemble sous l’eau."
+ },
+ {
+  "course": "crawl",
+  "n": 8,
+  "stepId": "ANC8",
+  "file": "step-08-retour-aerien.json",
+  "title": "Retour aérien, un bras puis l’autre",
+  "frames": 132,
+  "seconds": 4.4,
+  "show": "Deux tractions alternées, arrêt + inspiration, puis chaque bras revient par-dessus l’eau, coude haut."
+ },
+ {
+  "course": "crawl",
+  "n": 9,
+  "stepId": "ANC9",
+  "file": "step-09-cycle-vrille-dos.json",
+  "title": "Cycle, puis inspirer sur le dos",
+  "frames": 141,
+  "seconds": 4.7,
+  "show": "Un cycle complet avec retours aériens, puis demi-vrille : inspiration seulement à plat dos, bras devant."
+ },
+ {
+  "course": "crawl",
+  "n": 10,
+  "stepId": "ANC10",
+  "file": "step-10-dos-bras-opposes.json",
+  "title": "Inspirer sur le dos, un bras devant / un derrière",
+  "frames": 180,
+  "seconds": 6.0,
+  "show": "Un bras a fini sa poussée, l’autre reste devant : demi-vrille, inspiration dos dans cette opposition, puis fin du retour. Puis l’autre côté."
+ },
+ {
+  "course": "crawl",
+  "n": 11,
+  "stepId": "ANC11",
+  "file": "step-11-rattrape-vrille-dos.json",
+  "title": "Rattrapé avant + vrille, inspirer sur le dos",
+  "frames": 180,
+  "seconds": 6.0,
+  "show": "Un bras complet jusqu’à retrouver l’autre devant, vrille et inspiration à plat dos, retour ventre ; puis l’autre bras, l’autre côté."
+ },
+ {
+  "course": "crawl",
+  "n": 12,
+  "stepId": "ANC12",
+  "file": "step-12-rattrape-avant-cote.json",
+  "title": "Rattrapé avant, inspirer sur le côté",
+  "frames": 103,
+  "seconds": 3.433,
+  "show": "Rattrapé avant : après la poussée, quart de vrille et tête sur le côté pour une inspiration courte, puis retour devant. Un côté puis l’autre."
+ },
+ {
+  "course": "crawl",
+  "n": 13,
+  "stepId": "ANC13",
+  "file": "step-13-rattrape-arriere-cote.json",
+  "title": "Rattrapé arrière, inspirer sur le côté",
+  "frames": 105,
+  "seconds": 3.5,
+  "show": "Les mains se retrouvent derrière, aux cuisses : un bras fait retour + traction, inspiration côté 1 fois sur 2."
+ },
+ {
+  "course": "crawl",
+  "n": 14,
+  "stepId": "ANC14",
+  "file": "step-14-rattrape-avant-3-temps.json",
+  "title": "Rattrapé avant, inspirer tous les 3 temps",
+  "frames": 163,
+  "seconds": 5.433,
+  "show": "Rattrapé avant enchaîné, bras dissociés ; inspiration tous les 3 passages, une fois de chaque côté, hors poussée."
+ },
+ {
+  "course": "crawl",
+  "n": 15,
+  "stepId": "ANC15",
+  "file": "step-15-rattrape-arriere-3-temps.json",
+  "title": "Rattrapé arrière, inspirer tous les 3 temps",
+  "frames": 184,
+  "seconds": 6.133,
+  "show": "Même chose sans appui devant : les mains se retrouvent aux cuisses, inspiration tous les 3 passages."
+ },
+ {
+  "course": "crawl",
+  "n": 16,
+  "stepId": "ANC16",
+  "file": "step-16-opposition-arret.json",
+  "title": "Opposition, arrêt, inspiration",
+  "frames": 84,
+  "seconds": 2.8,
+  "show": "Un bras pousse pendant que l’autre revient, arrêt net, inspiration côté hors poussée ; puis l’autre côté."
+ },
+ {
+  "course": "crawl",
+  "n": 17,
+  "stepId": "ANC17",
+  "file": "step-17-crawl-3-temps.json",
+  "title": "Crawl en opposition, inspirer tous les 3 temps",
+  "frames": 112,
+  "seconds": 3.733,
+  "show": "C’est le crawl : poussée et retour liés, roulis latéral, inspiration courte tous les 3 temps (alternée)."
+ },
+ {
+  "course": "crawl",
+  "n": 18,
+  "stepId": "ANC18",
+  "file": "step-18-cycles.json",
+  "title": "Même nage, plus d’amplitude, moins de cycles",
+  "frames": 153,
+  "seconds": 5.1,
+  "show": "Même crawl, cadence plus lente et main qui glisse devant : on avance plus par cycle (repère livre : 9 cycles / 25 m)."
+ },
+ {
+  "course": "dos",
+  "n": 1,
+  "stepId": "DOS1",
+  "file": "dos-01-cote.json",
+  "title": "Dos sur le côté",
+  "frames": 120,
+  "seconds": 4.0,
+  "show": "Sur le dos mais sur le côté : un bras devant dans l’axe, l’autre le long du corps, épaule haute hors de l’eau, tête fixe. Puis l’autre côté."
+ },
+ {
+  "course": "dos",
+  "n": 2,
+  "stepId": "DOS2",
+  "file": "dos-02-tete-immobile.json",
+  "title": "Tête immobile",
+  "frames": 90,
+  "seconds": 3.0,
+  "show": "Nage complète : les épaules roulent d’un côté à l’autre, la tête et le regard ne bougent pas (regard au plafond)."
+ },
+ {
+  "course": "dos",
+  "n": 3,
+  "stepId": "DOS3",
+  "file": "dos-03-gainage.json",
+  "title": "Gainage",
+  "frames": 114,
+  "seconds": 3.8,
+  "show": "Coulée dos courte, bras le long du corps : torse et hanches d’un bloc, petits battements pour tenir la ligne."
+ },
+ {
+  "course": "dos",
+  "n": 4,
+  "stepId": "DOS4",
+  "file": "dos-04-battement.json",
+  "title": "Battement position idéale",
+  "frames": 90,
+  "seconds": 3.0,
+  "show": "Bras tendus et serrés derrière la tête, tête posée sur les bras : battement depuis les hanches, genoux sous l’eau."
+ },
+ {
+  "course": "dos",
+  "n": 5,
+  "stepId": "DOS5",
+  "file": "dos-05-deux-bras.json",
+  "title": "Dos à deux bras",
+  "frames": 111,
+  "seconds": 3.7,
+  "show": "Les deux bras entrent ensemble, arrêt ; traction jusqu’aux cuisses avec fouetté vers le bas, arrêt + inspiration ; retour bras tendus."
+ },
+ {
+  "course": "dos",
+  "n": 6,
+  "stepId": "DOS6",
+  "file": "dos-06-costal.json",
+  "title": "Battement costal",
+  "frames": 90,
+  "seconds": 3.0,
+  "show": "Sur le côté, regard au plafond : bras devant tendu, l’autre le long de la cuisse, épaule haute sortie. On bat sans rouler."
+ },
+ {
+  "course": "dos",
+  "n": 7,
+  "stepId": "DOS7",
+  "file": "dos-07-echange.json",
+  "title": "L’échange",
+  "frames": 102,
+  "seconds": 3.4,
+  "show": "Battement costal, puis échange des deux bras en même temps : le bras devant s’enfonce et tire, l’autre revient tendu en arc vertical."
+ },
+ {
+  "course": "dos",
+  "n": 8,
+  "stepId": "DOS8",
+  "file": "dos-08-vers-complete.json",
+  "title": "Vers la nage complète",
+  "frames": 96,
+  "seconds": 3.2,
+  "show": "Échanges avec un arrêt de plus en plus court, puis nage complète : l’épaule continue de sortir à chaque fin de poussée."
+ },
+ {
+  "course": "dos",
+  "n": 9,
+  "stepId": "DOS9",
+  "file": "dos-09-prise-eau.json",
+  "title": "Prise d’eau et traction",
+  "frames": 102,
+  "seconds": 3.4,
+  "show": "Un bras (l’autre devant) : la main entre sans ralentir, appuie d’abord vers le bas, puis vers l’extérieur, jusqu’à la cuisse."
+ },
+ {
+  "course": "dos",
+  "n": 10,
+  "stepId": "DOS10",
+  "file": "dos-10-sync.json",
+  "title": "Sync des bras",
+  "frames": 114,
+  "seconds": 3.8,
+  "show": "Une main entre au moment où l’autre finit son fouetté vers le bas : ce fouetté fait sortir l’épaule. Retour bras tendu au-dessus de l’épaule."
+ },
+ {
+  "course": "dos",
+  "n": 11,
+  "stepId": "DOS11",
+  "file": "dos-11-respiration.json",
+  "title": "Respiration en dos",
+  "frames": 96,
+  "seconds": 3.2,
+  "show": "Inspiration par la bouche quand une main sort de l’eau, tête immobile ; pas de respiration restreinte en dos."
+ },
+ {
+  "course": "dos",
+  "n": 12,
+  "stepId": "DOS12",
+  "file": "dos-12-qui-tient.json",
+  "title": "Dos qui tient",
+  "frames": 96,
+  "seconds": 3.2,
+  "show": "Nage complète avec un reste d’arrêt à l’échange : position et tête d’abord, coulées et arrivées soignées."
+ },
+ {
+  "course": "virage",
+  "n": 1,
+  "stepId": "AVC1",
+  "file": "virage-01-deux-mains-dos.json",
+  "title": "2 mains, bascule, coulée dos",
+  "frames": 138,
+  "seconds": 4.6,
+  "show": "On touche des deux mains, les jambes passent sous soi, tête en arrière et bras lancés en arrière : on repart en glisse sur le dos."
+ },
+ {
+  "course": "virage",
+  "n": 2,
+  "stepId": "AVC2",
+  "file": "virage-02-une-main-ventre.json",
+  "title": "1 main, demi-tour ventre",
+  "frames": 138,
+  "seconds": 4.6,
+  "show": "Une main touche, on se met sur le côté, la tête bascule latéralement et les bras aident le tour : on repart sur le ventre."
+ },
+ {
+  "course": "virage",
+  "n": 3,
+  "stepId": "AVC3",
+  "file": "virage-03-un-bras-air.json",
+  "title": "Un bras en l’air",
+  "frames": 138,
+  "seconds": 4.6,
+  "show": "Même demi-tour : le bras du côté du tour revient sous l’eau, l’autre revient par-dessus l’eau."
+ },
+ {
+  "course": "virage",
+  "n": 4,
+  "stepId": "AVC4",
+  "file": "virage-04-coulee-reprise.json",
+  "title": "Coulée + reprise",
+  "frames": 132,
+  "seconds": 4.4,
+  "show": "Inspiration avant le mur, puis apnée : poussée sur le ventre, coulée, et premier bras tout de suite, sans trou."
+ },
+ {
+  "course": "virage",
+  "n": 5,
+  "stepId": "AVC5",
+  "file": "virage-05-roulade.json",
+  "title": "Roulade sans mur",
+  "frames": 129,
+  "seconds": 4.3,
+  "show": "Coulée, les deux bras poussent, arrêt, puis roulade avant : c’est le menton qui lance la rotation, pas les bras."
+ },
+ {
+  "course": "virage",
+  "n": 6,
+  "stepId": "AVC6",
+  "file": "virage-06-crawl-roulade.json",
+  "title": "Crawl, arrêt, roulade",
+  "frames": 120,
+  "seconds": 4.0,
+  "show": "On nage, un bras s’arrête derrière, l’autre le rejoint : stop net. Puis roulade, tête très fléchie, et on repart sur le ventre."
+ },
+ {
+  "course": "virage",
+  "n": 7,
+  "stepId": "AVC7",
+  "file": "virage-07-pieds-au-mur.json",
+  "title": "Battements, pieds au mur",
+  "frames": 132,
+  "seconds": 4.4,
+  "show": "Battements vers le mur, bras derrière : on choisit quand tourner, demi-roulade, pieds au mur genoux pliés, sur le dos."
+ },
+ {
+  "course": "virage",
+  "n": 8,
+  "stepId": "AVC8",
+  "file": "virage-08-crawl-pieds.json",
+  "title": "Crawl + pieds au mur",
+  "frames": 132,
+  "seconds": 4.4,
+  "show": "Arrivée en crawl, rattrapé arrière, demi-roulade : on finit sur le dos, pieds posés au mur, genoux pliés, prêt à pousser."
+ },
+ {
+  "course": "virage",
+  "n": 9,
+  "stepId": "AVC9",
+  "file": "virage-09-poussee-dos.json",
+  "title": "Poussée dos + jambes",
+  "frames": 150,
+  "seconds": 5.0,
+  "show": "Même virage, puis poussée sur le dos, épaules à plat : longue coulée et battements de dos."
+ },
+ {
+  "course": "virage",
+  "n": 10,
+  "stepId": "AVC10",
+  "file": "virage-10-virage-complet.json",
+  "title": "Virage entier + nage",
+  "frames": 150,
+  "seconds": 5.0,
+  "show": "Nage, rattrapé, rotation, pieds, poussée sur le côté puis encore un quart de vrille : reprise en crawl."
+ },
+ {
+  "course": "depart",
+  "n": 1,
+  "stepId": "ADC1",
+  "file": "depart-01-chute.json",
+  "title": "Chute avant du bord",
+  "frames": 126,
+  "seconds": 4.2,
+  "show": "Debout au bord, bras tendus, tête rentrée, corps dur : on se laisse tomber sans pousser, jusqu’à entrer dans l’eau."
+ },
+ {
+  "course": "depart",
+  "n": 2,
+  "stepId": "ADC2",
+  "file": "depart-02-desequilibre.json",
+  "title": "Déséquilibre puis poussée",
+  "frames": 126,
+  "seconds": 4.2,
+  "show": "D’abord on bascule, ensuite seulement les jambes poussent : plus d’envol, tête toujours entre les bras."
+ },
+ {
+  "course": "depart",
+  "n": 3,
+  "stepId": "ADC3",
+  "file": "depart-03-bras.json",
+  "title": "Action des bras",
+  "frames": 126,
+  "seconds": 4.2,
+  "show": "Les bras descendent quand les jambes plient, ils remontent quand les jambes poussent ; à l’entrée, tête entre les bras."
+ },
+ {
+  "course": "depart",
+  "n": 4,
+  "stepId": "ADC4",
+  "file": "depart-04-cerceau.json",
+  "title": "Cerceau + coulée",
+  "frames": 126,
+  "seconds": 4.2,
+  "show": "Même départ en visant un cerceau : on perce le trou sans le toucher, nuque pliée, corps dur, et on glisse loin."
+ },
+ {
+  "course": "depart",
+  "n": 5,
+  "stepId": "ADC5",
+  "file": "depart-05-depart-reprise.json",
+  "title": "Départ entier + reprise",
+  "frames": 156,
+  "seconds": 5.2,
+  "show": "Poussée, entrée, coulée, puis battements et un premier bras : les phases s’enchaînent mais restent séparées."
+ },
+ {
+  "course": "depart",
+  "n": 6,
+  "stepId": "ADC6",
+  "file": "depart-06-agrippe.json",
+  "title": "Agrippé : tirer pour basculer",
+  "frames": 126,
+  "seconds": 4.2,
+  "show": "Mains au plot : on tire, le corps bascule, tête rentrée, corps dur ; on vise l’entrée par les mains, pas par le ventre."
+ },
+ {
+  "course": "depart",
+  "n": 7,
+  "stepId": "ADC7",
+  "file": "depart-07-tete-relevee.json",
+  "title": "Agrippé + tête qui se relève",
+  "frames": 126,
+  "seconds": 4.2,
+  "show": "Agrippé : au début de la bascule les jambes plient et la tête se lève, puis on rentre par la tête."
+ },
+ {
+  "course": "depart",
+  "n": 8,
+  "stepId": "ADC8",
+  "file": "depart-08-pieds-decales.json",
+  "title": "Pieds décalés",
+  "frames": 126,
+  "seconds": 4.2,
+  "show": "Pieds décalés, mains libres : la jambe arrière bascule, l’avant pousse, les bras aident, et on rentre dans l’axe."
+ },
+ {
+  "course": "depart",
+  "n": 9,
+  "stepId": "ADC9",
+  "file": "depart-09-cerceau-reprise.json",
+  "title": "Cerceau + reprise",
+  "frames": 156,
+  "seconds": 5.2,
+  "show": "Départ plot, on passe dans le cerceau sans le toucher, on glisse, puis on reprend la nage sans tout perdre."
+ },
+ {
+  "course": "depart",
+  "n": 10,
+  "stepId": "ADC10",
+  "file": "depart-10-signal.json",
+  "title": "Au signal",
+  "frames": 162,
+  "seconds": 5.4,
+  "show": "Prêt, puis au coup de sifflet on part tout de suite : envol dur, coulée, reprise."
+ },
+ {
+  "course": "pap",
+  "n": 1,
+  "stepId": "PAP1",
+  "file": "pap-01-deux-attitudes.json",
+  "title": "Deux attitudes",
+  "frames": 132,
+  "seconds": 4.4,
+  "show": "Bascule : tête et épaules plongent, fesses à la surface. Redressement : la tête remonte pendant la poussée, inspiration quand les coudes sortent."
+ },
+ {
+  "course": "pap",
+  "n": 2,
+  "stepId": "PAP2",
+  "file": "pap-02-canard.json",
+  "title": "Plongeon en canard",
+  "frames": 114,
+  "seconds": 3.8,
+  "show": "La tête bascule vers le fond, les hanches montent par réaction, genoux tendus ; on se redresse et on enchaîne les canards."
+ },
+ {
+  "course": "pap",
+  "n": 3,
+  "stepId": "PAP3",
+  "file": "pap-03-bras-planche.json",
+  "title": "Bras simultanés (planche)",
+  "frames": 114,
+  "seconds": 3.8,
+  "show": "Visage dans l’eau, jambes serrées immobiles : les deux bras poussent jusqu’aux cuisses, arrêt, retour sous l’eau, arrêt à l’entrée."
+ },
+ {
+  "course": "pap",
+  "n": 4,
+  "stepId": "PAP4",
+  "file": "pap-04-un-bras.json",
+  "title": "Papillon un bras",
+  "frames": 126,
+  "seconds": 4.2,
+  "show": "Un bras, l’autre devant : à l’entrée, bascule tenue jusqu’à voir les fesses, puis traction et fouetté profond (deuxième attitude)."
+ },
+ {
+  "course": "pap",
+  "n": 5,
+  "stepId": "PAP5",
+  "file": "pap-05-apnee.json",
+  "title": "Complet en apnée",
+  "frames": 162,
+  "seconds": 5.4,
+  "show": "Départ du mur, arrêt prolongé bras devant, puis 3 mouvements souples sans inspirer : les hanches restent hautes."
+ },
+ {
+  "course": "pap",
+  "n": 6,
+  "stepId": "PAP6",
+  "file": "pap-06-entree.json",
+  "title": "Entrée des bras",
+  "frames": 120,
+  "seconds": 4.0,
+  "show": "Les mains entrent serrées, presque à se toucher : ça laisse le temps de basculer et de sortir les hanches."
+ },
+ {
+  "course": "pap",
+  "n": 7,
+  "stepId": "PAP7",
+  "file": "pap-07-retour.json",
+  "title": "Fin de poussée et retour",
+  "frames": 120,
+  "seconds": 4.0,
+  "show": "Près de la surface les mains se relâchent, un court instant, puis les bras passent tendus, juste au-dessus de l’eau."
+ },
+ {
+  "course": "pap",
+  "n": 8,
+  "stepId": "PAP8",
+  "file": "pap-08-tete-bras.json",
+  "title": "Tête et bras ensemble",
+  "frames": 108,
+  "seconds": 3.6,
+  "show": "La tête plonge fort et vite : à l’entrée des mains, le visage regarde déjà le fond. Le redressement est plus progressif."
+ },
+ {
+  "course": "pap",
+  "n": 9,
+  "stepId": "PAP9",
+  "file": "pap-09-inspirer.json",
+  "title": "Où inspirer",
+  "frames": 114,
+  "seconds": 3.8,
+  "show": "Inspiration quand les coudes sortent et que les mains relâchent, jamais sur l’appui ; le menton avance plus qu’il ne monte."
+ },
+ {
+  "course": "pap",
+  "n": 10,
+  "stepId": "PAP10",
+  "file": "pap-10-qui-tient.json",
+  "title": "Papillon qui tient",
+  "frames": 87,
+  "seconds": 2.9,
+  "show": "Cycles enchaînés, inspiration tous les 2 temps ; priorité à la bascule et aux fesses qui remontent."
+ },
+ {
+  "course": "brasse",
+  "n": 1,
+  "stepId": "BRA1",
+  "file": "brasse-01-ciseau.json",
+  "title": "Le ciseau d’abord",
+  "frames": 96,
+  "seconds": 3.2,
+  "show": "Jambes seules, bras devant : talons vers les fesses, genoux pas plus larges que les hanches, puis ciseau qui pousse et retour vif."
+ },
+ {
+  "course": "brasse",
+  "n": 2,
+  "stepId": "BRA2",
+  "file": "brasse-02-fouette.json",
+  "title": "Seul le fouetté pousse",
+  "frames": 120,
+  "seconds": 4.0,
+  "show": "Ralenti sur les pieds : en flexion, tournés dehors (ça place), puis fouetté vers l’intérieur et le fond, pieds « en prière », relâchés."
+ },
+ {
+  "course": "brasse",
+  "n": 3,
+  "stepId": "BRA3",
+  "file": "brasse-03-prisonnier.json",
+  "title": "Nage du prisonnier",
+  "frames": 96,
+  "seconds": 3.2,
+  "show": "Mains dans le dos : seul le ciseau fait monter la tête pour inspirer. S’il ne pousse pas, la tête coule."
+ },
+ {
+  "course": "brasse",
+  "n": 4,
+  "stepId": "BRA4",
+  "file": "brasse-04-deux-attitudes.json",
+  "title": "Deux attitudes",
+  "frames": 120,
+  "seconds": 4.0,
+  "show": "Bascule (bras tendus devant, hanches hautes), puis redressement (mains qui rentrent, inspiration, relance) qui ne dure pas."
+ },
+ {
+  "course": "brasse",
+  "n": 5,
+  "stepId": "BRA5",
+  "file": "brasse-05-bonnet.json",
+  "title": "Pause bonnet hors de l’eau",
+  "frames": 114,
+  "seconds": 3.8,
+  "show": "Pendant la relance et l’allonge, le haut du bonnet reste hors de l’eau : pause stable, corps gainé."
+ },
+ {
+  "course": "brasse",
+  "n": 6,
+  "stepId": "BRA6",
+  "file": "brasse-06-relance.json",
+  "title": "Relance des bras vite",
+  "frames": 114,
+  "seconds": 3.8,
+  "show": "Les bras repartent devant très vite, puis un petit temps de glisse bras serrés, haut de la tête à la surface."
+ },
+ {
+  "course": "brasse",
+  "n": 7,
+  "stepId": "BRA7",
+  "file": "brasse-07-prise-eau.json",
+  "title": "Prise d’eau puis fouetté des mains",
+  "frames": 120,
+  "seconds": 4.0,
+  "show": "Les mains s’écartent (et descendent un peu) sans pousser, puis rentrent vers l’axe de plus en plus vite, coudes écartés, et filent devant."
+ },
+ {
+  "course": "brasse",
+  "n": 8,
+  "stepId": "BRA8",
+  "file": "brasse-08-corps-plat.json",
+  "title": "Corps assez plat",
+  "frames": 102,
+  "seconds": 3.4,
+  "show": "Petit dauphin seulement : les hanches remontent à la bascule, la tête monte au redressement, sans « montagnes russes »."
+ },
+ {
+  "course": "brasse",
+  "n": 9,
+  "stepId": "BRA9",
+  "file": "brasse-09-inspirer.json",
+  "title": "Inspirer hors appui",
+  "frames": 114,
+  "seconds": 3.8,
+  "show": "Pas d’inspiration quand les mains s’écartent : on inspire avec la relance des bras et le regroupement des jambes."
+ },
+ {
+  "course": "brasse",
+  "n": 10,
+  "stepId": "BRA10",
+  "file": "brasse-10-sans-trou.json",
+  "title": "Bras puis jambes, sans trou",
+  "frames": 126,
+  "seconds": 4.2,
+  "show": "Les jambes se regroupent pendant la relance des bras ; juste après le fouetté, nouvelle prise d’eau sans temps mort."
+ }
+]
