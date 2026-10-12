@@ -18,6 +18,7 @@
 
 | Date | Contexte | Correction | Statut |
 | --- | --- | --- | --- |
+| 2026-10-12 | Arrêter l'essai : corrections revue du 12 octobre | Pendant l'essai, Binômes ouvre la fiche d'essai (ligne Binômes), jamais « S'abonner ». Une synchro Apple de la même période garde l'arrêt. Au retour des Réglages, l'accès est relu à 3 s, 10 s et 30 s. La FAQ iPhone distingue essai app et essai site. `subscriptionPanelMode` et `stopTrialTarget` sont testés. | 🧪 à vérifier |
 | 2026-10-12 | École offres niveau / 4N | Pap/brasse invisibles Débutant+Découverte. Inter+ : lock crawl+dos. Fin 4 écoles → popup Intermédiaire (remplace Bravo) + regen. Fin 6 + pas 4N → popup 4 nages + regen. Non reproposable. | ✅ active |
 | 2026-10-12 | École pap/brasse lock | Pap et brasse restent invisibles en Découverte. Hors Découverte : lock tant que crawl (ANC18) et dos ne sont pas terminés. Copy locked mise à jour. | ↩ remplacée |
 | 2026-10-12 | École assets Accueil | Remis `school-hero.webp` + `loutre-ecole.webp` (sources JPG Oct 10 dans `design-assets/school/`). Plus de fallback `hero-pool` / `loutre-merci`. Rail Accueil au-dessus du CoachCard. Lottie pédagogiques toujours stubs (jamais commit) : à régénérer. | ✅ active |
