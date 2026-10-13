@@ -15,7 +15,7 @@ export function isIosSimpleNav() {
 }
 
 export function iosDockActive(tab) {
-  if (tab === "plan" || tab === "buddies") return "home";
+  if (tab === "plan" || tab === "buddies" || tab === "school" || tab === "library") return "home";
   if (tab === "history") return "analyse";
   return tab;
 }

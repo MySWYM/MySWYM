@@ -30,6 +30,7 @@ import { isIosSimpleNav } from "./lib/ios-simple-nav.js";
 import { currentWeekSessionCards, sessionTypeAccent } from "./lib/home-week-sessions.js";
 import SessionExportBar from "./ui/SessionExportBar.jsx";
 import "./school/school.css";
+import "./library/library.css";
 import { PRICING } from "./lib/pricing.js";
 import { isNativeIos } from "./lib/native-platform.js";
 import { isDecouverteLevelId } from "./lib/onboarding-level-gate.js";
@@ -83,6 +84,7 @@ export default function Dashboard({
   accessState = null,
   onGoBuddies = null,
   onOpenSchool = null,
+  onOpenLibrary = null,
 }) {
   const { t } = useTranslation("app");
   const {
@@ -261,6 +263,36 @@ export default function Dashboard({
       </section>
     ) : null;
 
+  const libraryHomeHero =
+    typeof onOpenLibrary === "function" && iosNav ? (
+      <section
+        className="ms-buddies-home-module ms-library-home-module"
+        aria-label={t("home.libraryCardTitle")}
+      >
+        <button
+          type="button"
+          className="ms-buddies-home-hero ms-library-home-hero"
+          onClick={() => {
+            playUiSound("soft");
+            onOpenLibrary();
+          }}
+        >
+          <img
+            className="ms-buddies-home-hero-bg"
+            src="/library/library-hero.jpg"
+            alt=""
+            decoding="async"
+          />
+          <span className="ms-buddies-home-hero-scrim" aria-hidden />
+          <span className="ms-buddies-home-hero-copy">
+            <span className="ms-buddies-home-hero-title">{t("home.libraryCardTitle")}</span>
+            <span className="ms-buddies-home-hero-lead">{t("home.libraryLead")}</span>
+            <span className="ms-buddies-home-hero-cta">{t("home.libraryOpen")}</span>
+          </span>
+        </button>
+      </section>
+    ) : null;
+
   return (
     <div
       className="ms-home-immersive"
@@ -397,6 +429,7 @@ export default function Dashboard({
             {!schoolAboveSessions ? schoolHomeHero : null}
             <CoachCard plan={plan} profile={profile} currentWeekIndex={coachWeek} spaced />
             {buddiesHomeHero}
+            {libraryHomeHero}
           </>
         ) : (
           <>
@@ -406,6 +439,7 @@ export default function Dashboard({
             {!schoolAboveSessions ? schoolHomeHero : null}
             <CoachCard plan={plan} profile={profile} currentWeekIndex={coachWeek} spaced />
             {buddiesHomeHero}
+            {libraryHomeHero}
           </>
         ) : schoolBlocks ? null : preview ? (
           <div style={{ marginBottom: 12 }}>

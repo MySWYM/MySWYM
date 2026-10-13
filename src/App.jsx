@@ -297,6 +297,7 @@ const SettingsDrawer = lazy(() => import("./SettingsDrawer.jsx"));
 const SupportBubble = lazy(() => import("./SupportBubble.jsx"));
 const BuddyMatching = lazy(() => import("./BuddyMatching.jsx"));
 const SchoolScreen = lazy(() => import("./school/SchoolScreen.jsx"));
+const LibraryScreen = lazy(() => import("./library/LibraryScreen.jsx"));
 
 /** Étape K, faits sportifs Supabase (entoure le moteur, ne le remplace pas). */
 const sportsPersistence = createSportsPersistence(supabase);
@@ -11416,6 +11417,41 @@ export default function App() {
     }
   };
 
+  const handleLibraryProfilePatch = (patch) => {
+    const nextProfile = { ...(activePlanEntry?.profile || activeProfile || {}), ...patch };
+    if (activePlanId) {
+      setPlans((prev) => prev.map((e) => {
+        if (e.id !== activePlanId) return e;
+        return { ...e, profile: { ...e.profile, ...patch } };
+      }));
+    }
+    if (user?.id) {
+      sportsPersistence.upsertSportProfile(user.id, nextProfile).then(() => {});
+    }
+  };
+
+  /** Pin éducatif Sheet → regen séances à venir, puis clear le pin. */
+  const handleLibraryUseInNextSession = (item) => {
+    if (!item?.sheetName) return;
+    const pinned = {
+      id: item.id,
+      name: item.sheetName,
+      nage: item.nage || null,
+      source: item.source || "sheet",
+    };
+    const withPin = { ...(activePlanEntry?.profile || activeProfile || {}), libraryPinnedEducatif: pinned };
+    handleLibraryProfilePatch({ libraryPinnedEducatif: pinned });
+    const clearPin = () => handleLibraryProfilePatch({ libraryPinnedEducatif: null });
+    Promise.resolve(applyProfileToUpcomingSessions(withPin, { toast: false }))
+      .then(() => {
+        clearPin();
+        showToast(t("library.pinToast"), 4000);
+      })
+      .catch(() => {
+        clearPin();
+      });
+  };
+
   /** Offre école : Intermédiaire (Débutant) ou 4 nages (Inter/Avancé), puis regen prochaines séances. */
   const handleSchoolUpgrade = (kind) => {
     const nextPatch =
@@ -12024,7 +12060,7 @@ export default function App() {
           </div>
         )}
         <div className="myswym-app-main">
-        {activeTab === "home"    && <Dashboard   plan={plan} profile={activeProfile} onTabChange={goTab} onShare={openShare} onSignOut={handleSignOut} user={user} isPremium={isPremium || accessState.hasPremiumAccess} onRegenerateLoop={handleRegenerateLoopSession} onUpgrade={(ctx) => openUpgrade(ctx || "trial_required")} onReset={handleReset} onEditFeedback={handleEditSessionFeedback} onPaceUpdate={handlePaceUpdate} onValidateSession={handleComplete} onOpenMenu={() => setSettingsOpen(true)} activePlanId={activePlanId} accessState={accessState} onGoBuddies={() => goTab("buddies")} onOpenSchool={(courseId) => { setSchoolCourseId(courseId || "crawl"); goTab("school"); }} />}
+        {activeTab === "home"    && <Dashboard   plan={plan} profile={activeProfile} onTabChange={goTab} onShare={openShare} onSignOut={handleSignOut} user={user} isPremium={isPremium || accessState.hasPremiumAccess} onRegenerateLoop={handleRegenerateLoopSession} onUpgrade={(ctx) => openUpgrade(ctx || "trial_required")} onReset={handleReset} onEditFeedback={handleEditSessionFeedback} onPaceUpdate={handlePaceUpdate} onValidateSession={handleComplete} onOpenMenu={() => setSettingsOpen(true)} activePlanId={activePlanId} accessState={accessState} onGoBuddies={() => goTab("buddies")} onOpenSchool={(courseId) => { setSchoolCourseId(courseId || "crawl"); goTab("school"); }} onOpenLibrary={() => goTab("library")} />}
         {activeTab === "plan"    && <PlanTab     plan={plan} profile={activeProfile} isPremium={isPremium || accessState.hasPremiumAccess} onComplete={handleComplete} onAdvanceLoop={handleAdvanceLoopSession} onShare={openShare} onEditFeedback={handleEditSessionFeedback} onReset={handleReset} onUpgrade={(ctx) => openUpgrade(ctx || "trial_required")} startDate={activePlanEntry?.startDate} plans={plans} activePlanId={activePlanId} onSwitchPlan={handleSwitchPlan} onAddPlan={handleAddPlan} onDeletePlan={handleDeletePlan} onRegenerateLoop={handleRegenerateLoopSession} onUpdateProgram={handleUpdateProgram} user={user} onOpenMenu={() => setSettingsOpen(true)} onTabChange={goTab} addingPlan={addingPlan} onCancelAddPlan={handleCancelAddPlan} onboardingProps={{
           profile,
           step,
@@ -12109,6 +12145,21 @@ export default function App() {
             />
           </Suspense>
         )}
+        {activeTab === "library" && (
+          <Suspense fallback={null}>
+            <LibraryScreen
+              profile={activeProfile}
+              user={user}
+              onBack={() => goTab(lastDockTabRef.current || "home")}
+              onOpenMenu={() => setSettingsOpen(true)}
+              onProfilePatch={handleLibraryProfilePatch}
+              onUseInNextSession={handleLibraryUseInNextSession}
+              hasSessionAccess={canAccessSessions(accessState, isPremium || accessState.hasPremiumAccess)}
+              isPremium={Boolean(isPremium || accessState.hasPremiumAccess)}
+              onUpgrade={(ctx) => openUpgrade(ctx || "trial_required")}
+            />
+          </Suspense>
+        )}
         <Suspense fallback={null}>
         {activeTab === "buddies" && <BuddyMatching user={user} profile={activeProfile} onOpenMenu={() => setSettingsOpen(true)} onTabChange={goTab} canUseBuddies={accessState.canUseBuddies} onUpgrade={(ctx) => openUpgrade(ctx || "buddies")} />}
         </Suspense>
@@ -12116,8 +12167,8 @@ export default function App() {
         {(() => {
           const iosNav = isIosSimpleNav();
           const dockVisible = iosNav
-            ? activeTab !== "plan" && activeTab !== "buddies" && activeTab !== "school" && !iosHideDock && !supportPageOpen
-            : activeTab !== "profile" && activeTab !== "school";
+            ? activeTab !== "plan" && activeTab !== "buddies" && activeTab !== "school" && activeTab !== "library" && !iosHideDock && !supportPageOpen
+            : activeTab !== "profile" && activeTab !== "school" && activeTab !== "library";
           return (
             <Suspense fallback={null}>
               {iosNav ? (
@@ -12138,7 +12189,7 @@ export default function App() {
             </Suspense>
           );
         })()}
-        {((isIosSimpleNav() && activeTab !== "plan" && activeTab !== "buddies" && activeTab !== "school" && !iosHideDock && !supportPageOpen) || (!isIosSimpleNav() && activeTab !== "profile" && activeTab !== "school")) && (
+        {((isIosSimpleNav() && activeTab !== "plan" && activeTab !== "buddies" && activeTab !== "school" && activeTab !== "library" && !iosHideDock && !supportPageOpen) || (!isIosSimpleNav() && activeTab !== "profile" && activeTab !== "school" && activeTab !== "library")) && (
           <BottomNav
             active={isIosSimpleNav() ? iosDockActive(activeTab) : (activeTab === "buddies" ? "analyse" : activeTab)}
             onChange={goTab}

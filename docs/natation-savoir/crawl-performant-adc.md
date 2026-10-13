@@ -1,73 +1,105 @@
 # Nager un crawl performant : ADC (fiches savoir)
 
 > Source : livre *Nager un crawl performant*, fiches pratiques d’apprentissage du départ crawl (ADC), p. 110-114.  
-> Fiches reformulées par l’agent, **validées par Arthur le 2026-10-10** (ADC0 + ADC1-ADC10).  
-> Statut : savoir de référence. **Branché école** (parcours brouillon 10 étapes ADC, correction Arthur à venir).  
-> Voir aussi : [`crawl-performant-anc.md`](./crawl-performant-anc.md) (nage) et [`nager2-departs.md`](./nager2-departs.md).
+> Reformulé depuis les pages livre (structure Objectif / Consignes / Critère / Attention).  
+> Statut : savoir de référence pour la bibliothèque.
 
 **Échelle :** on n’en saute pas une. Accepter de tomber d’abord. On pousse après. Tête fixée entre les bras du début à l’entrée. Peu d’éclaboussures = bonne entrée.
 
-**École (brouillon) :** chaque ADC = une case, après l’ANC ou module à part. `Pas encore` = même ADC plus simple (bord, pas plot / cerceau plus près), puis on rejoue.
-
 ---
 
-### ADC0 · L’ordre · `decouverte`
-- Tomber → pousser → mouliner les bras → cerceau + coulée → départ entier + reprise → **agrippé** (bascule) → tête qui se relève → pieds décalés → cerceau + reprise → signal (sifflet).
-- L’agrippé arrive **en 6**, pas en 1. D’abord on sait tomber.
+### ADC1 · Chute avant du bord · `decouverte`
+- **Action :** Chute avant du bord, bras en avant.
+- **Objectif :** Accepter le déséquilibre avant.
+- **Transformations :** Inhiber le réflexe de redressement.
+- **Consigne :** Tête basculée.
+- **Consigne :** Corps tonique.
+- **Consigne :** Se laisser tomber (pas de poussée).
+- **Critère :** Tête fixée entre les bras pendant tout le mouvement. Peu d’éclaboussures.
+- **Attention :** Yeux fermés. Puis même chose depuis le plot.
+- **Matériel :** Éventuellement un plot de départ.
 
-### ADC1 · Chute avant du bord
-- Bras devant, tête rentrée, corps dur. **Se laisser tomber.** Pas de poussée.
-- But : tuer le réflexe de se redresser.
-- **Bon si :** tête entre les bras tout le temps. Peu d’éclaboussures.
-- Variante : yeux fermés. Puis depuis le plot.
+### ADC2 · Impulsion du bord · `decouverte`
+- **Action :** Impulsion coordonnée avec le déséquilibre avant du bord.
+- **Objectif :** Augmenter l’amplitude de l’envol.
+- **Transformations :** Coordonner l’impulsion avec le déséquilibre.
+- **Consigne :** Commencer par le déséquilibre avant avant d’impulser.
+- **Critère :** Tête fixée entre les bras. Évaluer la hauteur d’envol et le niveau d’éclaboussures.
+- **Attention :** Yeux fermés. Passer sous une perche de plus en plus haute. Puis depuis le plot.
+- **Matériel :** Une perche, éventuellement un plot.
 
-### ADC2 · + impulsion
-- D’abord le déséquilibre, **ensuite** tu pousses. (Même règle que *Nager²* DP2.)
-- **Bon si :** plus d’envol, tête toujours entre les bras, peu d’eau qui gicle.
-- Variante : yeux fermés. Passer sous une perche de plus en plus haute.
+### ADC3 · Action des bras à l’impulsion · `inter`
+- **Action :** Action des bras pour amplifier l’appui puis l’allègement du corps.
+- **Objectif :** Intégrer le rôle des bras (segments libres) dans l’efficacité de l’impulsion.
+- **Transformations :** Coordonner la rotation des bras avec l’impulsion.
+- **Consigne :** Baisser les bras quand les jambes fléchissent.
+- **Consigne :** Lever les bras quand les jambes s’étendent.
+- **Critère :** À l’entrée, tête fixée entre les bras. Hauteur d’envol et niveau d’éclaboussures.
+- **Attention :** Yeux fermés. Modifier le trajet de rotation des bras. Puis depuis le plot.
+- **Matériel :** Éventuellement un plot de départ.
 
-### ADC3 · + action des bras
-- Bras qui descendent quand les jambes plient. Bras qui montent quand les jambes poussent.
-- **Bon si :** à l’entrée, tête entre les bras. Envol + peu d’éclaboussures.
-- Variante : yeux fermés. Changer le trajet des bras. Puis plot.
+### ADC4 · Cerceau puis coulée · `inter`
+- **Action :** Même enchaînement qu’ADC3, entrée dans un cerceau, puis coulée.
+- **Objectif :** Préciser le départ par rapport à la future reprise de nage.
+- **Transformations :** Garder la tonification à l’entrée et une flexion marquée de la nuque.
+- **Consigne :** Ne pas toucher le cerceau.
+- **Consigne :** Prolonger l’entrée par une coulée.
+- **Critère :** Hauteur d’envol et éclaboussures. Distance totale atteinte.
+- **Attention :** Yeux fermés. Éloigner le cerceau progressivement.
+- **Matériel :** Un cerceau.
 
-### ADC4 · Cerceau + coulée
-- Pareil qu’ADC3, tu vises un cerceau, puis tu glisses.
-- **Ne pas toucher le cerceau.** Nuque pliée, corps dur à l’entrée.
-- **Bon si :** tu perces le trou, tu glisses loin.
-- Variante : yeux fermés. Cerceau de plus en plus loin.
+### ADC5 · Départ complet sans agrippé + reprise · `inter`
+- **Action :** Départ complet avec reprise de nage.
+- **Objectif :** Intégrer l’ensemble des composantes du départ libre.
+- **Transformations :** Enchaîner impulsion, entrée, coulée, reprise. Reprise par battements puis propulsion de bras.
+- **Consigne :** Dissocier clairement chacune des phases du départ.
+- **Critère :** Hauteur d’envol et éclaboussures. Distance totale après un cycle de nage.
+- **Attention :** Yeux fermés. Partir au signal. Prolonger la nage de quelques mètres.
+- **Matériel :** Aucun.
 
-### ADC5 · Départ entier, sans agrippé + reprise
-- Enchaîner : poussée → entrée → coulée → nage. D’abord les **jambes**, puis un bras.
-- On **sépare** encore les phases dans la tête, même si ça s’enchaîne.
-- **Bon si :** peu d’éclaboussures. Distance après **1 cycle** de nage.
-- Variante : yeux fermés. Au signal. Nager encore 5-10 m.
+### ADC6 · Agrippé : traction pour basculer · `inter`
+- **Action :** Agrippé au plot, traction des bras pour faire basculer le corps.
+- **Objectif :** Intégrer le rôle des bras dans la phase de déséquilibre.
+- **Transformations :** Accepter un déséquilibre important.
+- **Consigne :** Maintenir la bascule de la tête.
+- **Consigne :** Conserver la tonification du corps.
+- **Critère :** Repérer la partie du corps qui touche l’eau en premier (viser tête / mains, pas le ventre).
+- **Attention :** Yeux fermés. Basculer plus ou moins pour varier l’entrée.
+- **Matériel :** Un plot de départ.
 
-### ADC6 · Agrippé : tirer pour basculer
-- Mains au plot. Tu **tires**, le corps bascule. Tête reste rentrée, corps dur.
-- But : les bras font le déséquilibre (grab-start, *Nager²* DP6).
-- **Bon si :** tu vois quelle partie touche l’eau en premier (viser la tête / les mains, pas le ventre).
-- Variante : yeux fermés. Bascule plus ou moins forte.
+### ADC7 · Agrippé + relevé de tête · `avance`
+- **Action :** Comme ADC6, mais au début de la bascule : fléchir les jambes et lever la tête, puis entrer par la tête.
+- **Objectif :** Coordonner déséquilibre, flexion des jambes et extension des bras.
+- **Transformations :** Dissocier les actions bras, jambes et tête.
+- **Consigne :** D’abord dissocier clairement les actions, puis les enchaîner.
+- **Critère :** À l’entrée, tête fixée entre les bras. Hauteur d’envol et éclaboussures.
+- **Attention :** Finir en roulade sous l’eau, ou coulée longue.
+- **Matériel :** Un plot de départ.
 
-### ADC7 · Agrippé + tête qui se relève
-- Comme ADC6, mais au début de la bascule : jambes qui plient, **tête qui se lève**, puis tu rentres par la tête.
-- D’abord les 3 gestes **séparés**, ensuite collés. (*Nager²* DP8 : tête qui pique à l’envol.)
-- **Bon si :** à l’eau, tête entre les bras. Envol + peu d’éclaboussures.
-- Variante : finir en roulade sous l’eau, ou coulée longue.
+### ADC8 · Départ complet pieds décalés · `avance`
+- **Action :** Départ complet sans agrippé, pieds décalés (track-start).
+- **Objectif :** Coordonner le déséquilibre d’une jambe, l’impulsion de l’autre, avec les bras.
+- **Transformations :** Dissocier bras, deux jambes et tête.
+- **Consigne :** D’abord dissocier clairement les actions, puis les enchaîner.
+- **Critère :** Entrée dans l’axe malgré les deux pieds différents. Tête entre les bras. Hauteur d’envol et éclaboussures.
+- **Attention :** Finir par une coulée longue.
+- **Matériel :** Un plot de départ.
 
-### ADC8 · Sans agrippé, pieds décalés
-- Track-start, mains libres. Une jambe bascule, l’autre pousse, les bras aident.
-- D’abord séparé, puis collé.
-- **Bon si :** malgré les 2 pieds différents, tu rentres **dans l’axe**. Tête entre les bras.
-- Variante : coulée longue.
+### ADC9 · Cerceau + coulée + reprise · `avance`
+- **Action :** Entrée dans un cerceau, prolonger par une coulée et une reprise de nage.
+- **Objectif :** Structurer le départ par rapport à la future reprise de nage.
+- **Transformations :** Conserver la tonification à l’entrée et la flexion marquée de la nuque.
+- **Consigne :** Ne pas toucher le cerceau.
+- **Consigne :** Prolonger l’entrée par une coulée.
+- **Critère :** Distance avant et après la coulée (ne pas tout perdre à l’entrée).
+- **Attention :** Yeux fermés. Éloigner le cerceau progressivement.
+- **Matériel :** Un plot de départ et un cerceau.
 
-### ADC9 · Cerceau + coulée + reprise
-- Départ plot, trou du cerceau, glisse, puis nage.
-- Ne pas toucher le cerceau. Nuque pliée.
-- **Bon si :** distance **avant** et **après** la coulée (tu n’as pas tout perdu à l’entrée).
-- Variante : yeux fermés. Cerceau plus loin.
-
-### ADC10 · Signal (sifflet)
-- Prépare-toi. Au sifflet : tout de suite. Envol dur. Coulée. Reprise.
-- **Mesure :** temps jusqu’à l’eau, puis **5 m et 10 m** (comme *Nager²* DP18). Pas seulement le temps de réaction.
-- Variante : mains agrippées **ou** libres. Pieds joints **ou** décalés. Puis nager plus loin.
+### ADC10 · Signal (sifflet) · `avance`
+- **Action :** Préparation et enchaînement complet des phases du départ + réaction à un signal.
+- **Objectif :** Se mettre dans les conditions complètes de réalisation.
+- **Transformations :** Départ spécifié à différents signaux auditifs.
+- **Consigne :** Bien se préparer, réagir immédiatement au signal, impulsation et envol, rester tonique après l’entrée, prolonger la coulée par une reprise de nage.
+- **Critère :** Temps de réaction, d’entrée, de coulée et de reprise (repères 5 m et 10 m).
+- **Attention :** Varier mains (agrippées ou libres) et pieds (joints ou décalés). Varier la reprise. Prolonger la nage.
+- **Matériel :** Un plot de départ et un sifflet.

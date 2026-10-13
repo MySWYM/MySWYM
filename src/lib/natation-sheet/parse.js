@@ -418,6 +418,13 @@ export function excludeEducatifNamesFromHistory(history, limit = SHEET_RECENT_ED
  * @param {() => number} [rng]
  */
 export function pickEducatif(educatifs, opts, rng = Math.random) {
+  const preferKey = normalizeEducatifKey(opts.preferName || "");
+  if (preferKey) {
+    const forced = (educatifs || []).find(
+      (e) => e?.garder !== false && normalizeEducatifKey(e.nom) === preferKey,
+    );
+    if (forced) return forced;
+  }
   const band = opts.levelBand || "intermediaire";
   const nageWant = normalizeNageKey(opts.nage || "crawl");
   let pool = (educatifs || []).filter((e) => e.garder);
