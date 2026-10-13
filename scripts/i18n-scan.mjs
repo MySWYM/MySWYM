@@ -17,6 +17,7 @@ export const IGNORE = [
   /^src\/lib\/sports-engine\//,
   /^src\/lib\/swim-banks\//,
   /^src\/lib\/natation-sheet\//,
+  /^src\/lib\/library\/book-parse\.js$/,
   /^src\/lib\/swim-school\//,
   /^src\/lib\/swim-session-generator\.js$/,
   /^src\/(Blog|BlogPost|HomeBlogCarousel)\.jsx$/,

@@ -222,6 +222,10 @@ export function tryComposeFromSheetCache(profile, opts = {}) {
   const excludeEducatifs = orderedEducatifs.slice(1);
   const pace100 = Number(profile.pace100) > 0 ? Number(profile.pace100) : null;
   const isPremium = opts.isPremium === true || profile.isPremium === true;
+  const preferName =
+    opts.preferEducatifName ||
+    profile?.libraryPinnedEducatif?.name ||
+    null;
   const filled = materializeSession(
     picked,
     cache.educatifs,
@@ -233,6 +237,7 @@ export function tryComposeFromSheetCache(profile, opts = {}) {
       hardExcludeNames,
       pace100,
       isPremium,
+      preferName,
     },
     opts.rng || Math.random,
   );
@@ -322,6 +327,12 @@ export function tryComposeFromSheetCache(profile, opts = {}) {
       excludeEducatifs,
       hardExcludeNames,
       weekRolePhase: weekRole?.phase || null,
+      libraryPinApplied: Boolean(
+        preferName &&
+          eduNames.some(
+            (n) => normalizeEducatifKey(n) === normalizeEducatifKey(preferName),
+          ),
+      ),
     },
     engineWhy: weekRole
       ? `sheet=${familyId} · n°${filled.n} · ${filled.total_m}m · ${weekRole.phase}`

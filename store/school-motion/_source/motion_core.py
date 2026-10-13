@@ -151,7 +151,22 @@ BREAST = [
     (0.84, (34, -14, 8), (86, -14, 0)),
 ]
 
+# Petit chien : traction courte (arrêt sous l'épaule), retour sous l'eau.
+SHORT = PULL[:3] + [
+    (0.45, (-6, -34, 12), (38, -44, 0)),
+    (0.72, (32, -18, 6), (86, -24, 0)),
+]
+# Doigts à la surface : retour aérien coude haut, la main frôle l'eau jusqu'à l'entrée.
+REC_DRAG = [
+    (0.60, (-48, 24, 14), (-74, -6, 16)),
+    (0.72, (-22, 44, 18), (-6, -4, 26)),
+    (0.85, (24, 40, 12), (58, -4, 14)),
+    (0.94, (50, 12, 4), (104, -4, 2)),
+]
+
 ARM_PATHS = {
+    'short': SHORT,
+    'drag': PULL + REC_DRAG,
     'air': PULL + REC_AIR,
     'water': PULL + REC_WATER,
     'back': BACK_PULL + BACK_REC,
@@ -246,7 +261,7 @@ class ArmSeq:
 
 
 # ───────────────────────── jambes ─────────────────────────
-def leg_chain(side, a_deg, k_deg, ab_deg=0.0, foot_deg=8.0):
+def leg_chain(side, a_deg, k_deg, ab_deg=0.0, foot_deg=8.0, foot_len=None):
     """a = flexion de hanche (+ = genou vers le ventre), k = flexion du genou (talon vers les fesses),
     ab = rotation de la jambe autour de l'axe du corps (+ = talons vers l'extérieur, genoux dedans),
     foot = angle du pied par rapport au tibia (8 = pointé, ~80 = pied en flexion)."""
@@ -256,7 +271,8 @@ def leg_chain(side, a_deg, k_deg, ab_deg=0.0, foot_deg=8.0):
     b = a - rad(k_deg)
     an = add(kn, (-SHIN * math.cos(b), -SHIN * math.sin(b), 0))
     c = b + rad(foot_deg)
-    to = add(an, (-FOOT * math.cos(c), -FOOT * math.sin(c), 0))
+    fl = FOOT if foot_len is None else foot_len      # palmes : pied plus long
+    to = add(an, (-fl * math.cos(c), -fl * math.sin(c), 0))
     if ab_deg:
         al = rad(ab_deg) * side
         ca, sa = math.cos(al), math.sin(al)
@@ -304,8 +320,8 @@ def _swimmer(sc, t, cache, pose, fade):
     limbs = {
         'armA': arm_chain_eh(+1, *sc['armA'](t)) if 'armA' in sc else arm_chain(+1, sc['A'](t), sc['modeA'](t)),
         'armB': arm_chain_eh(-1, *sc['armB'](t)) if 'armB' in sc else arm_chain(-1, sc['B'](t), sc['modeB'](t)),
-        'legA': leg_chain(+1, *la),
-        'legB': leg_chain(-1, *lb),
+        'legA': leg_chain(+1, *la, **({'foot_len': sc['foot_len']} if 'foot_len' in sc else {})),
+        'legB': leg_chain(-1, *lb, **({'foot_len': sc['foot_len']} if 'foot_len' in sc else {})),
     }
     ar = abs(pose['roll'])
     if 'hip_roll' in sc:
@@ -510,6 +526,16 @@ def frame_prims(sc, t, cache):
     if sc.get('coulee'):
         wx = cache['wall'](t)
         prims['wall'] = ('poly', [(wx - 60, SURF - 26), (wx, SURF - 26), (wx, H), (wx - 60, H)], fade)
+    if 'splash' in sc:                            # petit jet d'eau à la sortie de main (vers l'arrière)
+        side, amt = sc['splash'](t)
+        arm = prims['arm%s_near' % side][1] if prims['arm%s_near' % side][2] else prims['arm%s_far' % side][1]
+        hx, hy = arm[-1]
+        z = cp[0] if cp else 1.0
+        for i, (ang, ln) in enumerate(((150, 22), (125, 26), (100, 18)), 1):
+            a = rad(ang)
+            p0 = (hx + 6 * z * math.cos(a), hy - 6 * z * math.sin(a))
+            p1 = (hx + (6 + ln * amt) * z * math.cos(a), hy - (6 + ln * amt) * z * math.sin(a))
+            prims['splash%d' % i] = ('path', [p0, p1], amt * fade)
     for k, (kind, v, op) in prop_shapes(sc, t, fade).items():
         if kind == 'screen_path':
             prims[k] = ('path', v, op)
@@ -803,6 +829,9 @@ def build_lottie(sc, frames, name):
     push('surface', path_layer('surface', COL['surface'], 3), static(100))
     push('inspire-shaft', path_layer('inspire_shaft', COL['puff'], 3), opacity_of('inspire_shaft'))
     push('inspire-head', path_layer('inspire', COL['puff'], 3), opacity_of('inspire'))
+    if 'splash1' in p0:
+        for nm in ('splash1', 'splash2', 'splash3'):
+            push(nm, path_layer(nm, COL['puff'], 3), opacity_of(nm))
     if 'signal1' in p0:
         for nm in ('signal1', 'signal2', 'signal_dot'):
             push(nm.replace('_', '-'), path_layer(nm, COL['puff'], 3.5), opacity_of(nm))
@@ -889,7 +918,7 @@ def draw_png(prims, scale=1, zoom=1.0):
     if prims['inspire'][2] > 0.05:
         line(prims['inspire_shaft'][1], COL['puff'], 3 / zoom, 1)
         line(prims['inspire'][1], COL['puff'], 3 / zoom, 1)
-    for nm in ('signal1', 'signal2', 'signal_dot'):
+    for nm in ('signal1', 'signal2', 'signal_dot', 'splash1', 'splash2', 'splash3'):
         if nm in prims and prims[nm][2] > 0.05:
             line(prims[nm][1], COL['puff'], 3.5 / zoom, 1)
     return img

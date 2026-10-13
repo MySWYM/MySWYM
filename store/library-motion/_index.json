@@ -1,0 +1,252 @@
+[
+ {
+  "id": "sheet:petit chien",
+  "name": "petit chien",
+  "nage": "crawl",
+  "file": "sheet-petit-chien.json",
+  "frames": 96,
+  "seconds": 3.2,
+  "show": "Bras alternés sous l’eau, traction courte qui s’arrête sous l’épaule, la main revient devant sans sortir ; rythme lent.",
+  "todo": null
+ },
+ {
+  "id": "sheet:grand chien",
+  "name": "grand chien",
+  "nage": "crawl",
+  "file": "sheet-grand-chien.json",
+  "frames": 120,
+  "seconds": 4.0,
+  "show": "Bras alternés sous l’eau, grande traction jusqu’à la cuisse puis retour sous l’eau, les mains ne sortent jamais ; rythme lent.",
+  "todo": null
+ },
+ {
+  "id": "sheet:flèche",
+  "name": "flèche",
+  "nage": "crawl",
+  "file": "sheet-fleche.json",
+  "frames": 114,
+  "seconds": 3.8,
+  "show": "Poussée forte au mur, corps tendu et aligné, bras serrés une main sur l’autre, tête rentrée ; quand la glisse ralentit, petits battements sans casser la flèche.",
+  "todo": null
+ },
+ {
+  "id": "sheet:crawl rattrapé",
+  "name": "crawl rattrapé",
+  "nage": "crawl",
+  "file": "sheet-crawl-rattrape.json",
+  "frames": 142,
+  "seconds": 4.733,
+  "show": "Une main attend devant dans l’axe de l’épaule pendant que l’autre fait tout son trajet ; elles se retrouvent devant avant le mouvement suivant, sans couper la glisse.",
+  "todo": null
+ },
+ {
+  "id": "sheet:toucher cuisse",
+  "name": "toucher cuisse",
+  "nage": "crawl",
+  "file": "sheet-toucher-cuisse.json",
+  "frames": 108,
+  "seconds": 3.6,
+  "show": "Sur le côté : un bras tendu devant, l’autre le long de la cuisse, inspiration sur le côté sans lever la tête ; puis un mouvement pour inverser.",
+  "todo": null
+ },
+ {
+  "id": "sheet:six battements par roulis",
+  "name": "six battements par roulis",
+  "nage": "crawl",
+  "file": "sheet-six-battements-par-roulis.json",
+  "frames": 112,
+  "seconds": 3.733,
+  "show": "Six battements sur un côté, un mouvement de bras, six battements de l’autre : hanches et épaules tournent ensemble, regard vers le fond.",
+  "todo": null
+ },
+ {
+  "id": "sheet:crawl à un bras",
+  "name": "crawl à un bras",
+  "nage": "crawl",
+  "file": "sheet-crawl-a-un-bras.json",
+  "frames": 90,
+  "seconds": 3.0,
+  "show": "Un bras nage, l’autre reste tendu devant sans couler ; les hanches tournent du côté du bras qui rame. Puis l’autre bras.",
+  "todo": null
+ },
+ {
+  "id": "sheet:crawl immergé",
+  "name": "crawl immergé",
+  "nage": "crawl",
+  "file": "sheet-crawl-immerge.json",
+  "frames": 120,
+  "seconds": 4.0,
+  "show": "Crawl entièrement sous l’eau, avec palmes : traction ample jusqu’à la cuisse, corps aligné, sans chercher l’air au milieu de la longueur.",
+  "todo": "Retour des bras : sous l’eau (le retour aérien est impossible en immersion). À valider."
+ },
+ {
+  "id": "sheet:godille",
+  "name": "godille",
+  "nage": "crawl, dos",
+  "file": "sheet-godille.json",
+  "frames": 90,
+  "seconds": 3.0,
+  "show": "Mains devant, elles dessinent de petits huit pour avancer, sans grand cycle de bras ; corps allongé, jambes immobiles.",
+  "todo": "Position des mains (devant la tête ici) et variante dos pieds en avant à préciser."
+ },
+ {
+  "id": "sheet:roulis",
+  "name": "roulis",
+  "nage": "crawl",
+  "file": "sheet-roulis.json",
+  "frames": 126,
+  "seconds": 4.2,
+  "show": "Crawl avec une rotation exagérée : l’épaule du bras qui rame sort de l’eau, hanches et épaules tournent ensemble, regard vers le fond.",
+  "todo": null
+ },
+ {
+  "id": "sheet:minimum de coup de bras",
+  "name": "minimum de coup de bras",
+  "nage": "crawl",
+  "file": "sheet-minimum-de-coup-de-bras.json",
+  "frames": 153,
+  "seconds": 5.1,
+  "show": "Le moins de mouvements possible : chaque traction va au bout, la main glisse devant avant la suivante, on avance loin par cycle sans accélérer.",
+  "todo": null
+ },
+ {
+  "id": "sheet:entrée de main alignée",
+  "name": "entrée de main alignée",
+  "nage": "crawl",
+  "file": "sheet-entree-de-main-alignee.json",
+  "frames": 98,
+  "seconds": 3.267,
+  "show": "Retour lent puis entrée de la main devant l’épaule, doigts qui piquent vers le fond ; la glisse précède toujours la traction.",
+  "todo": "Le croisement (main au milieu de la tête) ne se voit pas de profil : une vue de dessus serait plus juste."
+ },
+ {
+  "id": "sheet:doigts à la surface",
+  "name": "doigts à la surface",
+  "nage": "crawl",
+  "file": "sheet-doigts-a-la-surface.json",
+  "frames": 96,
+  "seconds": 3.2,
+  "show": "Pendant le retour aérien, le coude reste haut et les doigts frôlent la surface jusqu’à l’entrée de la main.",
+  "todo": null
+ },
+ {
+  "id": "sheet:crawl polo",
+  "name": "crawl polo",
+  "nage": "crawl",
+  "file": "sheet-crawl-polo.json",
+  "frames": 108,
+  "seconds": 3.6,
+  "show": "Crawl la tête hors de l’eau, regard devant : les battements portent le buste, le bas du dos ne se cambre pas.",
+  "todo": null
+ },
+ {
+  "id": "sheet:crawl à l’envers",
+  "name": "crawl à l’envers",
+  "nage": "crawl",
+  "file": "sheet-crawl-a-l-envers.json",
+  "frames": 158,
+  "seconds": 5.267,
+  "show": "Rattrapé à la cuisse : la main attend le long de la jambe jusqu’à ce que l’autre la rejoigne ; les mains ne se retrouvent jamais devant la tête.",
+  "todo": null
+ },
+ {
+  "id": "sheet:jet d’eau",
+  "name": "jet d’eau",
+  "nage": "crawl",
+  "file": "sheet-jet-d-eau.json",
+  "frames": 90,
+  "seconds": 3.0,
+  "show": "En fin de traction, la main quitte l’eau près de la cuisse en envoyant un petit jet vers l’arrière : la preuve que l’appui est allé au bout.",
+  "todo": null
+ },
+ {
+  "id": "sheet:battements de dos",
+  "name": "battements de dos",
+  "nage": "dos",
+  "file": "sheet-battements-de-dos.json",
+  "frames": 90,
+  "seconds": 3.0,
+  "show": "Sur le dos surtout aux jambes : battements qui partent de la cuisse, genoux sous l’eau, hanches hautes.",
+  "todo": "Bras derrière la tête ici ; avec planche, elle se tient sur la poitrine ou les genoux."
+ },
+ {
+  "id": "sheet:rattrapé vertical",
+  "name": "rattrapé vertical",
+  "nage": "dos",
+  "file": "sheet-rattrape-vertical.json",
+  "frames": 84,
+  "seconds": 2.8,
+  "show": "En dos, un bras reste à la verticale, doigts vers le ciel, pendant que l’autre rame ; les épaules tournent autour de ce piquet. Puis on inverse.",
+  "todo": null
+ },
+ {
+  "id": "sheet:dos soldat",
+  "name": "dos soldat",
+  "nage": "dos",
+  "file": "sheet-dos-soldat.json",
+  "frames": 90,
+  "seconds": 3.0,
+  "show": "Sur le dos, bras le long du corps, mains vers les cuisses : on avance aux jambes, ventre vers le plafond, bassin qui ne coule pas.",
+  "todo": null
+ },
+ {
+  "id": "sheet:doubles coulées",
+  "name": "doubles coulées",
+  "nage": "brasse",
+  "file": "sheet-doubles-coulees.json",
+  "frames": 162,
+  "seconds": 5.4,
+  "show": "Poussée au mur et glisse, puis une coulée de brasse sous l’eau (bras jusqu’aux cuisses, glisse, retour et ciseau) avant de remonter nager ; on n’inspire pas trop tôt.",
+  "todo": "Interprété comme : coulée de poussée puis coulée de brasse (bras + ciseau) sous l’eau. À valider."
+ },
+ {
+  "id": "sheet:brasse en opposition",
+  "name": "brasse en opposition",
+  "nage": "brasse",
+  "file": "sheet-brasse-en-opposition.json",
+  "frames": 126,
+  "seconds": 4.2,
+  "show": "Bras et jambes ne poussent jamais ensemble : on tire bras pendant que les jambes restent allongées, court alignement, puis ciseau bras tendus devant.",
+  "todo": null
+ },
+ {
+  "id": "sheet:papillon baleine",
+  "name": "papillon baleine",
+  "nage": "papillon",
+  "file": "sheet-papillon-baleine.json",
+  "frames": 108,
+  "seconds": 3.6,
+  "show": "Bras le long du corps, on avance en ondulant : la tête sort puis plonge, la vague parcourt le corps jusqu’aux pieds, sans cycle de bras.",
+  "todo": null
+ },
+ {
+  "id": "sheet:pousse-tête",
+  "name": "pousse-tête",
+  "nage": "papillon",
+  "file": "sheet-pousse-tete.json",
+  "frames": 96,
+  "seconds": 3.2,
+  "show": "La vague part de la tête : le sommet du crâne pousse vers l’avant et un peu vers le fond, la poitrine puis les hanches suivent, les pieds ne donnent pas le départ.",
+  "todo": "Bras le long du corps supposés (la fiche ne le précise pas)."
+ },
+ {
+  "id": "sheet:ondule-tête",
+  "name": "ondule-tête",
+  "nage": "papillon",
+  "file": "sheet-ondule-tete.json",
+  "frames": 90,
+  "seconds": 3.0,
+  "show": "La tête fait un petit « oui » continu, elle plonge puis revient, et le corps copie cette oscillation jusqu’aux pieds, sans à-coup.",
+  "todo": "Bras le long du corps supposés (la fiche ne le précise pas)."
+ },
+ {
+  "id": "sheet:amorce",
+  "name": "amorce",
+  "nage": "papillon",
+  "file": "sheet-amorce.json",
+  "frames": 90,
+  "seconds": 3.0,
+  "show": "Deux ondulations bras devant, puis les mains entament seulement le début de l’appui papillon et reviennent : on cherche le premier appui, pas le cycle entier.",
+  "todo": null
+ }
+]

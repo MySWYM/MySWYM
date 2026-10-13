@@ -1,0 +1,30 @@
+{
+  "Crawl performant · ADC": {
+    "en": "Efficient freestyle · starts",
+    "de": "Effizientes Kraul · Starts",
+    "es": "Crol eficiente · salidas",
+    "ja": "効率的クロール · スタート",
+    "nl": "Efficiënte crawl · starts",
+    "it": "Crawl efficiente · partenze",
+    "pt": "Crawl eficiente · partidas",
+    "pt-BR": "Crawl eficiente · saídas",
+    "sv": "Effektiv crawl · starter",
+    "da": "Effektiv crawl · starter",
+    "nb": "Effektiv crawl · starter",
+    "fi": "Tehokas krooli · lähdöt"
+  },
+  "Crawl performant · AVC": {
+    "en": "Efficient freestyle · turns",
+    "de": "Effizientes Kraul · Wenden",
+    "es": "Crol eficiente · virajes",
+    "ja": "効率的クロール · ターン",
+    "nl": "Efficiënte crawl · keerpunten",
+    "it": "Crawl efficiente · virate",
+    "pt": "Crawl eficiente · viragens",
+    "pt-BR": "Crawl eficiente · viradas",
+    "sv": "Effektiv crawl · vändningar",
+    "da": "Effektiv crawl · vendinger",
+    "nb": "Effektiv crawl · vendinger",
+    "fi": "Tehokas krooli · käännökset"
+  }
+}
